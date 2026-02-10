@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Secrets (keep in application.properties, but don't commit) ###
+src/main/resources/application.properties
