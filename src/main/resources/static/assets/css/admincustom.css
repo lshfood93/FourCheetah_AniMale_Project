@@ -1,0 +1,98 @@
+/* =========================================================
+   Admin Dashboard (Cash) UI
+   - 범위 제한: .admin-dashboard 하위에만 적용 (다른 페이지 영향 방지)
+   ========================================================= */
+
+/* 1) 본문 컨테이너 폭/여백: 카드들이 너무 넓게 퍼지지 않도록 제한 */
+.admin-dashboard .container-fluid {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* 2) 카드 기본 룩앤필: 템플릿 카드에 라운드/패딩 보정 */
+.admin-dashboard .card {
+  border-radius: 18px;
+}
+.admin-dashboard .card-body {
+  padding: 24px;
+}
+
+/* 3) 카드 타이틀 간격 */
+.admin-dashboard .card-title {
+  margin-bottom: 10px;
+}
+
+/* 4) 차트 영역 기본 높이/여백
+   - 차트 렌더링 시 높이가 줄어들거나 튀는 현상을 방지 */
+.admin-dashboard #chart-mom-radial {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 140px;
+}
+.admin-dashboard #chart-method-bar {
+  margin-top: 6px;
+  min-height: 120px;
+}
+.admin-dashboard #chart-monthly-area {
+  margin-top: 8px;
+}
+
+/* 5) 연도 선택 select 크기 고정 */
+.admin-dashboard #yearSelect {
+  max-width: 120px;
+  height: 38px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+/* 6) 좌측 사이드바 폭 조정
+   - 템플릿 기본값이 넓게 느껴지면 좁혀서 시각적 균형을 맞춤 */
+.admin-dashboard .left-sidebar {
+  width: 220px;
+}
+.admin-dashboard .body-wrapper {
+  margin-left: 220px;
+}
+
+/* 7) 반응형: 모바일/태블릿 구간에서 sidebar 고정 여백 제거 */
+@media (max-width: 992px) {
+  .admin-dashboard .body-wrapper {
+    margin-left: 0;
+  }
+}
+
+/* 8) 전월 대비 알약 뱃지 스타일
+   - JS에서 momPercent 값에 따라 badge-up / badge-down 토글 */
+.admin-dashboard .badge-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.admin-dashboard .badge-up {
+  color: #0a8f55;
+  background: rgba(0, 200, 120, 0.12);
+}
+.admin-dashboard .badge-down {
+  color: #d61f69;
+  background: rgba(255, 77, 140, 0.12);
+}
+
+/* 9) 상단 KPI 카드(원형 차트 포함) 레이아웃 안정화 */
+.admin-dashboard .cash-summary {
+  position: relative;
+  min-height: 190px;
+}
+.admin-dashboard .radial-wrap {
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
