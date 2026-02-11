@@ -241,13 +241,16 @@ public class MemberController {
         String role = (String) session.getAttribute("memberRole");
         boolean isAdmin = role != null && role.toUpperCase().contains("ADMIN");
 
+        // 관리자면 adminPage로, 일반이면 mypage로
+        String backPage = isAdmin ? "redirect:/adminPage" : "redirect:/member/mypage";
+
         MemberDTO curQ = new MemberDTO();
         curQ.setCondition("MEMBER_MYPAGE");
         curQ.setMemberId(memberId);
         MemberDTO cur = memberService.selectOne(curQ);
         if (cur == null) {
             session.setAttribute("msg", "회원 정보를 불러오지 못했습니다.");
-            return "redirect:/member/mypage";
+            return backPage; // 변경
         }
 
         String newNick = (memberNickname == null) ? "" : memberNickname.trim();
@@ -258,7 +261,7 @@ public class MemberController {
 
         if (!nickChanged && !profileChanged) {
             session.setAttribute("msg", "변경된 내용이 없습니다.");
-            return "redirect:/member/mypage";
+            return backPage; // 변경
         }
 
         if (nickChanged) {
@@ -269,7 +272,7 @@ public class MemberController {
             MemberDTO found = memberService.selectOne(dup);
             if (found != null && found.getMemberId() != memberId) {
                 session.setAttribute("msg", "이미 사용 중인 닉네임입니다.");
-                return "redirect:/member/mypage";
+                return backPage; // 변경
             }
         }
 
@@ -281,7 +284,7 @@ public class MemberController {
                 Path tempFile = Paths.get(profileTempDir, token);
                 if (!Files.exists(tempFile)) {
                     session.setAttribute("msg", "프로필 임시 파일이 없습니다. 다시 업로드해주세요.");
-                    return "redirect:/member/mypage";
+                    return backPage; // 변경
                 }
 
                 String finalName = token;
@@ -294,7 +297,7 @@ public class MemberController {
             } catch (Exception e) {
                 e.printStackTrace();
                 session.setAttribute("msg", "프로필 파일 처리 중 오류가 발생했습니다.");
-                return "redirect:/member/mypage";
+                return backPage; // 변경
             }
         }
 
@@ -339,7 +342,7 @@ public class MemberController {
             session.setAttribute("msg", isAdmin
                     ? "수정 실패(DB 반영 실패)."
                     : "수정 실패(캐시 부족 또는 DB 반영 실패).");
-            return "redirect:/member/mypage";
+            return backPage; // 변경
         }
 
         MemberDTO after = memberService.selectOne(curQ);
@@ -351,9 +354,9 @@ public class MemberController {
         }
 
         session.setAttribute("msg", "내 정보가 수정되었습니다.");
-        return "redirect:/member/mypage";
+        return backPage; // 변경
     }
-
+    
     // ==================== 비밀번호 변경 ====================
 
     @GetMapping("/changePasswordPage")
