@@ -38,6 +38,9 @@
     - left-sidebar: 좌측 메뉴 영역
     - body-wrapper : 본문 컨텐츠 영역
   --%>
+  <div class="body-wrapper">
+  <jsp:include page="dashboardheader.jsp" />
+  <div class="container-fluid">
   <div class="page-wrapper"
        id="main-wrapper"
        data-layout="vertical"
