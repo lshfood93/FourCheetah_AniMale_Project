@@ -23,8 +23,8 @@ public class NewsDTO {
     // ========== 페이징 관련 ==========
     private int newsCount;                 // COUNT(*) 결과 담기용
     private int startRow;                  // 페이징 시작 행
-    private int endRow;  
-    private int page; // 페이징 끝 행
+    private int endRow;                    // 페이징 끝 행
+    private int page;                      // 현재 페이지
 
     // ========== 검색/정렬 관련 ==========
     private String condition;              // DAO 분기용 컨디션
@@ -35,8 +35,10 @@ public class NewsDTO {
     private Integer animeYear;             // 방영 연도 (NULL 가능)
     private String animeQuarter;           // 방영 분기
     private String animeThumbnailUrl;      // 애니 썸네일
-	private int startNum;
-	private int listSize;
+    
+    // ========== MyBatis/LIMIT-OFFSET 용 ==========
+    private int startNum;                  // OFFSET
+    private int listSize;                  // LIMIT
 
     // ========== Getter/Setter ==========
     
@@ -112,6 +114,14 @@ public class NewsDTO {
         this.endRow = endRow;
     }
 
+    public int getPage() {
+        return page;
+    }
+
+    public void setPage(int page) {
+        this.page = page;
+    }
+
     public String getCondition() {
         return condition;
     }
@@ -160,44 +170,29 @@ public class NewsDTO {
         this.animeThumbnailUrl = animeThumbnailUrl;
     }
 
-    public int getCnt() {
-        return this.newsCount;
+    public int getStartNum() {
+        return startNum;
     }
 
     public void setStartNum(int startNum) {
         this.startNum = startNum;
     }
 
+    public int getListSize() {
+        return listSize;
+    }
+
     public void setListSize(int listSize) {
         this.listSize = listSize;
     }
 
-	public int getListSize() {
-		return this.listSize;
-	}
-
-	public int getStartNum() {
-		return this.startNum;
-	}
-
-	public int getPage() {
-	    return page;
-	}
-
-	public void setPage(int page) {
-	    this.page = page;
-	}
-
-	@Override
-	public String toString() {
-		return "NewsDTO [newsId=" + newsId + ", animeId=" + animeId + ", newsTitle=" + newsTitle + ", newsContent="
-				+ newsContent + ", newsImageUrl=" + newsImageUrl + ", newsThumbnailUrl=" + newsThumbnailUrl
-				+ ", newsCount=" + newsCount + ", startRow=" + startRow + ", endRow=" + endRow + ", page=" + page
-				+ ", condition=" + condition + ", keyword=" + keyword + ", animeTitle=" + animeTitle + ", animeYear="
-				+ animeYear + ", animeQuarter=" + animeQuarter + ", animeThumbnailUrl=" + animeThumbnailUrl
-				+ ", startNum=" + startNum + ", listSize=" + listSize + "]";
-	}
-	
+    @Override
+    public String toString() {
+        return "NewsDTO [newsId=" + newsId + ", animeId=" + animeId + ", newsTitle=" + newsTitle + ", newsContent="
+                + newsContent + ", newsImageUrl=" + newsImageUrl + ", newsThumbnailUrl=" + newsThumbnailUrl
+                + ", newsCount=" + newsCount + ", startRow=" + startRow + ", endRow=" + endRow + ", page=" + page
+                + ", condition=" + condition + ", keyword=" + keyword + ", animeTitle=" + animeTitle + ", animeYear="
+                + animeYear + ", animeQuarter=" + animeQuarter + ", animeThumbnailUrl=" + animeThumbnailUrl
+                + ", startNum=" + startNum + ", listSize=" + listSize + "]";
+    }
 }
-
-
