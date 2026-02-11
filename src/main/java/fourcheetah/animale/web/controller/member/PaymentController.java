@@ -16,7 +16,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -24,14 +23,21 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import fourcheetah.animale.web.dto.member.MemberDTO;
-import fourcheetah.animale.web.repository.member.MemberDAO;
+import fourcheetah.animale.web.service.member.MemberService;
 import jakarta.servlet.http.HttpSession;
 
+/**
+ * 결제 컨트롤러 (카카오페이)
+ * 
+ * 통합 이전:
+ * - KakaoPayApproveController
+ * - KakaoPayCancelController
+ * - KakaoPayFailController
+ */
 @Controller
-@RequestMapping("/payment/kakaopay")
-public class KakaoPayApproveController {
+public class PaymentController {
 
-    private static final String READY_URL   = "https://open-api.kakaopay.com/online/v1/payment/ready";
+    private static final String READY_URL = "https://open-api.kakaopay.com/online/v1/payment/ready";
     private static final String APPROVE_URL = "https://open-api.kakaopay.com/online/v1/payment/approve";
 
     @Value("${kakaopay.cid}")
@@ -40,13 +46,15 @@ public class KakaoPayApproveController {
     @Value("${kakaopay.secret}")
     private String secretKey;
 
-    private final MemberDAO memberDAO;
+    private final MemberService memberService;
 
-    public KakaoPayApproveController(MemberDAO memberDAO) {
-        this.memberDAO = memberDAO;
+    public PaymentController(MemberService memberService) {
+        this.memberService = memberService;
     }
 
-    @PostMapping("/ready")
+    // ==================== 결제 준비 ====================
+
+    @PostMapping("/payment/kakaopay/ready")
     public String ready(@RequestParam("selectCash") int cashCharge,
                         HttpSession session,
                         Model model) {
@@ -60,18 +68,16 @@ public class KakaoPayApproveController {
             return "cashresult";
         }
 
-        // baseUrl 자동 (http://localhost:8088 같은 거)
         String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
 
         String partnerOrderId = "CASH_" + UUID.randomUUID();
-        String partnerUserId  = String.valueOf(memberId);
+        String partnerUserId = String.valueOf(memberId);
 
         String approvalUrl = baseUrl + "/payment/kakaopay/approve";
-        String cancelUrl   = baseUrl + "/payment/kakaopay/cancel";
-        String failUrl     = baseUrl + "/payment/kakaopay/fail";
+        String cancelUrl = baseUrl + "/payment/kakaopay/cancel";
+        String failUrl = baseUrl + "/payment/kakaopay/fail";
 
         try {
-            // 설정값 체크 로그(앞부분만)
             System.out.println("[KAKAO READY] cid=" + cid
                     + ", secret=" + (secretKey == null ? "null" : secretKey.substring(0, Math.min(4, secretKey.length())) + "****")
                     + ", approvalUrl=" + approvalUrl);
@@ -110,7 +116,9 @@ public class KakaoPayApproveController {
         }
     }
 
-    @GetMapping("/approve")
+    // ==================== 결제 승인 ====================
+
+    @GetMapping("/payment/kakaopay/approve")
     public String approve(@RequestParam("pg_token") String pgToken,
                           HttpSession session,
                           Model model) {
@@ -124,8 +132,8 @@ public class KakaoPayApproveController {
 
         String tid = (String) session.getAttribute("kakaopay_tid");
         String partnerOrderId = (String) session.getAttribute("kakaopay_partner_order_id");
-        String partnerUserId  = (String) session.getAttribute("kakaopay_partner_user_id");
-        Integer cashCharge    = (Integer) session.getAttribute("kakaopay_total_amount");
+        String partnerUserId = (String) session.getAttribute("kakaopay_partner_user_id");
+        Integer cashCharge = (Integer) session.getAttribute("kakaopay_total_amount");
 
         if (tid == null || partnerOrderId == null || partnerUserId == null || cashCharge == null) {
             model.addAttribute("payResult", "FAIL");
@@ -166,7 +174,7 @@ public class KakaoPayApproveController {
             upd.setMemberId(memberId);
             upd.setMemberPayCash(approvedTotal);
 
-            boolean ok = memberDAO.update(upd);
+            boolean ok = memberService.update(upd);
             if (!ok) {
                 model.addAttribute("payResult", "FAIL");
                 model.addAttribute("message", "캐시 충전 DB 반영 실패");
@@ -176,7 +184,7 @@ public class KakaoPayApproveController {
             MemberDTO sel = new MemberDTO();
             sel.setCondition("MEMBER_MYPAGE");
             sel.setMemberId(memberId);
-            MemberDTO memberData = memberDAO.selectOne(sel);
+            MemberDTO memberData = memberService.selectOne(sel);
             int totalCash = (memberData == null) ? 0 : memberData.getMemberCash();
 
             session.setAttribute("kakaopay_processed_order_id", partnerOrderId);
@@ -202,19 +210,40 @@ public class KakaoPayApproveController {
         }
     }
 
-    @GetMapping("/cancel")
+    // ==================== 카카오페이 콜백 ====================
+
+    @GetMapping("/payment/kakaopay/cancel")
     public String cancel(Model model) {
         model.addAttribute("payResult", "FAIL");
         model.addAttribute("message", "결제가 취소되었습니다.");
         return "cashresult";
     }
 
-    @GetMapping("/fail")
+    @GetMapping("/payment/kakaopay/fail")
     public String fail(Model model) {
         model.addAttribute("payResult", "FAIL");
         model.addAttribute("message", "결제에 실패했습니다.");
         return "cashresult";
     }
+
+    // ==================== 기존 경로 (KakaoPayCancelController, KakaoPayFailController) ====================
+
+    @GetMapping("/KakaoPayCancel")
+    public String kakaoPayCancel(Model model) {
+        System.out.println("[카카오페이 CANCEL 로그] 결제 취소 : 마이페이지 이동");
+        model.addAttribute("msg", "결제가 취소되었습니다.");
+        model.addAttribute("location", "/myPage");
+        return "message";
+    }
+
+    @GetMapping("/KakaoPayFail")
+    public String kakaoPayFail(Model model) {
+        System.out.println("[카카오페이 FAIL 로그] 결제 실패 : 완료페이지 이동");
+        model.addAttribute("payResult", "FAIL");
+        return "cashresult";
+    }
+
+    // ==================== 헬퍼 메서드 ====================
 
     private String postJson(String url, String jsonBody) throws IOException {
         if (secretKey == null || secretKey.trim().isEmpty()) {
