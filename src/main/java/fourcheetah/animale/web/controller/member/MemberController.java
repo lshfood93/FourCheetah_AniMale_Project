@@ -99,6 +99,37 @@ public class MemberController {
             session.setAttribute("memberRole", data.getMemberRole());
             session.setAttribute("memberProfileImage", data.getMemberProfileImage());
             session.setAttribute("memberEmail", data.getMemberEmail());
+            
+            // 제재 정보 조회 (member_warning 테이블에서)
+            MemberDTO warningInfo = memberService.selectActiveWarning(data.getMemberId());
+            
+            if (warningInfo != null) {
+                String warningType = warningInfo.getMemberStatus();
+                
+                System.out.println("[로그인] 제재 정보 발견: " + warningType);
+                
+                // BAN (영구정지) 체크
+                if ("BAN".equals(warningType)) {
+                    session.invalidate();
+                    model.addAttribute("msg", "영구 정지된 계정입니다. 관리자에게 문의하세요.");
+                    model.addAttribute("location", "/login");
+                    return "message";
+                }
+                
+                // SUSPEND (정지) 체크
+                if ("SUSPEND_7D".equals(warningType) || "SUSPEND_30D".equals(warningType)) {
+                    session.setAttribute("memberStatus", warningType);
+                    session.setAttribute("showSanctionModal", true);
+                    session.setAttribute("sanctionEndAt", warningInfo.getSanctionEndAt());
+                    session.setAttribute("sanctionReason", warningInfo.getSanctionReason());
+                    
+                    System.out.println("[로그인] 정지 상태 - 제재 모달 표시");
+                }
+            } else {
+                // 제재 없음 = 정상
+                session.setAttribute("memberStatus", "ACTIVE");
+                System.out.println("[로그인] 정상 계정");
+            }
 
             if ("Y".equals(autoLogin)) {
                 Cookie cookie = new Cookie("autoLogin", data.getMemberName());
@@ -214,131 +245,121 @@ public class MemberController {
             session.setAttribute("joinError", "JOIN_FAIL");
             return "redirect:/joinPage";
 
-        } catch (DataAccessException dae) {
-            dae.printStackTrace();
-            session.setAttribute("joinError", "JOIN_DB_ERROR");
-            return "redirect:/joinPage";
-        } catch (Exception e) {
-            e.printStackTrace();
-            session.setAttribute("joinError", "JOIN_ERROR");
+        } catch (DataAccessException e) {
+            System.out.println("JOIN ERR: " + e.getMessage());
+            session.setAttribute("joinError", "JOIN_FAIL");
             return "redirect:/joinPage";
         }
     }
 
+    // ==================== 마이페이지 ====================
+
+    @GetMapping("/myPage")
+    public String myPage(HttpSession session) {
+        if (session == null || session.getAttribute("memberId") == null) {
+            return "redirect:/login";
+        }
+        return "mypage";
+    }
+
+    @GetMapping("/member/mypage")
+    public String legacyMyPage() {
+        return "redirect:/myPage";
+    }
+
     // ==================== 프로필 변경 ====================
 
-    @PostMapping("/member/profile")
-    public String updateProfile(
-            @RequestParam(required = false) String memberNickname,
-            @RequestParam(required = false) String temporaryProfileImageToken,
-            HttpSession session,
-            Model model
+    @GetMapping("/changeProfilePage")
+    public String changeProfilePage(HttpSession session) {
+        if (session == null || session.getAttribute("memberId") == null) {
+            return "redirect:/login";
+        }
+        return "changeprofile";
+    }
+
+    @GetMapping("/member/change-profile-page")
+    public String legacyChangeProfile() {
+        return "redirect:/changeprofile";
+    }
+
+    @PostMapping("/member/change-profile")
+    public String changeProfile(
+            @RequestParam(value = "newNickname", required = false) String newNickname,
+            @RequestParam(value = "newProfileImage", required = false) String newProfileImage,
+            HttpSession session
     ) {
+        if (session == null || session.getAttribute("memberId") == null) {
+            return "redirect:/login";
+        }
 
         Integer memberId = (Integer) session.getAttribute("memberId");
-        if (memberId == null) return "redirect:/login";
+        String currentNick = (String) session.getAttribute("memberNickName");
+        String currentImg = (String) session.getAttribute("memberProfileImage");
 
         String role = (String) session.getAttribute("memberRole");
-        boolean isAdmin = role != null && role.toUpperCase().contains("ADMIN");
+        boolean isAdmin = "ADMIN".equals(role);
+
+        boolean nickChange = (newNickname != null && !newNickname.trim().isEmpty() && !newNickname.equals(currentNick));
+        boolean imgChange = (newProfileImage != null && !newProfileImage.trim().isEmpty() && !newProfileImage.equals(currentImg));
+
+        if (!nickChange && !imgChange) {
+            session.setAttribute("msg", "변경 사항이 없습니다.");
+            return "redirect:/member/mypage";
+        }
+
+        int needCash = 0;
+        if (!isAdmin) {
+            needCash = (nickChange ? 500 : 0) + (imgChange ? 500 : 0);
+        }
 
         MemberDTO curQ = new MemberDTO();
-        curQ.setCondition("MEMBER_MYPAGE");
+        curQ.setCondition("MEMBER_CASH_SELECT");
         curQ.setMemberId(memberId);
-        MemberDTO cur = memberService.selectOne(curQ);
-        if (cur == null) {
-            session.setAttribute("msg", "회원 정보를 불러오지 못했습니다.");
-            return "redirect:/member/mypage";
-        }
 
-        String newNick = (memberNickname == null) ? "" : memberNickname.trim();
-        boolean nickChanged = !newNick.isEmpty() && !newNick.equals(cur.getMemberNickname());
-
-        boolean profileChanged = (temporaryProfileImageToken != null && !temporaryProfileImageToken.trim().isEmpty());
-        String token = profileChanged ? temporaryProfileImageToken.trim() : null;
-
-        if (!nickChanged && !profileChanged) {
-            session.setAttribute("msg", "변경된 내용이 없습니다.");
-            return "redirect:/member/mypage";
-        }
-
-        if (nickChanged) {
-            MemberDTO dup = new MemberDTO();
-            dup.setCondition("JOIN_NICKNAME");
-            dup.setMemberNickname(newNick);
-
-            MemberDTO found = memberService.selectOne(dup);
-            if (found != null && found.getMemberId() != memberId) {
-                session.setAttribute("msg", "이미 사용 중인 닉네임입니다.");
+        MemberDTO cashInfo = memberService.selectOne(curQ);
+        if (!isAdmin) {
+            if (cashInfo == null || cashInfo.getMemberCash() < needCash) {
+                session.setAttribute("msg", "캐시가 부족합니다. (필요: " + needCash + ")");
                 return "redirect:/member/mypage";
             }
         }
 
-        String finalProfilePathForDb = null;
-        if (profileChanged) {
+        if (newProfileImage != null && !newProfileImage.trim().isEmpty() && !newProfileImage.equals(currentImg)) {
             try {
-                Files.createDirectories(Paths.get(profileDir));
+                Path tempFile = Paths.get(profileTempDir, newProfileImage);
+                Path targetFile = Paths.get(profileDir, newProfileImage);
 
-                Path tempFile = Paths.get(profileTempDir, token);
-                if (!Files.exists(tempFile)) {
-                    session.setAttribute("msg", "프로필 임시 파일이 없습니다. 다시 업로드해주세요.");
-                    return "redirect:/member/mypage";
+                if (Files.exists(tempFile)) {
+                    Files.createDirectories(targetFile.getParent());
+                    Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
                 }
-
-                String finalName = token;
-                Path finalFile = Paths.get(profileDir, finalName);
-
-                Files.move(tempFile, finalFile, StandardCopyOption.REPLACE_EXISTING);
-
-                finalProfilePathForDb = "/uploads/profile/" + finalName;
-
             } catch (Exception e) {
                 e.printStackTrace();
-                session.setAttribute("msg", "프로필 파일 처리 중 오류가 발생했습니다.");
-                return "redirect:/member/mypage";
             }
         }
 
-        int cost = 0;
-        if (!isAdmin) {
-            if (nickChanged) cost += 300;
-            if (profileChanged) cost += 500;
-        }
+        MemberDTO dto = new MemberDTO();
+        dto.setMemberId(memberId);
 
-        MemberDTO upd = new MemberDTO();
-        upd.setMemberId(memberId);
-        upd.setMemberPayCash(cost);
-
-        if (isAdmin) {
-            if (nickChanged && profileChanged) {
-                upd.setCondition("ADMIN_MEMBER_INFORM_UPDATE");
-                upd.setMemberNickname(newNick);
-                upd.setMemberProfileImage(finalProfilePathForDb);
-            } else if (nickChanged) {
-                upd.setCondition("ADMIN_MEMBER_NICKNAME_UPDATE");
-                upd.setMemberNickname(newNick);
-            } else {
-                upd.setCondition("ADMIN_MEMBER_PROFILE_UPDATE");
-                upd.setMemberProfileImage(finalProfilePathForDb);
-            }
+        if (nickChange && imgChange) {
+            dto.setCondition(isAdmin ? "ADMIN_MEMBER_INFORM_UPDATE" : "MEMBER_INFORM_UPDATE");
+            dto.setMemberNickname(newNickname.trim());
+            dto.setMemberProfileImage(newProfileImage != null ? newProfileImage.trim() : null);
+            if (!isAdmin) dto.setMemberPayCash(needCash);
+        } else if (nickChange) {
+            dto.setCondition(isAdmin ? "ADMIN_MEMBER_NICKNAME_UPDATE" : "MEMBER_NICKNAME_UPDATE");
+            dto.setMemberNickname(newNickname.trim());
+            if (!isAdmin) dto.setMemberPayCash(500);
         } else {
-            if (nickChanged && profileChanged) {
-                upd.setCondition("MEMBER_INFORM_UPDATE");
-                upd.setMemberNickname(newNick);
-                upd.setMemberProfileImage(finalProfilePathForDb);
-            } else if (nickChanged) {
-                upd.setCondition("MEMBER_NICKNAME_UPDATE");
-                upd.setMemberNickname(newNick);
-            } else {
-                upd.setCondition("MEMBER_PROFILE_UPDATE");
-                upd.setMemberProfileImage(finalProfilePathForDb);
-            }
+            dto.setCondition(isAdmin ? "ADMIN_MEMBER_PROFILE_UPDATE" : "MEMBER_PROFILE_UPDATE");
+            dto.setMemberProfileImage(newProfileImage != null ? newProfileImage.trim() : null);
+            if (!isAdmin) dto.setMemberPayCash(500);
         }
 
-        boolean ok = memberService.update(upd);
+        boolean ok = memberService.update(dto);
+
         if (!ok) {
-            session.setAttribute("msg", isAdmin
-                    ? "수정 실패(DB 반영 실패)."
-                    : "수정 실패(캐시 부족 또는 DB 반영 실패).");
+            session.setAttribute("msg", "프로필 변경에 실패했습니다.");
             return "redirect:/member/mypage";
         }
 
