@@ -12,6 +12,9 @@
     kakaoPercent: 58,        // 결제수단 비중(%)
     tossPercent: 42,
 
+    // (선택) 지난달 금액을 서버에서 내려줄 수 있으면 가장 정확함
+    // lastMonthTotal: 4120000,
+
     // 1~12월 월별 충전금액(원)
     monthlyTotals: [
       1200000, 1800000, 2400000, 2100000, 2700000, 3100000,
@@ -48,107 +51,149 @@
 
   // =========================================================
   // 1) 전월 대비 원형(라디얼) 차트
-  // - momPercent를 0~100 범위로 clamp하여 radialBar series로 사용
+  // - 중앙 텍스트 제거(깔끔)
+  // - hover 시 커스텀 툴팁으로 지난달/이번달/증감 표시
   // =========================================================
-  const ringValue = Math.max(0, Math.min(100, Math.abs(vm.momPercent || 0)));
+
+  // 안전한 증감률(숫자 보정)
+  const safeMom = Number(vm.momPercent ?? 0);
+
+  // 지난달 금액(선택)
+  // - 서버에서 lastMonthTotal을 내려주면 그대로 사용
+  // - 없으면 momPercent 기반으로 역산(0/음수 극단값 방어)
+  let lastMonthTotal = vm.lastMonthTotal;
+
+  if (lastMonthTotal == null) {
+    const denom = 1 + (safeMom / 100);
+    lastMonthTotal = (denom <= 0) ? 0 : Math.round(vm.thisMonthTotal / denom);
+  }
+
+  // 링에 표시할 값(0~100)
+  // - momPercent가 100을 넘거나 음수여도 안전하게 clamp
+  const ringValue = Math.max(0, Math.min(100, Math.abs(safeMom)));
 
   const radialOptions = {
     series: [ringValue],
     chart: {
       type: 'radialBar',
-      height: 140,
-      sparkline: { enabled: true } // 축/여백을 최소화해 카드형 위젯 느낌
+      height: 260,
+	  width: 260,
+      sparkline: { enabled: true }, // 축/여백 최소화(위젯 느낌)
     },
-    colors: ['#1e88ff'], // 포인트 컬러 통일(파랑)
-
+    colors: ['#1e88ff'], // 포인트 컬러(파랑)
     plotOptions: {
       radialBar: {
-        hollow: { size: '65%' },
+        // hollow size가 작아질수록 링이 두꺼워짐
+        hollow: { size: '40%' },
 
         // 배경 링(회색 트랙)
         track: {
           background: '#e9eef5',
-          strokeWidth: '100%'
+          strokeWidth: '100%',
+          margin: 0
         },
 
+        // 중앙 텍스트는 제거(깔끔하게)
         dataLabels: {
           name: { show: false },
-          value: {
-            show: true,
-            fontSize: '16px',
-            formatter: function () {
-              const v = vm.momPercent ?? 0;
-              const sign = v >= 0 ? '+' : '';
-              return sign + Math.round(v) + '%';
-            }
-          }
+          value: { show: false }
         }
+      }
+    },
+
+    // 커스텀 tooltip: hover 시 상세 비교 제공
+    tooltip: {
+      enabled: true,
+	  fixed: {
+	    enabled: true,
+	    position: 'topLeft',
+	    offsetX: -6,
+	    offsetY: 10
+	  },
+      custom: function () {
+        const sign = safeMom >= 0 ? '+' : '';
+        const momText = sign + Math.round(safeMom) + '%';
+
+        // 주의: bootstrap .row 충돌 방지 → tt-row 사용
+        return `
+          <div class="dash-tooltip">
+            <div class="tt-row"><span class="label">지난달</span><span class="value">₩ ${Number(lastMonthTotal).toLocaleString()}</span></div>
+            <div class="tt-row"><span class="label">이번달</span><span class="value">₩ ${Number(vm.thisMonthTotal).toLocaleString()}</span></div>
+            <div class="tt-row"><span class="label">증감</span><span class="value">${momText}</span></div>
+          </div>
+        `;
       }
     }
   };
 
+  // 원형 차트 렌더링(중요)
   const radialEl = document.querySelector('#chart-mom-radial');
   if (radialEl) new ApexCharts(radialEl, radialOptions).render();
 
   // =========================================================
-  // 2) 충전 수단 비교(스택 막대)
-  // - 비중(파랑) + 나머지(회색)로 100% 스택처럼 보이게 구성
+  // 2) 충전 수단 비교(100% 가로 스택 1개)
+  // - 하나의 막대(총합 100%) 안에서 카카오/토스 비율이 나뉘어 보이도록
+  // - 퍼센트 차이가 직관적으로 보이게 개선
   // =========================================================
-  const kakao = vm.kakaoPercent ?? 0;
-  const toss = vm.tossPercent ?? 0;
+  const kakao = Math.max(0, Math.min(100, Number(vm.kakaoPercent ?? 0)));
+  const toss = Math.max(0, Math.min(100, Number(vm.tossPercent ?? 0)));
 
   const methodBarOptions = {
     series: [
-      { name: '비중', data: [kakao, toss] },
-      { name: '나머지', data: [100 - kakao, 100 - toss] }
+      { name: '카카오페이', data: [kakao] },
+      { name: '토스페이', data: [toss] }
     ],
     chart: {
       type: 'bar',
       height: 120,
       stacked: true,
+      stackType: '100%',
       sparkline: { enabled: true },
       fontFamily: 'inherit'
     },
     colors: ['#1e88ff', '#e9eef5'],
-    fill: { opacity: 1 },
-
     plotOptions: {
       bar: {
-        horizontal: false,
-        columnWidth: '35%',
-        borderRadius: 8,
-        borderRadiusApplication: 'end',
+        horizontal: true,
+        barHeight: '44%',
+        borderRadius: 12,
         borderRadiusWhenStacked: 'all'
       }
     },
-
-    dataLabels: { enabled: false },
+    dataLabels: {
+      enabled: true,
+      formatter: function (val) {
+        return Math.round(val) + '%';
+      },
+      style: {
+        fontSize: '12px',
+        fontWeight: 700
+      }
+    },
     xaxis: {
-      categories: ['카카오페이', '토스페이'],
+      max: 100,
       labels: { show: false },
       axisBorder: { show: false },
       axisTicks: { show: false }
     },
-    yaxis: { max: 100, labels: { show: false } },
+    yaxis: { labels: { show: false } },
     legend: { show: false },
-
-    // 툴팁은 파랑(비중)만 보여주고 회색(나머지)은 숨김
     tooltip: {
       y: {
         formatter: function (val, opts) {
-          const seriesIndex = opts.seriesIndex;
-          if (seriesIndex === 0) return Math.round(val) + '%';
-          return '';
+          const name = opts.seriesIndex === 0 ? '카카오페이' : '토스페이';
+          return name + ' ' + Math.round(val) + '%';
         }
       }
-    }
+    },
+    grid: { show: false }
   };
 
   const barEl = document.querySelector('#chart-method-bar');
   if (barEl) new ApexCharts(barEl, methodBarOptions).render();
 
   // =========================================================
-  // 3) 올해 월별 충전금액(에어리어 차트)
+  // 3) 월별 충전금액(에어리어 차트)
   // - 금액은 원 단위, y축 라벨만 '만' 단위로 표시
   // =========================================================
   const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
