@@ -1,10 +1,13 @@
 package fourcheetah.animale.web.dto.board;
 
+import java.time.LocalDateTime;
+
 public class BoardLikeDTO {
 	
 	private int boardLikeId;
 	private int boardId;
 	private int memberId;
+	private LocalDateTime createdAt;
 	
 	// condition / view
 	private String condition;
@@ -46,9 +49,17 @@ public class BoardLikeDTO {
 	public void setIsLiked(int isLiked) {
 		this.isLiked = isLiked;
 	}
+	
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
 	@Override
 	public String toString() {
 		return "BoardLikeDTO [boardLikeId=" + boardLikeId + ", boardId=" + boardId + ", memberId=" + memberId
-				+ ", condition=" + condition + ", likeCnt=" + likeCnt + ", isLiked=" + isLiked + "]";
+				+ ", createdAt=" + createdAt + ", condition=" + condition + ", likeCnt=" + likeCnt + ", isLiked="
+				+ isLiked + "]";
 	}
 }

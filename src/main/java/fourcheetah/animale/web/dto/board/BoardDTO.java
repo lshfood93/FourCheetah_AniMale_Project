@@ -1,6 +1,6 @@
 package fourcheetah.animale.web.dto.board;
 
-
+import java.time.LocalDateTime;
 
 public class BoardDTO {
 	private int boardId;
@@ -10,13 +10,45 @@ public class BoardDTO {
 	private int boardViews;
 	private String boardCategory;
 
+	private String boardStatus;       // '정상'/'내용삭제'
+	private LocalDateTime contentDeletedAt;// 내용 삭제 처리 일시
+
+	private LocalDateTime boardUpdatedAt;  // ON UPDATE CURRENT_TIMESTAMP
+	private LocalDateTime boardCreatedAt;  // DEFAULT CURRENT_TIMESTAMP
 
 	// 최프 최종 추가 컬럼들
 
+	public String getBoardStatus() {
+		return boardStatus;
+	}
+	public void setBoardStatus(String boardStatus) {
+		this.boardStatus = boardStatus;
+	}
+	public LocalDateTime getContentDeletedAt() {
+		return contentDeletedAt;
+	}
+	public void setContentDeletedAt(LocalDateTime contentDeletedAt) {
+		this.contentDeletedAt = contentDeletedAt;
+	}
+	public LocalDateTime getBoardUpdatedAt() {
+		return boardUpdatedAt;
+	}
+	public void setBoardUpdatedAt(LocalDateTime boardUpdatedAt) {
+		this.boardUpdatedAt = boardUpdatedAt;
+	}
+	public LocalDateTime getBoardCreatedAt() {
+		return boardCreatedAt;
+	}
+	public void setBoardCreatedAt(LocalDateTime boardCreatedAt) {
+		this.boardCreatedAt = boardCreatedAt;
+	}
+	
+	
 
 	// condition / join / view
 
 	private String condition;
+
 	private String keyword; // 검색어(제목,작성자/내용)
 	private String type;
 
@@ -114,9 +146,11 @@ public class BoardDTO {
 	}
 	@Override
 	public String toString() {
-		return "BoardDTO [boardId=" + boardId + ", memberId=" + memberId + ", boardTitle=" + boardTitle + ", boardContent="
-				+ boardContent + ", boardViews=" + boardViews + ", boardCategory=" + boardCategory + ", condition="
-				+ condition + ", keyword=" + keyword + ", writerNickname=" + writerNickname + ", writerRole=" + writerRole
+		return "BoardDTO [boardId=" + boardId + ", memberId=" + memberId + ", boardTitle=" + boardTitle
+				+ ", boardContent=" + boardContent + ", boardViews=" + boardViews + ", boardCategory=" + boardCategory
+				+ ", boardStatus=" + boardStatus + ", contentDeletedAt=" + contentDeletedAt + ", boardUpdatedAt="
+				+ boardUpdatedAt + ", boardCreatedAt=" + boardCreatedAt + ", condition=" + condition + ", keyword="
+				+ keyword + ", type=" + type + ", writerNickname=" + writerNickname + ", writerRole=" + writerRole
 				+ ", likeCnt=" + likeCnt + ", isLiked=" + isLiked + ", likeMemberNickname=" + likeMemberNickname + "]";
 	}
 
