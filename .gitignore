@@ -39,3 +39,5 @@ build/
 #### file upload ##
 /uploads/
 /src/main/webapp/upload/
+### Secrets (keep in application.properties, but don't commit) ###
+src/main/resources/application.properties
