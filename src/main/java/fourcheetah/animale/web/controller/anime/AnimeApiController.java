@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -12,13 +13,10 @@ import fourcheetah.animale.web.dto.anime.AnimeDTO;
 import fourcheetah.animale.web.service.anime.AnimeService;
 
 @RestController
-public class AnimeListDataController {
-
-    private final AnimeService animeService;
-
-    public AnimeListDataController(AnimeService animeService) {
-        this.animeService = animeService;
-    }
+public class AnimeApiController {
+	
+	@Autowired
+	private AnimeService animeService;
 
     @GetMapping(value = "/api/anime", produces = "application/json; charset=UTF-8")
     public Map<String, Object> execute(AnimeDTO dto) { // 커맨드객체 바인딩
@@ -142,4 +140,5 @@ public class AnimeListDataController {
 
         return result;
     }
+
 }

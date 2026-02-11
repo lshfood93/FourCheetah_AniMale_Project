@@ -35,3 +35,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+#### file upload ##
+/uploads/
+/src/main/webapp/upload/
