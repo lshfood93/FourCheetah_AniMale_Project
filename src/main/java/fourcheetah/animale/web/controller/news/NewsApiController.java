@@ -9,12 +9,29 @@ import org.springframework.web.bind.annotation.RestController;
 import fourcheetah.animale.web.dto.anime.AnimeDTO;
 import fourcheetah.animale.web.service.anime.AnimeService;
 
+/**
+ * 뉴스 API 컨트롤러
+ * 
+ * 기능:
+ * - 애니 검색: GET /newsAnimeSearch
+ * 
+ * 통합 이전:
+ * - NewsAnimeSearchController
+ */
 @RestController
-public class NewsAnimeSearchController {
+public class NewsApiController {
 
     @Autowired
     private AnimeService animeService;
 
+    /**
+     * 뉴스 작성/수정 시 애니메이션 검색 API
+     * 
+     * GET /newsAnimeSearch?keyword=xxx
+     * 
+     * @param dto 검색 조건 (keyword)
+     * @return 애니메이션 목록 (제목 매칭)
+     */
     @GetMapping("/newsAnimeSearch")
     public List<AnimeDTO> searchAnime(AnimeDTO dto) {
 

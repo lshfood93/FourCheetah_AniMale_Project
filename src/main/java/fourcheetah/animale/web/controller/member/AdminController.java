@@ -10,7 +10,7 @@ import fourcheetah.animale.web.service.member.MemberService;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
-public class AdminPageController {
+public class AdminController {
 
     @Autowired
     private MemberService memberService;

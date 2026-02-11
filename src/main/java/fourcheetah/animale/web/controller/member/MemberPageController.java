@@ -5,19 +5,25 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import fourcheetah.animale.web.dto.member.MemberDTO;
-import fourcheetah.animale.web.repository.member.MemberDAO;
+import fourcheetah.animale.web.service.member.MemberService;
 import jakarta.servlet.http.HttpSession;
 
+/**
+ * 회원 페이지 컨트롤러
+ * 
+ * 통합 이전:
+ * - MyPageController
+ * - CashChargePageController
+ */
 @Controller
-public class MyPageController {
+public class MemberPageController {
 
-    private final MemberDAO memberDAO;
+    private final MemberService memberService;
 
-    public MyPageController(MemberDAO memberDAO) {
-        this.memberDAO = memberDAO;
+    public MemberPageController(MemberService memberService) {
+        this.memberService = memberService;
     }
 
-    // 대소문자/예전 주소까지 전부 커버
     @GetMapping({"/mypage", "/myPage", "/member/mypage"})
     public String myPage(HttpSession session, Model model) {
 
@@ -28,12 +34,18 @@ public class MyPageController {
         dto.setCondition("MEMBER_MYPAGE");
         dto.setMemberId(memberId);
 
-        MemberDTO member = memberDAO.selectOne(dto);
+        MemberDTO member = memberService.selectOne(dto);
 
-        // JSP가 쓰는 이름으로 넣어주기
         model.addAttribute("memberData", member);
 
         return "mypage";
     }
 
+    @GetMapping({"/cash/charge", "/cashcharge"})
+    public String cashChargePage(HttpSession session) {
+        if (session == null || session.getAttribute("memberId") == null) {
+            return "redirect:/login";
+        }
+        return "cashcharge";
+    }
 }
