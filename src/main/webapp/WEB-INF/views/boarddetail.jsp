@@ -272,36 +272,6 @@
 	align-items: center;
 }
 
-/* Auth Bar (로그인 안했을 때) */
-.auth-bar {
-	padding: 10px 0;
-	border-bottom: 1px solid rgba(255, 255, 255, 0.10);
-	background: rgba(255, 255, 255, 0.04);
-	backdrop-filter: blur(10px);
-	-webkit-backdrop-filter: blur(10px);
-}
-
-.auth-bar__menu {
-	margin: 0;
-	padding: 0;
-	list-style: none;
-	display: flex;
-	gap: 12px;
-	justify-content: flex-end;
-	align-items: center;
-	flex-wrap: wrap;
-}
-
-.auth-bar__menu a {
-	font-size: 13px;
-	color: rgba(255, 255, 255, 0.9);
-	text-decoration: none;
-}
-
-.auth-bar__menu a:hover {
-	color: #fff;
-	text-decoration: underline;
-}
 
 /* 댓글 헤더 */
 .bd-replies-head {
@@ -657,19 +627,6 @@
 <body>
 
 	<jsp:include page="/WEB-INF/common/header.jsp" />
-
-	<%-- Auth Bar (로그인 안 했을 때만) --%>
-	<c:if test="${not isLogin}">
-		<section class="auth-bar">
-			<div class="container">
-				<ul class="auth-bar__menu">
-					<li><a href="login">로그인</a></li>
-					<li><a href="joinPage">회원가입</a></li>
-					<li><a href="findPasswordPage">비밀번호 찾기</a></li>
-				</ul>
-			</div>
-		</section>
-	</c:if>
 
 	<section class="product spad bd-detail-wrap">
 		<div class="container">

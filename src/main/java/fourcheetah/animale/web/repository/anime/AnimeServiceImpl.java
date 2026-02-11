@@ -25,17 +25,17 @@ public class AnimeServiceImpl implements AnimeService {
     }
 
     @Override
-    public boolean insertAnime(AnimeDTO dto) {
+    public boolean insert(AnimeDTO dto) {
         return animeDAO.insert(dto);
     }
 
     @Override
-    public boolean updateAnime(AnimeDTO dto) {
+    public boolean update(AnimeDTO dto) {
         return animeDAO.update(dto);
     }
 
     @Override
-    public boolean deleteAnime(AnimeDTO dto) {
+    public boolean delete(AnimeDTO dto) {
         return animeDAO.delete(dto);
     }
 }

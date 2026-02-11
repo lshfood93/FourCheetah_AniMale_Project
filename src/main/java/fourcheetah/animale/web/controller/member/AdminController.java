@@ -53,4 +53,9 @@ public class AdminController {
         model.addAttribute("memberData", memberData);
         return "adminpage";
     }
+    
+    @GetMapping("/admindashboard")
+    public String admindashboard(HttpSession session) {
+        return "admindashboard";
+    }
 }
