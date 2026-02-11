@@ -7,7 +7,7 @@ import fourcheetah.animale.web.dto.anime.AnimeDTO;
 public interface AnimeService {
     List<AnimeDTO> selectAll(AnimeDTO dto); 
     AnimeDTO selectOne(AnimeDTO dto);         
-    boolean insertAnime(AnimeDTO dto);
-    boolean updateAnime(AnimeDTO dto);
-    boolean deleteAnime(AnimeDTO dto);
+    boolean insert(AnimeDTO dto);
+    boolean update(AnimeDTO dto);
+    boolean delete(AnimeDTO dto);
 }
