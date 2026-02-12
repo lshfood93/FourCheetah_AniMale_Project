@@ -582,6 +582,45 @@
 	display: block;
 	margin: 12px 0;
 }
+/* 신고 모달 중앙 정렬 */
+#reportModal .modal-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    max-width: 500px;
+    width: 90%;
+}
+
+#reportModal.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+}
+
+#reportModal.modal.show {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 모달 애니메이션 제거 */
+#reportModal .modal-dialog {
+    transition: none !important;
+}
+
+/* 모달 내용 스크롤 */
+#reportModal .modal-body {
+    max-height: 400px;
+    overflow-y: auto;
+}
 </style>
 </head>
 
@@ -701,6 +740,15 @@
 											id="btnLikeUsers" data-board-id="${boardData.boardId}">
 											<i class="fa fa-users"></i> 좋아요 누른 사람
 										</button>
+										
+										<%-- 신고 버튼 (로그인 시에만 표시) --%>
+											<c:if test="${isLogin}">
+												<button type="button" class="btn-sm2 btn-danger2"
+													id="btnReport" data-board-id="${boardData.boardId}">
+													<i class="fa fa-flag"></i> 신고
+												</button>
+											</c:if>
+										
 									</div>
 
 								</div>
@@ -811,7 +859,7 @@
 	</section>
 
 	<%-- 좋아요 사용자 모달 --%>
-	<div class="modal fade" id="likeUsersModal" tabindex="-1" role="dialog"
+	<div class="modal" id="likeUsersModal" tabindex="-1" role="dialog"
 		aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered" role="document">
 			<div class="modal-content">
@@ -832,6 +880,49 @@
 			</div>
 		</div>
 	</div>
+	
+	<%-- 신고 모달 --%>
+		<div class="modal fade" id="reportModal" tabindex="-1" role="dialog">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content" style="background: rgba(30, 30, 40, 0.98); color: #fff; border: 1px solid rgba(255,255,255,0.2);">
+					<div class="modal-header">
+						<h5 class="modal-title">게시글 신고</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #fff;">
+							<span aria-hidden="true" style="color: #fff;">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<p class="meta">신고 사유를 선택해주세요:</p>
+						<div style="margin-top: 16px;">
+							<label style="display: block; margin-bottom: 10px; cursor: pointer;">
+								<input type="radio" name="reasonCode" value="SPAM" style="margin-right: 8px;">
+								<span>스팸/광고</span>
+							</label>
+							<label style="display: block; margin-bottom: 10px; cursor: pointer;">
+								<input type="radio" name="reasonCode" value="ABUSE" style="margin-right: 8px;">
+								<span>욕설/비방</span>
+							</label>
+							<label style="display: block; margin-bottom: 10px; cursor: pointer;">
+								<input type="radio" name="reasonCode" value="OBSCENE" style="margin-right: 8px;">
+								<span>음란물</span>
+							</label>
+							<label style="display: block; margin-bottom: 10px; cursor: pointer;">
+								<input type="radio" name="reasonCode" value="ILLEGAL" style="margin-right: 8px;">
+								<span>불법 정보</span>
+							</label>
+							<label style="display: block; margin-bottom: 10px; cursor: pointer;">
+								<input type="radio" name="reasonCode" value="ETC" style="margin-right: 8px;">
+								<span>기타</span>
+							</label>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn-sm2 btn-ghost2" data-dismiss="modal">취소</button>
+						<button type="button" class="btn-sm2 btn-danger2" id="btnSubmitReport">신고하기</button>
+					</div>
+				</div>
+			</div>
+		</div>
 
 	<%@ include file="/WEB-INF/common/footer.jsp"%>
 
@@ -1125,6 +1216,63 @@
       .toggleClass("liked", !!liked)
       .attr("data-liked", liked ? "1" : "0");
   }
+  
+
+  // 신고 버튼 클릭
+  $("#btnReport").on("click", function() {
+    if (!isLogin) {
+      alert("로그인 후 이용 가능합니다.");
+      return;
+    }
+    
+    // 라디오 선택 초기화
+    $('input[name="reasonCode"]').prop('checked', false);
+    
+    // 모달 표시
+    $("#reportModal").modal("show");
+  });
+
+  // 신고 제출
+  $("#btnSubmitReport").on("click", function() {
+    const reasonCode = $('input[name="reasonCode"]:checked').val();
+    
+    if (!reasonCode) {
+      alert("신고 사유를 선택해주세요.");
+      return;
+    }
+    
+    if (!confirm("이 게시글을 신고하시겠습니까?")) {
+      return;
+    }
+    
+    $.ajax({
+      url: ctx + "/report/board",
+      type: "POST",
+      data: {
+        boardId: boardId,
+        reasonCode: reasonCode
+      },
+      dataType: "json",
+      success: function(res) {
+        if (res.ok) {
+          alert(res.ok);
+          $("#reportModal").modal("hide");
+        } else if (res.fail) {
+          alert(res.fail);
+        } else {
+          alert("신고 처리 중 오류가 발생했습니다.");
+        }
+      },
+      error: function(xhr) {
+        if (xhr.status === 401) {
+          alert("로그인 후 이용 가능합니다.");
+          location.href = ctx + "/loginPage";
+          return;
+        }
+        alert("서버 통신 오류가 발생했습니다.");
+      }
+    });
+  });
   </script>
 
 </body>
