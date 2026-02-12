@@ -141,6 +141,15 @@ public class MemberDAO {
             "SELECT member_cash AS MEMBER_CASH " +
             "FROM MEMBER " +
             "WHERE member_id = ?";
+    
+    // 현재 활성화된 제재 조회 (추가!)
+    private static final String SELECT_ACTIVE_WARNING =
+        "SELECT warning_type, reason, start_at, end_at " +
+        "FROM member_warning " +
+        "WHERE member_id = ? " +
+        "AND start_at <= NOW() " +
+        "AND (end_at IS NULL OR end_at > NOW()) " +
+        "ORDER BY start_at DESC LIMIT 1";
 
     /* =========================
        SELECT_ALL
@@ -216,23 +225,33 @@ public class MemberDAO {
             "WHERE member_id = ?";
 
     private static final String UPDATE_PASSWORD =
-            "UPDATE MEMBER SET member_password = ? WHERE member_id = ?";
+            "UPDATE MEMBER " +
+            "SET member_password = ? " +
+            "WHERE member_id = ?";
 
     private static final String UPDATE_CASH_PLUS =
-            "UPDATE MEMBER SET member_cash = member_cash + ? WHERE member_id = ?";
+            "UPDATE MEMBER " +
+            "SET member_cash = member_cash + ? " +
+            "WHERE member_id = ?";
 
     private static final String UPDATE_CASH_MINUS =
-            "UPDATE MEMBER SET member_cash = member_cash - ? WHERE member_id = ? AND member_cash >= ?";
+            "UPDATE MEMBER " +
+            "SET member_cash = member_cash - ? " +
+            "WHERE member_id = ? AND member_cash >= ?";
 
     private static final String UPDATE_WITHDRAWN =
-            "UPDATE MEMBER SET member_role = 'WITHDRAWN' WHERE member_id = ?";
+            "UPDATE MEMBER " +
+            "SET member_role = 'WITHDRAWN' " +
+            "WHERE member_id = ?";
 
     private static final String UPDATE_COLORS =
-            "UPDATE MEMBER SET member_profile_color = ?, member_nickname_color = ? WHERE member_id = ?";
+            "UPDATE MEMBER " +
+            "SET member_profile_color = ?, member_nickname_color = ? " +
+            "WHERE member_id = ?";
 
     private static final String UPDATE_NOTICE_SET =
             "UPDATE MEMBER " +
-            "SET last_warning_at = NOW(), notice_pending='Y', notice_message=? " +
+            "SET notice_pending='Y', notice_message=? " +
             "WHERE member_id = ?";
 
     private static final String UPDATE_NOTICE_CLEAR =
@@ -339,16 +358,12 @@ public class MemberDAO {
             if ("JOIN_NICKNAME".equals(condition)) {
                 return jdbcTemplate.queryForObject(SELECT_JOIN_NICKNAME, ID_ONLY_ROW_MAPPER, dto.getMemberNickname());
             }
-            if ("MEMBER_EMAIL_CHECK".equals(condition) || "member_email_check".equals(condition)) {
+            if ("MEMBER_EMAIL_CHECK".equals(condition)) {
                 return jdbcTemplate.queryForObject(SELECT_MEMBER_EMAIL_CHECK, ID_ONLY_ROW_MAPPER, dto.getMemberEmail());
             }
 
             if ("MEMBER_AUTOLOGIN".equals(condition)) {
-                return jdbcTemplate.queryForObject(
-                        SELECT_MEMBER_AUTOLOGIN,
-                        FULL_ROW_MAPPER,
-                        dto.getMemberName()
-                );
+                return jdbcTemplate.queryForObject(SELECT_MEMBER_AUTOLOGIN, FULL_ROW_MAPPER, dto.getMemberName());
             }
 
             if ("MEMBER_LOGIN".equals(condition)) {
@@ -404,6 +419,38 @@ public class MemberDAO {
         } catch (EmptyResultDataAccessException e) {
             return null;
         } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    /**
+     * 현재 활성화된 제재 정보 조회 (추가!)
+     */
+    public MemberDTO selectActiveWarning(int memberId) {
+        try {
+            return jdbcTemplate.queryForObject(
+                SELECT_ACTIVE_WARNING,
+                (rs, rowNum) -> {
+                    MemberDTO dto = new MemberDTO();
+                    dto.setMemberStatus(rs.getString("warning_type"));
+                    dto.setSanctionReason(rs.getString("reason"));
+                    
+                    Timestamp endTime = rs.getTimestamp("end_at");
+                    if (endTime == null) {
+                        dto.setSanctionEndAt("영구 정지");
+                    } else {
+                        dto.setSanctionEndAt(endTime.toString());
+                    }
+                    
+                    return dto;
+                },
+                memberId
+            );
+        } catch (EmptyResultDataAccessException e) {
+            return null; // 제재 없음
+        } catch (Exception e) {
+            System.out.println("[MemberDAO] 제재 조회 에러: " + e.getMessage());
             e.printStackTrace();
             return null;
         }
