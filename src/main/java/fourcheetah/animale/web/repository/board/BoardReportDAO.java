@@ -2,6 +2,8 @@ package fourcheetah.animale.web.repository.board;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -349,15 +351,51 @@ public class BoardReportDAO {
                 boardId             // source_report_id 조회용
             );
             System.out.println("[DAO] 제재 기록 생성 - rows=" + rows4);
-
+        
             // 6. 알림 생성 (3회 이상)
             if (newCount >= 3) {
-                int rows5 = jdbcTemplate.update(UPDATE_MEMBER_NOTICE, boardWriterId);
-                System.out.println("[DAO] 알림 생성 - rows=" + rows5);
+                String warningMsg = "";
+                
+                if (newCount == 3) {
+                    // 7일 정지
+                    LocalDateTime startAt = LocalDateTime.now();
+                    LocalDateTime endAt = startAt.plusDays(7);
+                    
+                    warningMsg = String.format(
+                        "[계정 활동 제한] 신고 누적 3회로 인해 7일간 계정이 정지되었습니다. " +
+                        "정지 기간: %s ~ %s (정지 종료 후 로그인 시 자동 해제)",
+                        startAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                        endAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                    );
+                } else if (newCount == 5) {
+                    // 30일 정지
+                    LocalDateTime startAt = LocalDateTime.now();
+                    LocalDateTime endAt = startAt.plusDays(30);
+                    
+                    warningMsg = String.format(
+                        "[계정 활동 제한] 신고 누적 5회로 인해 30일간 계정이 정지되었습니다. " +
+                        "정지 기간: %s ~ %s (정지 종료 후 로그인 시 자동 해제)",
+                        startAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                        endAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                    );
+                } else if (newCount >= 6) {
+                    // 영구 정지
+                    warningMsg = "[계정 활동 제한] 신고 누적 6회 이상으로 인해 계정이 영구 정지되었습니다.";
+                }
+                
+                // notice_message에 날짜 포함된 메시지 저장
+                String updateNoticeSql = 
+                    "UPDATE member SET " +
+                    "  notice_pending = 'Y', " +
+                    "  notice_message = ? " +
+                    "WHERE member_id = ?";
+                
+                int rows5 = jdbcTemplate.update(updateNoticeSql, warningMsg, boardWriterId);
+                System.out.println("[DAO] 알림 생성 (날짜 포함) - rows=" + rows5);
+                System.out.println("[DAO] 알림 메시지: " + warningMsg);
             }
-
+            
             System.out.println("[DAO] 신고 승인 트랜잭션 완료");
-
             return true;
 
         } catch (Exception e) {

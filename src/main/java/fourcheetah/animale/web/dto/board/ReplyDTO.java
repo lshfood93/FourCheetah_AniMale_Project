@@ -5,10 +5,13 @@ public class ReplyDTO {
 	private int boardId;
 	private int memberId;
 	private String replyContent;
+	private String replyCreatedAt;  // 작성일시
+	private String replyUpdatedAt;  // 수정일시
 	
 	// condition / join / view
 	private String condition;
 	private String writerNickname; // JOIN MEMBER + 탈퇴회원 
+	
 	public int getReplyId() {
 		return replyId;
 	}
@@ -33,6 +36,18 @@ public class ReplyDTO {
 	public void setReplyContent(String replyContent) {
 		this.replyContent = replyContent;
 	}
+	public String getReplyCreatedAt() {
+		return replyCreatedAt;
+	}
+	public void setReplyCreatedAt(String replyCreatedAt) {
+		this.replyCreatedAt = replyCreatedAt;
+	}
+	public String getReplyUpdatedAt() {
+		return replyUpdatedAt;
+	}
+	public void setReplyUpdatedAt(String replyUpdatedAt) {
+		this.replyUpdatedAt = replyUpdatedAt;
+	}
 	public String getCondition() {
 		return condition;
 	}
@@ -48,6 +63,7 @@ public class ReplyDTO {
 	@Override
 	public String toString() {
 		return "ReplyDTO [replyId=" + replyId + ", boardId=" + boardId + ", memberId=" + memberId + ", replyContent="
-				+ replyContent + ", condition=" + condition + ", writerNickname=" + writerNickname + "]";
+				+ replyContent + ", replyCreatedAt=" + replyCreatedAt + ", replyUpdatedAt=" + replyUpdatedAt
+				+ ", condition=" + condition + ", writerNickname=" + writerNickname + "]";
 	}
 }
