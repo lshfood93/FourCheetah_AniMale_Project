@@ -41,7 +41,7 @@ public class AdminReportServiceImpl implements AdminReportService {
             List<BoardReportDTO> reports = boardReportDAO.selectAll(dto);
             
             // DAO 호출 - 전체 건수 조회
-            int totalCount = boardReportDAO.selectTotalCount();
+            int totalCount = boardReportDAO.getTotalCount();  // 수정!
             
             System.out.println("[Service] DAO 호출 완료");
             System.out.println("  - 조회된 신고: " + reports.size() + "건");
@@ -114,7 +114,7 @@ public class AdminReportServiceImpl implements AdminReportService {
     }
 
     /**
-     * 신고 반려 (CRUD 통일)
+     * 신고 반려 (수정!)
      */
     @Override
     public boolean updateReportReject(int boardId, int handledBy) {
@@ -123,11 +123,7 @@ public class AdminReportServiceImpl implements AdminReportService {
         System.out.println("  - handledBy: " + handledBy);
         
         try {
-            BoardReportDTO dto = new BoardReportDTO();
-            dto.setBoardId(boardId);
-            dto.setHandledBy(handledBy);
-            
-            boolean result = boardReportDAO.update(dto);
+            boolean result = boardReportDAO.rejectReport(boardId, handledBy);  // 수정!
             
             if (result) {
                 System.out.println("[Service] 신고 반려 처리 완료");

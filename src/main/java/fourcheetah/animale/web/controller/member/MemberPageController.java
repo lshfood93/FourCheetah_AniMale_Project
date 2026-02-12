@@ -24,7 +24,7 @@ public class MemberPageController {
         this.memberService = memberService;
     }
 
-    @GetMapping({"/mypage", "/myPage", "/member/mypage"})
+    @GetMapping({"/mypage", "/member/mypage"})
     public String myPage(HttpSession session, Model model) {
 
         Integer memberId = (Integer) session.getAttribute("memberId");

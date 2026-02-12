@@ -15,8 +15,8 @@ public class BoardReportDTO {
     private String reasonCode;          // 신고 사유 코드
     private String reasonDetail;        // 신고 사유 상세
     private String status;              // 상태 (PENDING/APPROVED/REJECTED)
-    private String createdAt;           // 신고 일시
-    private String handledAt;           // 처리 일시
+    private String createdAt;           // 신고 일시 (String 유지!)
+    private String handledAt;           // 처리 일시 (String 유지!)
     private int handledBy;              // 처리자 ID
     
     // 게시글 정보 (조인)
@@ -104,6 +104,7 @@ public class BoardReportDTO {
         this.status = status;
     }
     
+    // String 유지!
     public String getCreatedAt() {
         return createdAt;
     }
@@ -112,6 +113,7 @@ public class BoardReportDTO {
         this.createdAt = createdAt;
     }
     
+    // String 유지!
     public String getHandledAt() {
         return handledAt;
     }
@@ -215,6 +217,7 @@ public class BoardReportDTO {
                 ", boardTitle='" + boardTitle + '\'' +
                 ", reportCount=" + reportCount +
                 ", status='" + status + '\'' +
+                ", createdAt='" + createdAt + '\'' +
                 '}';
     }
 }

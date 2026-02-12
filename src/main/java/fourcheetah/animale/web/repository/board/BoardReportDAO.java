@@ -148,10 +148,10 @@ public class BoardReportDAO {
         "WHERE member_id = ? AND valid_report_count >= 3";
 
     /* =========================
-       RowMapper
-       ========================= */
+    RowMapper
+    ========================= */
 
-    private static final RowMapper<BoardReportDTO> BoardReportRowMapper = (rs, rowNum) -> {
+    private static final RowMapper<BoardReportDTO> boardReportRowMapper = (rs, rowNum) -> {
         BoardReportDTO dto = new BoardReportDTO();
         dto.setBoardId(rs.getInt("board_id"));
         dto.setBoardWriterId(rs.getInt("board_writer_id"));
@@ -159,44 +159,45 @@ public class BoardReportDAO {
         dto.setBoardContent(rs.getString("board_content"));
         dto.setReportCount(rs.getInt("report_count"));
 
+        // Timestamp → String 변환! (올바른 방법)
         Timestamp ts = rs.getTimestamp("created_at");
-        dto.setCreatedAt(ts == null ? null : ts.toLocalDateTime());
+        if (ts != null) {
+            dto.setCreatedAt(ts.toString());  // String으로!
+        }
 
         return dto;
     };
+ /* =========================
+    SELECT_ALL (신고 목록 조회)
+    ========================= */
 
-    /* =========================
-       SELECT_ALL (신고 목록 조회)
-       ========================= */
+ /**
+  * 신고 목록 조회 (페이징 + 정렬)
+  */
+ public List<BoardReportDTO> selectAll(BoardReportDTO dto) {
+	    if (dto == null) {
+	        return List.of();
+	    }
 
-    /**
-     * 신고 목록 조회 (페이징 + 정렬)
-     */
-    public List<BoardReportDTO> selectAll(BoardReportDTO dto) {
-        if (dto == null) {
-            return List.of();
-        }
+	    int pageSize = dto.getPageSize();
+	    int currentPage = dto.getPage();  // getCurrentPage() 대신 getPage() 사용!
+	    int offset = (currentPage - 1) * pageSize;
 
-        int pageSize = dto.getPageSize();
-        int currentPage = dto.getCurrentPage();
-        int offset = (currentPage - 1) * pageSize;
+	    String sortOrder = dto.getSortOrder();
+	    String sql = "asc".equalsIgnoreCase(sortOrder) ? 
+	                 SELECT_REPORT_LIST_ASC : SELECT_REPORT_LIST_DESC;
 
-        String sortOrder = dto.getSortOrder();
-        String sql = "asc".equalsIgnoreCase(sortOrder) ? 
-                     SELECT_REPORT_LIST_ASC : SELECT_REPORT_LIST_DESC;
+	    System.out.println("[DAO] 신고 목록 조회 - 페이지: " + currentPage + 
+	                       ", 정렬: " + sortOrder);
 
-        System.out.println("[DAO] 신고 목록 조회 - 페이지: " + currentPage + 
-                           ", 정렬: " + sortOrder);
-
-        try {
-            return jdbcTemplate.query(sql, BoardReportRowMapper, pageSize, offset);
-        } catch (Exception e) {
-            System.out.println("[DAO 에러] 신고 목록 조회: " + e.getMessage());
-            e.printStackTrace();
-            return List.of();
-        }
-    }
-
+	    try {
+	        return jdbcTemplate.query(sql, boardReportRowMapper, pageSize, offset);
+	    } catch (Exception e) {
+	        System.out.println("[DAO 에러] 신고 목록 조회: " + e.getMessage());
+	        e.printStackTrace();
+	        return List.of();
+	    }
+	}
     /**
      * 신고 목록 총 개수
      */
@@ -210,6 +211,43 @@ public class BoardReportDAO {
         }
     }
 
+    /* =========================
+    SELECT_ONE (신고 상세 조회)
+    ========================= */
+
+ /**
+  * 신고 상세 조회 (게시글 ID로)
+  */
+ public BoardReportDTO selectOne(BoardReportDTO dto) {
+     if (dto == null) {
+         return null;
+     }
+     
+     int boardId = dto.getBoardId();
+     
+     System.out.println("[DAO] 신고 상세 조회 - boardId: " + boardId);
+     
+     String sql = 
+         "SELECT " +
+         "  br.board_id, " +
+         "  b.member_id AS board_writer_id, " +
+         "  b.board_title, " +
+         "  b.board_content, " +
+         "  COUNT(br.report_id) AS report_count, " +
+         "  MIN(br.created_at) AS created_at " +
+         "FROM board_report br " +
+         "JOIN board b ON br.board_id = b.board_id " +
+         "WHERE br.board_id = ? AND br.status = 'PENDING' " +
+         "GROUP BY br.board_id, b.member_id, b.board_title, b.board_content";
+     
+     try {
+         return jdbcTemplate.queryForObject(sql, boardReportRowMapper, boardId);
+     } catch (Exception e) {
+         System.out.println("[DAO 에러] 신고 상세 조회: " + e.getMessage());
+         return null;
+     }
+ }
+    
     /* =========================
        사용자 신고 접수
        ========================= */

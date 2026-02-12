@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import fourcheetah.animale.web.dto.member.MemberDTO;
+import fourcheetah.animale.web.dto.member.MemberWarningDTO;  // 추가!
 
 @Repository
 public class MemberDAO {
@@ -142,7 +143,7 @@ public class MemberDAO {
             "FROM MEMBER " +
             "WHERE member_id = ?";
     
-    // 현재 활성화된 제재 조회 (추가!)
+    // 현재 활성화된 제재 조회
     private static final String SELECT_ACTIVE_WARNING =
         "SELECT warning_type, reason, start_at, end_at " +
         "FROM member_warning " +
@@ -425,23 +426,23 @@ public class MemberDAO {
     }
     
     /**
-     * 현재 활성화된 제재 정보 조회 (추가!)
+     * 현재 활성화된 제재 정보 조회
+     * @return MemberWarningDTO (제재 없으면 null)
      */
-    public MemberDTO selectActiveWarning(int memberId) {
+    public MemberWarningDTO selectActiveWarning(int memberId) {
         try {
             return jdbcTemplate.queryForObject(
                 SELECT_ACTIVE_WARNING,
                 (rs, rowNum) -> {
-                    MemberDTO dto = new MemberDTO();
-                    dto.setMemberStatus(rs.getString("warning_type"));
-                    dto.setSanctionReason(rs.getString("reason"));
+                    MemberWarningDTO dto = new MemberWarningDTO();
+                    dto.setWarningType(rs.getString("warning_type"));
+                    dto.setReason(rs.getString("reason"));
+                    
+                    Timestamp startTime = rs.getTimestamp("start_at");
+                    dto.setStartAt(startTime == null ? null : startTime.toLocalDateTime());
                     
                     Timestamp endTime = rs.getTimestamp("end_at");
-                    if (endTime == null) {
-                        dto.setSanctionEndAt("영구 정지");
-                    } else {
-                        dto.setSanctionEndAt(endTime.toString());
-                    }
+                    dto.setEndAt(endTime == null ? null : endTime.toLocalDateTime());
                     
                     return dto;
                 },
