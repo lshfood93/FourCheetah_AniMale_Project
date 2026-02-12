@@ -25,6 +25,8 @@ public class CashChargeDTO {
     private String condition;  // "CHARGE_INSERT", "DASHBOARD_THIS_MONTH" ... 등
     private int year;      // 대시보드 조회용
     private int month;     // 대시보드 조회용
+    
+    
 	public int getChargeId() {
 		return chargeId;
 	}

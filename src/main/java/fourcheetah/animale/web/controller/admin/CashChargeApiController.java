@@ -15,14 +15,11 @@ import fourcheetah.animale.web.service.admin.CashChargeService;
 public class CashChargeApiController {
 
 	@Autowired
-    private CashChargeService cashChargeService;
+	private CashChargeService cashChargeService;
 
-    // 대시보드 데이터 조회
-    @GetMapping("/dashboard")
-    public Map<String, Object> dashboard(
-            @RequestParam int year,
-            @RequestParam int month
-    ) {
-        return cashChargeService.getDashboardSummary(year, month);
-    }
+	// 대시보드 데이터 조회
+	@GetMapping("/admindashboard")
+	public Map<String, Object> dashboard(@RequestParam int year, @RequestParam int month) {
+		return cashChargeService.getDashboardSummary(year, month);
+	}
 }
