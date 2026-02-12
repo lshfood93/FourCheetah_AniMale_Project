@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -16,12 +17,12 @@ import fourcheetah.animale.web.dto.ai.RecommendedAnimeDTO;
 @Repository
 public class AnimeRepository {
 
-    private final JdbcTemplate jdbcTemplate;
+	@Autowired
+    private JdbcTemplate jdbcTemplate;
+	
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public AnimeRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
+   
 
     private final RowMapper<RecommendedAnimeDTO> mapper = (rs, rowNum) -> {
         RecommendedAnimeDTO dto = new RecommendedAnimeDTO();
