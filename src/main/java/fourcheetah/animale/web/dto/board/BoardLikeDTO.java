@@ -5,11 +5,13 @@ public class BoardLikeDTO {
 	private int boardLikeId;
 	private int boardId;
 	private int memberId;
+	private String createdAt;  // 작성일시
 	
 	// condition / view
 	private String condition;
 	private int likeCnt; // 좋아요 개수(LIKE_CNT)
 	private int isLiked; // 내가 눌렀는지(0/1, IS_LIKED)
+	
 	public int getBoardLikeId() {
 		return boardLikeId;
 	}
@@ -27,6 +29,12 @@ public class BoardLikeDTO {
 	}
 	public void setMemberId(int memberId) {
 		this.memberId = memberId;
+	}
+	public String getCreatedAt() {
+		return createdAt;
+	}
+	public void setCreatedAt(String createdAt) {
+		this.createdAt = createdAt;
 	}
 	public String getCondition() {
 		return condition;
@@ -49,6 +57,6 @@ public class BoardLikeDTO {
 	@Override
 	public String toString() {
 		return "BoardLikeDTO [boardLikeId=" + boardLikeId + ", boardId=" + boardId + ", memberId=" + memberId
-				+ ", condition=" + condition + ", likeCnt=" + likeCnt + ", isLiked=" + isLiked + "]";
+				+ ", createdAt=" + createdAt + ", condition=" + condition + ", likeCnt=" + likeCnt + ", isLiked=" + isLiked + "]";
 	}
 }

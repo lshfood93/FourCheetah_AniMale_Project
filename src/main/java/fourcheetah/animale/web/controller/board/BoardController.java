@@ -16,6 +16,8 @@ import fourcheetah.animale.web.dto.board.ReplyDTO;
 import fourcheetah.animale.web.service.board.BoardLikeService;
 import fourcheetah.animale.web.service.board.BoardService;
 import fourcheetah.animale.web.service.board.ReplyService;
+import fourcheetah.animale.web.aop.SanctionCheck;
+import fourcheetah.animale.web.aop.DeletedBoardCheck;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -56,6 +58,8 @@ public class BoardController {
 
     // =========================================================
     // 1) 게시글 삭제 (POST /boardDelete)
+    @SanctionCheck                      
+    @DeletedBoardCheck(allowAdmin = true) 
     @PostMapping("/boardDelete")
     public String deleteBoard(
             BoardDTO boardDTO,
@@ -224,6 +228,8 @@ public class BoardController {
 
     // =========================================================
     // 3) 수정 폼 진입 (GET /boardEditPage)
+    @SanctionCheck                          
+    @DeletedBoardCheck(allowAdmin = true)
     @GetMapping("/boardEditPage")
     public String boardEditPage(
             HttpServletRequest request,
@@ -265,12 +271,15 @@ public class BoardController {
             return message(model, "수정 권한이 없습니다.", "boardDetail?boardId=" + boardId);
         }
 
+        model.addAttribute("type", "BOARD");
         model.addAttribute("boardData", boardData);
         return "edit";
     }
 
     // =========================================================
     // 4) 수정 처리 (POST /boardEdit)
+    @SanctionCheck                   
+    @DeletedBoardCheck(allowAdmin = true) 
     @PostMapping("/boardEdit")
     public String boardEdit(
             HttpServletRequest request,
@@ -423,6 +432,7 @@ public class BoardController {
 
     // =========================================================
     // 6) 글쓰기 진입 검증 + redirect (GET /boardWritePage)
+    @SanctionCheck                     
     @GetMapping("/boardWritePage")
     public String boardWritePage(
             BoardDTO boardDTO,
@@ -462,6 +472,7 @@ public class BoardController {
 
     // =========================================================
     // 7) write.jsp 렌더링 (GET /write)
+    @SanctionCheck  
     @GetMapping("/write")
     public String writePage(
             BoardDTO boardDTO,
@@ -502,6 +513,7 @@ public class BoardController {
 
     // =========================================================
     // 8) 글쓰기 처리 (POST /boardWrite)
+    @SanctionCheck  
     @PostMapping("/boardWrite")
     public String boardWrite(
             BoardDTO boardDTO,

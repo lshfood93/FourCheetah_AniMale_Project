@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 
 import fourcheetah.animale.web.dto.board.ReplyDTO;
 import fourcheetah.animale.web.service.board.ReplyService;
+import fourcheetah.animale.web.aop.SanctionCheck;
+import fourcheetah.animale.web.aop.DeletedBoardCheck;
 import jakarta.servlet.http.HttpSession;
 
 /** 댓글 통합 컨트롤러
@@ -25,6 +27,8 @@ public class ReplyController {
 
     // =========================================================
     // 1) 댓글 작성 (POST /replyWrite)
+    @SanctionCheck      
+    @DeletedBoardCheck  
     @PostMapping("/replyWrite")
     public String replyWrite(
             ReplyDTO replyDTO,
@@ -86,6 +90,7 @@ public class ReplyController {
 
     // =========================================================
     // 2) 댓글 수정 (POST /replyEdit)
+    @SanctionCheck  
     @PostMapping("/replyEdit")
     public String replyEdit(
             ReplyDTO replyDTO,
@@ -156,6 +161,7 @@ public class ReplyController {
 
     // =========================================================
     // 3) 댓글 삭제 (POST /replyDelete)
+    @SanctionCheck  
     @PostMapping("/replyDelete")
     public String replyDelete(
             ReplyDTO replyDTO,

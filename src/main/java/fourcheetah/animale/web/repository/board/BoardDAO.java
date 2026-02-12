@@ -101,10 +101,12 @@ public class BoardDAO {
 
    // =========================================================
    // SELECT ONE
+   // ✅ board_status 추가!
    private static final String SELECT_BOARD_DETAIL = "SELECT " + "  b.board_id, b.member_id, "
          + "  m.member_role AS writer_role, "
          + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' ELSE m.member_nickname END AS writer_nickname, "
          + "  b.board_title, b.board_content, b.board_views, b.board_category, "
+         + "  b.board_status, "  // ← 추가!
          + "  IFNULL(l.like_cnt, 0) AS like_cnt " + "FROM board b " + "JOIN member m ON m.member_id = b.member_id "
          + "LEFT JOIN (" + LIKE_COUNT_SUBQUERY + ") l ON l.board_id = b.board_id " + "WHERE b.board_id = ?";
 
@@ -329,7 +331,7 @@ public class BoardDAO {
       }
 
       // =========================================================
-      // ✅ 상세용 RowMapper (board_content 포함)
+      // ✅ 상세용 RowMapper (board_content + board_status 포함)
       // =========================================================
       class BoardDetailRowMapper implements RowMapper<BoardDTO> {
 
@@ -340,8 +342,8 @@ public class BoardDAO {
           public BoardDTO mapRow(ResultSet rs, int rowNum) throws SQLException {
               BoardDTO data = base.mapRow(rs, rowNum);          // ✅ 목록 공통 필드 세팅
               data.setBoardContent(rs.getString("board_content")); // ✅ 상세에서만 읽음
+              data.setBoardStatus(rs.getString("board_status"));   // ✅ 추가!
               return data;
           }
       }
 }
-
