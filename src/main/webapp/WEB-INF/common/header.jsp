@@ -115,4 +115,33 @@
 	</div>
 </header>
 
+<!-- 제재 안내 모달 -->
+<c:if test="${not empty sessionScope.showSanctionModal}">
+<div class="modal" id="sanctionModal" style="display: flex !important; 
+     position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+     background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="modal-dialog" style="max-width: 500px; margin: 0;">
+        <div class="modal-content" style="background: rgba(30, 30, 40, 0.98); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px;">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <h5 class="modal-title" style="color: #ff6b6b;">⚠️ 계정 이용 제한 안내</h5>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <p style="margin-bottom: 10px;"><strong>사유:</strong> ${sessionScope.sanctionReason}</p>
+                <p style="margin-bottom: 20px;"><strong>제한 해제일:</strong> ${sessionScope.sanctionEndAt}</p>
+                <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
+                <p style="margin-bottom: 10px;"><strong>🚫 제한 내용:</strong></p>
+                <ul style="margin-bottom: 20px; padding-left: 20px;">
+                    <li>게시글 작성/수정/삭제 불가</li>
+                    <li>댓글 작성/수정/삭제 불가</li>
+                    <li>신고 기능 불가</li>
+                </ul>
+                <p style="margin-bottom: 0;"><strong>✅ 이용 가능:</strong> 조회, 좋아요, 캐시 충전/사용</p>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.1);">
+                <button type="button" class="btn-sm2 btn-primary2" onclick="closeSanctionModal()">확인</button>
+            </div>
+        </div>
+    </div>
+</div>
+</c:if>
 <script src="${ctx}/js/header.js" defer></script>
