@@ -22,4 +22,6 @@ public class CashChargeApiController {
 	public Map<String, Object> dashboard(@RequestParam int year, @RequestParam int month) {
 		return cashChargeService.getDashboardSummary(year, month);
 	}
+	
+	
 }

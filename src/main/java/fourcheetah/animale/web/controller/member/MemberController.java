@@ -318,21 +318,21 @@ public class MemberController {
         MemberDTO curQ = new MemberDTO();
         curQ.setCondition("MEMBER_CASH_SELECT");
         curQ.setMemberId(memberId);
-<<<<<<< HEAD
+
 
         MemberDTO cashInfo = memberService.selectOne(curQ);
         if (!isAdmin) {
             if (cashInfo == null || cashInfo.getMemberCash() < needCash) {
                 session.setAttribute("msg", "캐시가 부족합니다. (필요: " + needCash + ")");
                 return "redirect:/member/mypage";
-=======
+
         MemberDTO cur = memberService.selectOne(curQ);
         if (cur == null) {
             session.setAttribute("msg", "회원 정보를 불러오지 못했습니다.");
             return backPage; // 변경
         }
 
-        String newNick = (memberNickname == null) ? "" : memberNickname.trim();
+        String newNick = (newNickname == null) ? "" : newNickname.trim();
         boolean nickChanged = !newNick.isEmpty() && !newNick.equals(cur.getMemberNickname());
 
         boolean profileChanged = (temporaryProfileImageToken != null && !temporaryProfileImageToken.trim().isEmpty());
@@ -352,7 +352,7 @@ public class MemberController {
             if (found != null && found.getMemberId() != memberId) {
                 session.setAttribute("msg", "이미 사용 중인 닉네임입니다.");
                 return backPage; // 변경
->>>>>>> develop
+
             }
         }
 
@@ -361,24 +361,25 @@ public class MemberController {
                 Path tempFile = Paths.get(profileTempDir, newProfileImage);
                 Path targetFile = Paths.get(profileDir, newProfileImage);
 
-<<<<<<< HEAD
+
                 if (Files.exists(tempFile)) {
                     Files.createDirectories(targetFile.getParent());
                     Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
-=======
-                Path tempFile = Paths.get(profileTempDir, token);
-                if (!Files.exists(tempFile)) {
+                
+                Path tempFile1 = Paths.get(profileTempDir, token);
+                if (!Files.exists(tempFile1)) {
                     session.setAttribute("msg", "프로필 임시 파일이 없습니다. 다시 업로드해주세요.");
                     return backPage; // 변경
->>>>>>> develop
-                }
-            } catch (Exception e) {
+                    }
+                    
+               }
+            }
+                catch (Exception e) {
                 e.printStackTrace();
-<<<<<<< HEAD
-=======
+
                 session.setAttribute("msg", "프로필 파일 처리 중 오류가 발생했습니다.");
                 return backPage; // 변경
->>>>>>> develop
+
             }
         }
 
@@ -403,15 +404,15 @@ public class MemberController {
         boolean ok = memberService.update(dto);
 
         if (!ok) {
-<<<<<<< HEAD
+
             session.setAttribute("msg", "프로필 변경에 실패했습니다.");
             return "redirect:/member/mypage";
-=======
+
             session.setAttribute("msg", isAdmin
                     ? "수정 실패(DB 반영 실패)."
                     : "수정 실패(캐시 부족 또는 DB 반영 실패).");
             return backPage; // 변경
->>>>>>> develop
+
         }
 
         MemberDTO after = memberService.selectOne(curQ);
@@ -424,8 +425,9 @@ public class MemberController {
 
         session.setAttribute("msg", "내 정보가 수정되었습니다.");
         return backPage; // 변경
+       }
+      }
     }
-    
     // ==================== 비밀번호 변경 ====================
 
     @GetMapping("/changePasswordPage")

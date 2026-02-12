@@ -427,6 +427,9 @@ public class MemberDAO {
     /**
      * 현재 활성화된 제재 정보 조회 (추가!)
      */
+    
+    
+    /*
     public MemberDTO selectActiveWarning(int memberId) {
         try {
             return jdbcTemplate.queryForObject(
@@ -456,6 +459,7 @@ public class MemberDAO {
         }
     }
 
+*/
     /* =========================
        INSERT
        ========================= */

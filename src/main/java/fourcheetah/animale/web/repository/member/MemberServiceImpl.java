@@ -38,4 +38,10 @@ public class MemberServiceImpl implements MemberService {
     public boolean delete(MemberDTO dto) {
         return memberDAO.delete(dto);
     }
+
+	@Override
+	public MemberDTO selectActiveWarning(int memberId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

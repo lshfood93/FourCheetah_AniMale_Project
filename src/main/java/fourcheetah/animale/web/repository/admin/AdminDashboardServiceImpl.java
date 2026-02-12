@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import fourcheetah.animale.web.service.admin.AdminDashboardService;
-import fourcheetah.animale.web.repository.admin.AdminCashDAO;
 import fourcheetah.animale.web.dto.admin.CashStatsDTO;
 
 import java.util.*;

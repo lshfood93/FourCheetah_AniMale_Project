@@ -11,4 +11,5 @@ public interface MemberService {
     boolean insert(MemberDTO dto);
     boolean update(MemberDTO dto);
     boolean delete(MemberDTO dto);
+	MemberDTO selectActiveWarning(int memberId);
 }
