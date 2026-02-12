@@ -7,7 +7,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin | 신고 게시글 관리</title>
+  <title>Admin | Report Board</title>
 
   <link rel="icon" type="image/png" href="${ctx}/assets/images/logos/favicon.png" />
   <link rel="stylesheet" href="${ctx}/assets/css/styles.min.css" />
@@ -15,11 +15,16 @@
 </head>
 
 <body class="admin-dashboard">
-  <div class="page-wrapper" id="main-wrapper"
-       data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
-       data-sidebar-position="fixed" data-header-position="fixed">
 
-    <!-- 좌측 사이드바 -->
+  <div class="page-wrapper"
+       id="main-wrapper"
+       data-layout="vertical"
+       data-navbarbg="skin6"
+       data-sidebartype="full"
+       data-sidebar-position="fixed"
+       data-header-position="fixed">
+
+    <!-- ✅ 사이드바: 대시보드랑 동일하게 유지 -->
     <aside class="left-sidebar">
       <div>
         <div class="brand-logo d-flex align-items-center justify-content-between">
@@ -42,86 +47,136 @@
             </li>
           </ul>
         </nav>
-
       </div>
     </aside>
 
-    <!-- 본문 -->
+    <!-- ✅ 본문 -->
     <div class="body-wrapper">
+
+      <!-- ✅ 우상단 버튼(너가 만든 플로팅 include 쓰는 걸 추천) -->
       <jsp:include page="dashboardheader.jsp" />
 
       <div class="container-fluid">
 
+        <!-- ✅ 신고 게시글 관리 UI (검색 없음, UI만) -->
         <div class="card w-100">
           <div class="card-body">
-            <h5 class="card-title mb-3">신고 게시글 목록</h5>
 
-            <!-- 더미 리스트: reportList -->
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <h5 class="card-title mb-0">신고 게시글 관리</h5>
+
+              <select class="form-select" style="max-width: 180px;">
+                <option selected>최신순</option>
+                <option>오래된순</option>
+              </select>
+            </div>
+
+            <p class="text-muted mb-3">제목 / 내용 클릭 시 게시글 이동</p>
+
             <div class="table-responsive">
-              <table class="table align-middle text-nowrap mb-0">
+              <table class="table align-middle">
                 <thead>
-                  <tr class="border-0">
-                    <th>신고ID</th>
-                    <th>게시글ID</th>
-                    <th>사유</th>
-                    <th>신고자</th>
-                    <th>상태</th>
-                    <th class="text-end">처리</th>
+                  <tr>
+                    <th style="width:140px;">작성자ID</th>
+                    <th style="width:220px;">제목</th>
+                    <th style="width:120px;" class="text-center">신고횟수</th>
+                    <th>내용</th>
+                    <th style="width:140px;" class="text-center">Action</th>
                   </tr>
                 </thead>
+
                 <tbody>
-                  <c:forEach var="r" items="${reportList}">
-                    <tr>
-                      <td>${r.reportId}</td>
-                      <td>${r.boardId}</td>
-                      <td>${r.reason}</td>
-                      <td>${r.reporter}</td>
-                      <td>
-                        <span class="badge bg-warning">${r.status}</span>
-                      </td>
-                      <td class="text-end">
-                        <a class="btn btn-sm btn-outline-secondary"
-                           href="${ctx}/adminreportboard/detail?reportId=${r.reportId}">
-                          게시글 상세보기
-                        </a>
+                  <tr>
+                    <td>이현빈</td>
+                    <td><a href="javascript:void(0);" class="fw-semibold text-decoration-none">마린조아</a></td>
+                    <td class="text-center"><span class="badge rounded-pill text-bg-light">36</span></td>
+                    <td><a href="javascript:void(0);" class="text-muted text-decoration-none">마린우히히</a></td>
+                    <td class="text-center">
+                      <div class="d-inline-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" type="button" title="반려(패스)">
+                          <i class="ti ti-x"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-dark" type="button" title="신고 처리">
+                          <i class="ti ti-check"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
 
-                        <a class="btn btn-sm btn-outline-primary"
-                           href="${ctx}/adminreportboard/action/confirm?reportId=${r.reportId}">
-                          조치 확인
-                        </a>
-
-                        <a class="btn btn-sm btn-outline-danger"
-                           href="${ctx}/adminreportboard/action/delete?reportId=${r.reportId}">
-                          게시글 내용 삭제
-                        </a>
-                      </td>
-                    </tr>
-                  </c:forEach>
-
-                  <c:if test="${empty reportList}">
-                    <tr>
-                      <td colspan="6" class="text-center text-muted py-4">
-                        신고 내역이 없습니다.
-                      </td>
-                    </tr>
-                  </c:if>
+                  <tr>
+                    <td>최준혁</td>
+                    <td><a href="javascript:void(0);" class="fw-semibold text-decoration-none">술줘</a></td>
+                    <td class="text-center"><span class="badge rounded-pill text-bg-light">5</span></td>
+                    <td><a href="javascript:void(0);" class="text-muted text-decoration-none">부어라마셔라</a></td>
+                    <td class="text-center">
+                      <div class="d-inline-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" type="button" title="반려(패스)">
+                          <i class="ti ti-x"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-dark" type="button" title="신고 처리">
+                          <i class="ti ti-check"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>김영인</td>
+                    <td><a href="javascript:void(0);" class="fw-semibold text-decoration-none">치킨공주</a></td>
+                    <td class="text-center"><span class="badge rounded-pill text-bg-light">99</span></td>
+                    <td><a href="javascript:void(0);" class="text-muted text-decoration-none">난피자보다치킨이좋아</a></td>
+                    <td class="text-center">
+                      <div class="d-inline-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" type="button" title="반려(패스)">
+                          <i class="ti ti-x"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-dark" type="button" title="신고 처리">
+                          <i class="ti ti-check"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>이승환</td>
+                    <td><a href="javascript:void(0);" class="fw-semibold text-decoration-none">닭목살킬러</a></td>
+                    <td class="text-center"><span class="badge rounded-pill text-bg-light">999</span></td>
+                    <td><a href="javascript:void(0);" class="text-muted text-decoration-none">에다가 오이라면까지</a></td>
+                    <td class="text-center">
+                      <div class="d-inline-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" type="button" title="반려(패스)">
+                          <i class="ti ti-x"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-dark" type="button" title="신고 처리">
+                          <i class="ti ti-check"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
+
+            <nav class="d-flex justify-content-center mt-4">
+              <ul class="pagination mb-0">
+                <li class="page-item"><a class="page-link" href="javascript:void(0);">이전</a></li>
+                <li class="page-item active"><a class="page-link" href="javascript:void(0);">1</a></li>
+                <li class="page-item"><a class="page-link" href="javascript:void(0);">2</a></li>
+                <li class="page-item"><a class="page-link" href="javascript:void(0);">3</a></li>
+                <li class="page-item"><a class="page-link" href="javascript:void(0);">다음</a></li>
+              </ul>
+            </nav>
 
           </div>
         </div>
 
       </div>
     </div>
-
   </div>
 
+  <!-- ✅ 템플릿 JS -->
   <script src="${ctx}/assets/libs/jquery/dist/jquery.min.js"></script>
   <script src="${ctx}/assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
   <script src="${ctx}/assets/js/sidebarmenu.js"></script>
   <script src="${ctx}/assets/js/app.min.js"></script>
   <script src="${ctx}/assets/libs/simplebar/dist/simplebar.js"></script>
-
 </body>
 </html>

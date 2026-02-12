@@ -15,28 +15,35 @@ public class AdminController {
     @Autowired
     private MemberService memberService;
 
-    @GetMapping("/adminPage")
-    public String adminPage(HttpSession session, Model model) {
-
-        // 1) 세션 유무/로그인 체크
+    // 관리자 공통 체크
+    private boolean checkAdmin(HttpSession session, Model model) {
         Integer memberId = (Integer) session.getAttribute("memberId");
         String memberRole = (String) session.getAttribute("memberRole");
 
         if (memberId == null) {
             model.addAttribute("msg", "로그인 정보가 없습니다.");
             model.addAttribute("location", "/login");
-
-            return "message";
+            return false;
         }
 
-        // 2) 관리자 권한 체크
         if (!"ADMIN".equals(memberRole)) {
             model.addAttribute("msg", "접근 권한이 없습니다.");
             model.addAttribute("location", "/mainPage");
-            return "message";
+            return false;
         }
 
-        // 3) DB 조회
+        return true;
+    }
+
+    @GetMapping("/adminPage")
+    public String adminPage(HttpSession session, Model model) {
+
+        // 1) 관리자 권한 체크
+        if (!checkAdmin(session, model)) return "message";
+
+        Integer memberId = (Integer) session.getAttribute("memberId");
+
+        // 2) DB 조회
         MemberDTO dto = new MemberDTO();
         dto.setCondition("MEMBER_ADMINPAGE");
         dto.setMemberId(memberId);
@@ -49,13 +56,22 @@ public class AdminController {
             return "message";
         }
 
-        // 4) 화면 이동
+        // 3) 화면 이동
         model.addAttribute("memberData", memberData);
         return "adminpage";
     }
-    
+
+    // 관리자 대시보드 페이지 이동
     @GetMapping("/admindashboard")
-    public String admindashboard(HttpSession session) {
+    public String admindashboard(HttpSession session, Model model) {
+        if (!checkAdmin(session, model)) return "message";
         return "admindashboard";
+    }
+
+    // 신고 게시글 관리 페이지 이동
+    @GetMapping("/adminreportboard")
+    public String adminReportBoard(HttpSession session, Model model) {
+        if (!checkAdmin(session, model)) return "message";
+        return "adminreportboard";
     }
 }

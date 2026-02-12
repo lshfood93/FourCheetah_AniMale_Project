@@ -395,7 +395,10 @@ body.mypage-editing .mypage-right-card{
 </head>
 
 <body>
-	<%@ include file="/WEB-INF/common/header.jsp" %>
+	 <%-- ✅ 관리자 페이지에서는 사람 버튼을 대시보드로 보내기 --%>
+    <c:set var="profileHref" value="/admindashboard" />
+
+    <%@ include file="/WEB-INF/common/header.jsp" %>
 
 	<c:if test="${not empty msg}">
 		<div class="container" style="margin-top: 18px;">

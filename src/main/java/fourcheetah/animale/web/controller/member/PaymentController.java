@@ -8,6 +8,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -190,12 +192,21 @@ public class PaymentController {
             session.setAttribute("kakaopay_processed_order_id", partnerOrderId);
 
             model.addAttribute("payResult", "SUCCESS");
+            model.addAttribute("payMethod", "카카오페이");
             model.addAttribute("totalAmount", String.format("%,d", approvedTotal));
             model.addAttribute("totalCash", String.format("%,d", totalCash));
+
             if (resObj.has("approved_at") && !resObj.get("approved_at").isJsonNull()) {
                 model.addAttribute("approvedAt", resObj.get("approved_at").getAsString());
+            } else {
+                // (선택) approved_at이 없을 때 대비해서 서버시간 찍기
+                model.addAttribute("approvedAt",
+                    java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                );
             }
+
             return "cashresult";
+
 
         } catch (DataAccessException dae) {
             dae.printStackTrace();
@@ -215,6 +226,7 @@ public class PaymentController {
     @GetMapping("/payment/kakaopay/cancel")
     public String cancel(Model model) {
         model.addAttribute("payResult", "FAIL");
+        model.addAttribute("payMethod", "카카오페이");
         model.addAttribute("message", "결제가 취소되었습니다.");
         return "cashresult";
     }
@@ -222,9 +234,11 @@ public class PaymentController {
     @GetMapping("/payment/kakaopay/fail")
     public String fail(Model model) {
         model.addAttribute("payResult", "FAIL");
+        model.addAttribute("payMethod", "카카오페이");
         model.addAttribute("message", "결제에 실패했습니다.");
         return "cashresult";
     }
+
 
     // ==================== 기존 경로 (KakaoPayCancelController, KakaoPayFailController) ====================
 
@@ -284,4 +298,107 @@ public class PaymentController {
     private int calcVat(int amount) {
         return (int) Math.round(amount / 11.0);
     }
+ // ==================== TossPayments 콜백 (임시) ====================
+
+    /**
+     * 토스 결제 성공 콜백
+     * TossPayments는 successUrl로 paymentKey, orderId, amount 를 쿼리스트링으로 전달합니다.
+     */
+    @GetMapping("/payment/toss/success")
+    public String tossSuccess(@RequestParam("paymentKey") String paymentKey,
+                              @RequestParam("orderId") String orderId,
+                              @RequestParam("amount") int amount,
+                              HttpSession session,
+                              Model model) {
+
+        Integer memberId = (Integer) session.getAttribute("memberId");
+        if (memberId == null) return "redirect:/login";
+
+        // (안전장치) 허용된 충전 금액만 처리
+        if (!(amount == 1000 || amount == 5000 || amount == 10000 || amount == 50000)) {
+            model.addAttribute("payResult", "FAIL");
+            model.addAttribute("payMethod", "토스페이");
+            model.addAttribute("message", "허용되지 않은 충전 금액입니다.");
+            return "cashresult";
+        }
+
+        // 중복 처리 방지(새로고침/뒤로가기)
+        String processedOrderId = (String) session.getAttribute("toss_processed_order_id");
+        if (orderId != null && orderId.equals(processedOrderId)) {
+            return "redirect:/member/mypage";
+        }
+
+        try {
+            // TODO(운영): paymentKey/orderId/amount로 서버에서 confirm API 호출 후 성공일 때만 DB 반영
+
+            MemberDTO upd = new MemberDTO();
+            upd.setCondition("MEMBER_CASH_PLUS");
+            upd.setMemberId(memberId);
+            upd.setMemberPayCash(amount);
+
+            boolean ok = memberService.update(upd);
+            if (!ok) {
+                model.addAttribute("payResult", "FAIL");
+                model.addAttribute("payMethod", "토스페이");
+                model.addAttribute("message", "캐시 충전 DB 반영 실패");
+                return "cashresult";
+            }
+
+            MemberDTO sel = new MemberDTO();
+            sel.setCondition("MEMBER_MYPAGE");
+            sel.setMemberId(memberId);
+            MemberDTO memberData = memberService.selectOne(sel);
+            int totalCash = (memberData == null) ? 0 : memberData.getMemberCash();
+
+            session.setAttribute("toss_processed_order_id", orderId);
+
+            // ✅ JSP에서 사용할 값들
+            model.addAttribute("payResult", "SUCCESS");
+            model.addAttribute("payMethod", "토스페이");
+            model.addAttribute("totalAmount", String.format("%,d", amount));
+            model.addAttribute("totalCash", String.format("%,d", totalCash));
+
+            // ✅ 승인 시각: 일단 서버 현재 시간으로 표시 (임시)
+            String approvedAt = LocalDateTime.now()
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            model.addAttribute("approvedAt", approvedAt);
+
+            return "cashresult";
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            model.addAttribute("payResult", "FAIL");
+            model.addAttribute("payMethod", "토스페이");
+            model.addAttribute("message", e.getMessage() == null ? "토스 결제 성공 처리 실패" : e.getMessage());
+            return "cashresult";
+        }
+    }
+
+    /**
+     * 토스 결제 실패 콜백
+     * TossPayments는 failUrl로 code, message(및 orderId) 등을 전달합니다.
+     */
+    @GetMapping("/payment/toss/fail")
+    public String tossFail(@RequestParam(value = "code", required = false) String code,
+                           @RequestParam(value = "message", required = false) String message,
+                           @RequestParam(value = "orderId", required = false) String orderId,
+                           HttpSession session,
+                           Model model) {
+
+        model.addAttribute("payResult", "FAIL");
+        model.addAttribute("payMethod", "토스페이");
+
+        String msg = "결제에 실패했습니다.";
+        if (message != null && !message.isBlank()) msg = message;
+        if (code != null && !code.isBlank()) msg = msg + " (" + code + ")";
+        model.addAttribute("message", msg);
+
+        if (orderId != null && !orderId.isBlank()) {
+            session.removeAttribute("toss_processed_order_id");
+        }
+
+        return "cashresult";
+    }
+
+
 }
