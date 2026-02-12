@@ -5,81 +5,33 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * 전역 예외 처리 핸들러
- * AOP에서 던진 예외를 받아서 일관된 형식의 응답 반환
- */
-@ControllerAdvice
+import jakarta.servlet.http.HttpServletRequest;
+
+@RestControllerAdvice
 public class GlobalExceptionHandler {
-    
-    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
-    
-    /**
-     * 회원 제재 예외 처리
-     * 제재 중인 회원이 제한된 활동 시도 시 호출
-     */
-    @ExceptionHandler(MemberSanctionedException.class)
-    public ResponseEntity<Map<String, Object>> handleMemberSanctionedException(MemberSanctionedException ex) {
-        logger.warn("[예외처리] 회원 제재 - {}", ex.getMessage());
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("result", "FAIL");
-        response.put("code", "MEMBER_SANCTIONED");
-        response.put("msg", ex.getMessage());
-        
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+	
+	 private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<Map<String, Object>> handleApi(ApiException e) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("code", e.getCode());
+        body.put("message", e.getMessage());
+        return ResponseEntity.status(e.getStatus()).body(body);
     }
-    
-    /**
-     * 삭제된 게시글 예외 처리
-     * 삭제된 게시글 접근 시도 시 호출
-     */
-    @ExceptionHandler(BoardDeletedException.class)
-    public ResponseEntity<Map<String, Object>> handleBoardDeletedException(BoardDeletedException ex) {
-        logger.warn("[예외처리] 삭제된 게시글 - {}", ex.getMessage());
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("result", "FAIL");
-        response.put("code", "BOARD_DELETED");
-        response.put("msg", ex.getMessage());
-        
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
-    }
-    
-    /**
-     * 로그인 필요 예외 처리
-     * 로그인하지 않은 사용자의 요청 시 호출
-     */
-    @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<Map<String, Object>> handleUnauthorizedException(UnauthorizedException ex) {
-        logger.warn("[예외처리] 로그인 필요 - {}", ex.getMessage());
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("result", "FAIL");
-        response.put("code", "LOGIN_REQUIRED");
-        response.put("msg", ex.getMessage());
-        
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-    }
-    
-    /**
-     * 기타 런타임 예외 처리
-     * 예상치 못한 예외 발생 시 호출
-     */
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
-        logger.error("[예외처리] 런타임 에러 - {}", ex.getMessage(), ex);
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("result", "FAIL");
-        response.put("code", "SERVER_ERROR");
-        response.put("msg", "서버 오류가 발생했습니다.");
-        
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleAny(Exception e, HttpServletRequest req) {
+    	
+    	  // ✅ 이게 핵심: 어떤 URL에서 어떤 예외가 났는지 + 스택트레이스
+        log.error("[AI-CHAT] Unhandled error: {} {}", req.getMethod(), req.getRequestURI(), e);
+        Map<String, Object> body = new HashMap<>();
+        body.put("code", "INTERNAL_ERROR");
+        body.put("message", "서버 오류가 발생했습니다.");
+        return ResponseEntity.status(500).body(body);
     }
 }

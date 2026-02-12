@@ -2,8 +2,6 @@ package fourcheetah.animale.web.repository.board;
 
 import java.sql.Timestamp;
 import java.util.List;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -150,10 +148,10 @@ public class BoardReportDAO {
         "WHERE member_id = ? AND valid_report_count >= 3";
 
     /* =========================
-    RowMapper
-    ========================= */
+       RowMapper
+       ========================= */
 
-    private static final RowMapper<BoardReportDTO> boardReportRowMapper = (rs, rowNum) -> {
+    private static final RowMapper<BoardReportDTO> BoardReportRowMapper = (rs, rowNum) -> {
         BoardReportDTO dto = new BoardReportDTO();
         dto.setBoardId(rs.getInt("board_id"));
         dto.setBoardWriterId(rs.getInt("board_writer_id"));
@@ -161,45 +159,44 @@ public class BoardReportDAO {
         dto.setBoardContent(rs.getString("board_content"));
         dto.setReportCount(rs.getInt("report_count"));
 
-        // Timestamp → String 변환! (올바른 방법)
         Timestamp ts = rs.getTimestamp("created_at");
-        if (ts != null) {
-            dto.setCreatedAt(ts.toString());  // String으로!
-        }
+        dto.setCreatedAt(ts == null ? null : ts.toLocalDateTime());
 
         return dto;
     };
- /* =========================
-    SELECT_ALL (신고 목록 조회)
-    ========================= */
 
- /**
-  * 신고 목록 조회 (페이징 + 정렬)
-  */
- public List<BoardReportDTO> selectAll(BoardReportDTO dto) {
-	    if (dto == null) {
-	        return List.of();
-	    }
+    /* =========================
+       SELECT_ALL (신고 목록 조회)
+       ========================= */
 
-	    int pageSize = dto.getPageSize();
-	    int currentPage = dto.getPage();  // getCurrentPage() 대신 getPage() 사용!
-	    int offset = (currentPage - 1) * pageSize;
+    /**
+     * 신고 목록 조회 (페이징 + 정렬)
+     */
+    public List<BoardReportDTO> selectAll(BoardReportDTO dto) {
+        if (dto == null) {
+            return List.of();
+        }
 
-	    String sortOrder = dto.getSortOrder();
-	    String sql = "asc".equalsIgnoreCase(sortOrder) ? 
-	                 SELECT_REPORT_LIST_ASC : SELECT_REPORT_LIST_DESC;
+        int pageSize = dto.getPageSize();
+        int currentPage = dto.getPage();
+        int offset = (currentPage - 1) * pageSize;
 
-	    System.out.println("[DAO] 신고 목록 조회 - 페이지: " + currentPage + 
-	                       ", 정렬: " + sortOrder);
+        String sortOrder = dto.getSortOrder();
+        String sql = "asc".equalsIgnoreCase(sortOrder) ? 
+                     SELECT_REPORT_LIST_ASC : SELECT_REPORT_LIST_DESC;
 
-	    try {
-	        return jdbcTemplate.query(sql, boardReportRowMapper, pageSize, offset);
-	    } catch (Exception e) {
-	        System.out.println("[DAO 에러] 신고 목록 조회: " + e.getMessage());
-	        e.printStackTrace();
-	        return List.of();
-	    }
-	}
+        System.out.println("[DAO] 신고 목록 조회 - 페이지: " + currentPage + 
+                           ", 정렬: " + sortOrder);
+
+        try {
+            return jdbcTemplate.query(sql, BoardReportRowMapper, pageSize, offset);
+        } catch (Exception e) {
+            System.out.println("[DAO 에러] 신고 목록 조회: " + e.getMessage());
+            e.printStackTrace();
+            return List.of();
+        }
+    }
+
     /**
      * 신고 목록 총 개수
      */
@@ -213,43 +210,6 @@ public class BoardReportDAO {
         }
     }
 
-    /* =========================
-    SELECT_ONE (신고 상세 조회)
-    ========================= */
-
- /**
-  * 신고 상세 조회 (게시글 ID로)
-  */
- public BoardReportDTO selectOne(BoardReportDTO dto) {
-     if (dto == null) {
-         return null;
-     }
-     
-     int boardId = dto.getBoardId();
-     
-     System.out.println("[DAO] 신고 상세 조회 - boardId: " + boardId);
-     
-     String sql = 
-         "SELECT " +
-         "  br.board_id, " +
-         "  b.member_id AS board_writer_id, " +
-         "  b.board_title, " +
-         "  b.board_content, " +
-         "  COUNT(br.report_id) AS report_count, " +
-         "  MIN(br.created_at) AS created_at " +
-         "FROM board_report br " +
-         "JOIN board b ON br.board_id = b.board_id " +
-         "WHERE br.board_id = ? AND br.status = 'PENDING' " +
-         "GROUP BY br.board_id, b.member_id, b.board_title, b.board_content";
-     
-     try {
-         return jdbcTemplate.queryForObject(sql, boardReportRowMapper, boardId);
-     } catch (Exception e) {
-         System.out.println("[DAO 에러] 신고 상세 조회: " + e.getMessage());
-         return null;
-     }
- }
-    
     /* =========================
        사용자 신고 접수
        ========================= */
@@ -351,51 +311,15 @@ public class BoardReportDAO {
                 boardId             // source_report_id 조회용
             );
             System.out.println("[DAO] 제재 기록 생성 - rows=" + rows4);
-        
+
             // 6. 알림 생성 (3회 이상)
             if (newCount >= 3) {
-                String warningMsg = "";
-                
-                if (newCount == 3) {
-                    // 7일 정지
-                    LocalDateTime startAt = LocalDateTime.now();
-                    LocalDateTime endAt = startAt.plusDays(7);
-                    
-                    warningMsg = String.format(
-                        "[계정 활동 제한] 신고 누적 3회로 인해 7일간 계정이 정지되었습니다. " +
-                        "정지 기간: %s ~ %s (정지 종료 후 로그인 시 자동 해제)",
-                        startAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
-                        endAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-                    );
-                } else if (newCount == 5) {
-                    // 30일 정지
-                    LocalDateTime startAt = LocalDateTime.now();
-                    LocalDateTime endAt = startAt.plusDays(30);
-                    
-                    warningMsg = String.format(
-                        "[계정 활동 제한] 신고 누적 5회로 인해 30일간 계정이 정지되었습니다. " +
-                        "정지 기간: %s ~ %s (정지 종료 후 로그인 시 자동 해제)",
-                        startAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
-                        endAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-                    );
-                } else if (newCount >= 6) {
-                    // 영구 정지
-                    warningMsg = "[계정 활동 제한] 신고 누적 6회 이상으로 인해 계정이 영구 정지되었습니다.";
-                }
-                
-                // notice_message에 날짜 포함된 메시지 저장
-                String updateNoticeSql = 
-                    "UPDATE member SET " +
-                    "  notice_pending = 'Y', " +
-                    "  notice_message = ? " +
-                    "WHERE member_id = ?";
-                
-                int rows5 = jdbcTemplate.update(updateNoticeSql, warningMsg, boardWriterId);
-                System.out.println("[DAO] 알림 생성 (날짜 포함) - rows=" + rows5);
-                System.out.println("[DAO] 알림 메시지: " + warningMsg);
+                int rows5 = jdbcTemplate.update(UPDATE_MEMBER_NOTICE, boardWriterId);
+                System.out.println("[DAO] 알림 생성 - rows=" + rows5);
             }
-            
+
             System.out.println("[DAO] 신고 승인 트랜잭션 완료");
+
             return true;
 
         } catch (Exception e) {

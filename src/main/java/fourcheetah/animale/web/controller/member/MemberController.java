@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import fourcheetah.animale.web.dto.member.MemberDTO;
-import fourcheetah.animale.web.dto.member.MemberWarningDTO;  // 추가!
 import fourcheetah.animale.web.repository.member.WithdrawRepository;
 import fourcheetah.animale.web.service.member.MemberService;
 import jakarta.servlet.http.Cookie;
@@ -102,10 +101,10 @@ public class MemberController {
             session.setAttribute("memberEmail", data.getMemberEmail());
             
             // 제재 정보 조회 (member_warning 테이블에서)
-            MemberWarningDTO warningInfo = memberService.selectActiveWarning(data.getMemberId());
+            MemberDTO warningInfo = memberService.selectActiveWarning(data.getMemberId());
             
             if (warningInfo != null) {
-                String warningType = warningInfo.getWarningType();
+                String warningType = warningInfo.getMemberStatus();
                 
                 System.out.println("[로그인] 제재 정보 발견: " + warningType);
                 
@@ -121,14 +120,8 @@ public class MemberController {
                 if ("SUSPEND_7D".equals(warningType) || "SUSPEND_30D".equals(warningType)) {
                     session.setAttribute("memberStatus", warningType);
                     session.setAttribute("showSanctionModal", true);
-                    
-                    // 날짜 포맷팅
-                    String endAtStr = warningInfo.getEndAt() == null ? 
-                                     "영구 정지" : 
-                                     warningInfo.getEndAt().toString();
-                    
-                    session.setAttribute("sanctionEndAt", endAtStr);
-                    session.setAttribute("sanctionReason", warningInfo.getReason());
+                    session.setAttribute("sanctionEndAt", warningInfo.getSanctionEndAt());
+                    session.setAttribute("sanctionReason", warningInfo.getSanctionReason());
                     
                     System.out.println("[로그인] 정지 상태 - 제재 모달 표시");
                 }
@@ -319,15 +312,47 @@ public class MemberController {
             needCash = (nickChange ? 500 : 0) + (imgChange ? 500 : 0);
         }
 
+        // 관리자면 adminPage로, 일반이면 mypage로
+        String backPage = isAdmin ? "redirect:/adminPage" : "redirect:/member/mypage";
+
         MemberDTO curQ = new MemberDTO();
         curQ.setCondition("MEMBER_CASH_SELECT");
         curQ.setMemberId(memberId);
+
 
         MemberDTO cashInfo = memberService.selectOne(curQ);
         if (!isAdmin) {
             if (cashInfo == null || cashInfo.getMemberCash() < needCash) {
                 session.setAttribute("msg", "캐시가 부족합니다. (필요: " + needCash + ")");
                 return "redirect:/member/mypage";
+
+        MemberDTO cur = memberService.selectOne(curQ);
+        if (cur == null) {
+            session.setAttribute("msg", "회원 정보를 불러오지 못했습니다.");
+            return backPage; // 변경
+        }
+
+        String newNick = (newNickname == null) ? "" : newNickname.trim();
+        boolean nickChanged = !newNick.isEmpty() && !newNick.equals(cur.getMemberNickname());
+
+        boolean profileChanged = (temporaryProfileImageToken != null && !temporaryProfileImageToken.trim().isEmpty());
+        String token = profileChanged ? temporaryProfileImageToken.trim() : null;
+
+        if (!nickChanged && !profileChanged) {
+            session.setAttribute("msg", "변경된 내용이 없습니다.");
+            return backPage; // 변경
+        }
+
+        if (nickChanged) {
+            MemberDTO dup = new MemberDTO();
+            dup.setCondition("JOIN_NICKNAME");
+            dup.setMemberNickname(newNick);
+
+            MemberDTO found = memberService.selectOne(dup);
+            if (found != null && found.getMemberId() != memberId) {
+                session.setAttribute("msg", "이미 사용 중인 닉네임입니다.");
+                return backPage; // 변경
+
             }
         }
 
@@ -336,12 +361,25 @@ public class MemberController {
                 Path tempFile = Paths.get(profileTempDir, newProfileImage);
                 Path targetFile = Paths.get(profileDir, newProfileImage);
 
+
                 if (Files.exists(tempFile)) {
                     Files.createDirectories(targetFile.getParent());
                     Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
-                }
-            } catch (Exception e) {
+                
+                Path tempFile1 = Paths.get(profileTempDir, token);
+                if (!Files.exists(tempFile1)) {
+                    session.setAttribute("msg", "프로필 임시 파일이 없습니다. 다시 업로드해주세요.");
+                    return backPage; // 변경
+                    }
+                    
+               }
+            }
+                catch (Exception e) {
                 e.printStackTrace();
+
+                session.setAttribute("msg", "프로필 파일 처리 중 오류가 발생했습니다.");
+                return backPage; // 변경
+
             }
         }
 
@@ -366,8 +404,15 @@ public class MemberController {
         boolean ok = memberService.update(dto);
 
         if (!ok) {
+
             session.setAttribute("msg", "프로필 변경에 실패했습니다.");
             return "redirect:/member/mypage";
+
+            session.setAttribute("msg", isAdmin
+                    ? "수정 실패(DB 반영 실패)."
+                    : "수정 실패(캐시 부족 또는 DB 반영 실패).");
+            return backPage; // 변경
+
         }
 
         MemberDTO after = memberService.selectOne(curQ);
@@ -379,9 +424,10 @@ public class MemberController {
         }
 
         session.setAttribute("msg", "내 정보가 수정되었습니다.");
-        return "redirect:/member/mypage";
+        return backPage; // 변경
+       }
+      }
     }
-
     // ==================== 비밀번호 변경 ====================
 
     @GetMapping("/changePasswordPage")

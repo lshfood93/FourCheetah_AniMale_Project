@@ -9,15 +9,18 @@ import fourcheetah.animale.web.repository.board.BoardReportDAO;
 
 import java.util.*;
 
+
+
 @Service
 public class AdminReportServiceImpl implements AdminReportService {
+
 
     @Autowired
     private BoardReportDAO boardReportDAO;
 
     /**
      * 신고 목록 조회 (STEP 3: 실제 DB 조회)
-     */
+     
     @Override
     public Map<String, Object> selectReportList(int page, int pageSize, String sortOrder) {
         System.out.println("[Service] selectReportList 호출됨");
@@ -41,7 +44,7 @@ public class AdminReportServiceImpl implements AdminReportService {
             List<BoardReportDTO> reports = boardReportDAO.selectAll(dto);
             
             // DAO 호출 - 전체 건수 조회
-            int totalCount = boardReportDAO.getTotalCount();  // 수정!
+            int totalCount = boardReportDAO.getTotalCount();
             
             System.out.println("[Service] DAO 호출 완료");
             System.out.println("  - 조회된 신고: " + reports.size() + "건");
@@ -87,6 +90,8 @@ public class AdminReportServiceImpl implements AdminReportService {
     /**
      * 신고 상세 조회
      */
+
+    /*
     @Override
     public BoardReportDTO selectReportDetail(int boardId) {
         System.out.println("[Service] selectReportDetail 호출됨");
@@ -112,10 +117,13 @@ public class AdminReportServiceImpl implements AdminReportService {
             return null;
         }
     }
+*/
 
     /**
-     * 신고 반려 (수정!)
+     * 신고 반려 (CRUD 통일)
      */
+    
+    /*
     @Override
     public boolean updateReportReject(int boardId, int handledBy) {
         System.out.println("[Service] updateReportReject 호출됨");
@@ -123,7 +131,11 @@ public class AdminReportServiceImpl implements AdminReportService {
         System.out.println("  - handledBy: " + handledBy);
         
         try {
-            boolean result = boardReportDAO.rejectReport(boardId, handledBy);  // 수정!
+            BoardReportDTO dto = new BoardReportDTO();
+            dto.setBoardId(boardId);
+            dto.setHandledBy(handledBy);
+            
+            boolean result = boardReportDAO.update(dto);
             
             if (result) {
                 System.out.println("[Service] 신고 반려 처리 완료");
@@ -139,18 +151,21 @@ public class AdminReportServiceImpl implements AdminReportService {
             return false;
         }
     }
+*/
 
     /**
      * 신고 승인 (CRUD 통일)
      * 
      * 주의: boardWriterId를 따로 조회해야 함!
      */
+
+
     @Override
     public boolean updateReportApprove(int boardId, int handledBy) {
         System.out.println("[Service] updateReportApprove 호출됨");
         System.out.println("  - boardId: " + boardId);
         System.out.println("  - handledBy: " + handledBy);
-        
+       
         try {
             // 1. 먼저 게시글 작성자 ID 조회
             BoardReportDTO reportDetail = selectReportDetail(boardId);
@@ -180,5 +195,25 @@ public class AdminReportServiceImpl implements AdminReportService {
             e.printStackTrace();
             return false;
         }
+        
     }
+
+	@Override
+	public Map<String, Object> selectReportList(int page, int pageSize, String sortOrder) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public BoardReportDTO selectReportDetail(int boardId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean updateReportReject(int boardId, int handledBy) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }
+
