@@ -180,6 +180,162 @@
     WHERE INSTR(anime_story, #{keyword}) > 0
   </select>
 
+  <!-- ========================================
+       필터 검색 COUNT (3개)
+       ======================================== -->
+
+  <!-- 필터 COUNT - 필터만 (검색 없음) -->
+  <select id="animeCountFilter" parameterType="map" resultType="int">
+    SELECT COUNT(*)
+    FROM ANIME
+    WHERE 1=1
+    <if test="year != null">
+      AND anime_year = #{year}
+    </if>
+    <if test="quarter != null">
+      AND anime_quarter = #{quarter}
+    </if>
+  </select>
+
+  <!-- 필터 COUNT - 필터 + 제목 검색 -->
+  <select id="animeCountFilterTitle" parameterType="map" resultType="int">
+    SELECT COUNT(*)
+    FROM ANIME
+    WHERE 1=1
+    <if test="year != null">
+      AND anime_year = #{year}
+    </if>
+    <if test="quarter != null">
+      AND anime_quarter = #{quarter}
+    </if>
+    <if test="keyword != null and keyword != ''">
+      AND anime_title LIKE CONCAT('%', #{keyword}, '%')
+    </if>
+  </select>
+
+  <!-- 필터 COUNT - 필터 + 내용 검색 -->
+  <select id="animeCountFilterStory" parameterType="map" resultType="int">
+    SELECT COUNT(*)
+    FROM ANIME
+    WHERE 1=1
+    <if test="year != null">
+      AND anime_year = #{year}
+    </if>
+    <if test="quarter != null">
+      AND anime_quarter = #{quarter}
+    </if>
+    <if test="keyword != null and keyword != ''">
+      AND INSTR(anime_story, #{keyword}) > 0
+    </if>
+  </select>
+
+  <!-- ========================================
+       필터 검색 LIST (3개)
+       ======================================== -->
+
+  <!-- 필터 LIST - 필터만 (검색 없음) -->
+  <select id="animeListFilter" parameterType="map" resultType="animeDTO">
+    SELECT
+      anime_id            AS animeId,
+      anime_title         AS animeTitle,
+      anime_year          AS animeYear,
+      anime_quarter       AS animeQuarter,
+      anime_thumbnail_url AS animeThumbnailUrl,
+      anime_genres        AS animeGenres
+    FROM ANIME
+    WHERE 1=1
+    <if test="year != null">
+      AND anime_year = #{year}
+    </if>
+    <if test="quarter != null">
+      AND anime_quarter = #{quarter}
+    </if>
+    <choose>
+      <when test="sort == 'OLDEST'">
+        ORDER BY anime_id ASC
+      </when>
+      <when test="sort == 'TITLE'">
+        ORDER BY anime_title ASC, anime_id DESC
+      </when>
+      <otherwise>
+        ORDER BY anime_id DESC
+      </otherwise>
+    </choose>
+    LIMIT #{offset}, #{rows}
+  </select>
+
+  <!-- 필터 LIST - 필터 + 제목 검색 -->
+  <select id="animeListFilterTitle" parameterType="map" resultType="animeDTO">
+    SELECT
+      anime_id            AS animeId,
+      anime_title         AS animeTitle,
+      anime_year          AS animeYear,
+      anime_quarter       AS animeQuarter,
+      anime_thumbnail_url AS animeThumbnailUrl,
+      anime_genres        AS animeGenres
+    FROM ANIME
+    WHERE 1=1
+    <if test="year != null">
+      AND anime_year = #{year}
+    </if>
+    <if test="quarter != null">
+      AND anime_quarter = #{quarter}
+    </if>
+    <if test="keyword != null and keyword != ''">
+      AND anime_title LIKE CONCAT('%', #{keyword}, '%')
+    </if>
+    <choose>
+      <when test="sort == 'OLDEST'">
+        ORDER BY anime_id ASC
+      </when>
+      <when test="sort == 'TITLE'">
+        ORDER BY anime_title ASC, anime_id DESC
+      </when>
+      <otherwise>
+        ORDER BY anime_id DESC
+      </otherwise>
+    </choose>
+    LIMIT #{offset}, #{rows}
+  </select>
+
+  <!-- 필터 LIST - 필터 + 내용 검색 -->
+  <select id="animeListFilterStory" parameterType="map" resultType="animeDTO">
+    SELECT
+      anime_id            AS animeId,
+      anime_title         AS animeTitle,
+      anime_year          AS animeYear,
+      anime_quarter       AS animeQuarter,
+      anime_thumbnail_url AS animeThumbnailUrl,
+      anime_genres        AS animeGenres
+    FROM ANIME
+    WHERE 1=1
+    <if test="year != null">
+      AND anime_year = #{year}
+    </if>
+    <if test="quarter != null">
+      AND anime_quarter = #{quarter}
+    </if>
+    <if test="keyword != null and keyword != ''">
+      AND INSTR(anime_story, #{keyword}) > 0
+    </if>
+    <choose>
+      <when test="sort == 'OLDEST'">
+        ORDER BY anime_id ASC
+      </when>
+      <when test="sort == 'TITLE'">
+        ORDER BY anime_title ASC, anime_id DESC
+      </when>
+      <otherwise>
+        ORDER BY anime_id DESC
+      </otherwise>
+    </choose>
+    LIMIT #{offset}, #{rows}
+  </select>
+
+  <!-- ========================================
+       INSERT / UPDATE / DELETE (기존 유지)
+       ======================================== -->
+
   <insert id="insertAnime" parameterType="animeDTO">
     INSERT INTO ANIME
       (anime_title, original_title, anime_year, anime_quarter, anime_story,

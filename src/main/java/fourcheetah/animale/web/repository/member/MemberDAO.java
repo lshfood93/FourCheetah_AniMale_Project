@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import fourcheetah.animale.web.dto.member.MemberDTO;
+import fourcheetah.animale.web.dto.member.MemberWarningDTO;
 
 @Repository
 public class MemberDAO {
