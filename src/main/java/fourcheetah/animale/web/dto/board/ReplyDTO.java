@@ -11,6 +11,9 @@ public class ReplyDTO {
 	// condition / join / view
 	private String condition;
 	private String writerNickname; // JOIN MEMBER + 탈퇴회원 
+	private String writerProfileImage; // 작성자 표시용 (JOIN으로 채움)
+	private String writerProfileColor;
+	private String writerNicknameColor;
 	
 	public int getReplyId() {
 		return replyId;
@@ -60,10 +63,31 @@ public class ReplyDTO {
 	public void setWriterNickname(String writerNickname) {
 		this.writerNickname = writerNickname;
 	}
+	
+	public String getWriterProfileImage() {
+		return writerProfileImage;
+	}
+	public void setWriterProfileImage(String writerProfileImage) {
+		this.writerProfileImage = writerProfileImage;
+	}
+	public String getWriterProfileColor() {
+		return writerProfileColor;
+	}
+	public void setWriterProfileColor(String writerProfileColor) {
+		this.writerProfileColor = writerProfileColor;
+	}
+	public String getWriterNicknameColor() {
+		return writerNicknameColor;
+	}
+	public void setWriterNicknameColor(String writerNicknameColor) {
+		this.writerNicknameColor = writerNicknameColor;
+	}
 	@Override
 	public String toString() {
 		return "ReplyDTO [replyId=" + replyId + ", boardId=" + boardId + ", memberId=" + memberId + ", replyContent="
 				+ replyContent + ", replyCreatedAt=" + replyCreatedAt + ", replyUpdatedAt=" + replyUpdatedAt
-				+ ", condition=" + condition + ", writerNickname=" + writerNickname + "]";
+				+ ", condition=" + condition + ", writerNickname=" + writerNickname + ", writerProfileImage="
+				+ writerProfileImage + ", writerProfileColor=" + writerProfileColor + ", writerNicknameColor="
+				+ writerNicknameColor + "]";
 	}
 }
