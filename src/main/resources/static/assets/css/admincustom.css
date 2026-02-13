@@ -24,18 +24,22 @@
 }
 
 /* 좌측 사이드바 폭 */
-.admin-dashboard .left-sidebar {
-  width: 220px;
+.admin-dashboard{
+  --admin-sidebar-w: 280px;
 }
-.admin-dashboard .body-wrapper {
-  margin-left: 220px;
+
+.admin-dashboard .left-sidebar{
+  width: var(--admin-sidebar-w) !important;
+}
+
+.admin-dashboard .body-wrapper{
+  margin-left: var(--admin-sidebar-w) !important;
 }
 
 /* 반응형 */
 @media (max-width: 992px) {
-  .admin-dashboard .body-wrapper {
-    margin-left: 0;
-  }
+  .admin-dashboard .left-sidebar{ width: 0 !important; }
+  .admin-dashboard .body-wrapper { margin-left: 0 !important; }
 }
 
 /* =========================
@@ -529,4 +533,94 @@
 }
 .admin-dashboard .admin-report-link:hover {
   text-decoration: underline;
+}
+
+/* =========================================================
+   12) Sidebar redesign (Admin)
+   - 1) 사이드바를 화면 맨 위까지 채우기 (top:72px 제거)
+   - 2) 로고 영역과 메뉴 사이 간격/구분선으로 분리
+   ========================================================= */
+
+/* (1) fixed 사이드바 top 72px -> 0으로 덮어쓰기 */
+.admin-dashboard #main-wrapper[data-layout="vertical"][data-sidebar-position="fixed"] .left-sidebar {
+  top: 0 !important;
+  height: 100vh;
+  background: #fff;
+  border-right: 1px solid rgba(0,0,0,0.06);
+  z-index: 30;
+}
+
+/* 사이드바 내부를 세로 플렉스로: 로고(위) / 메뉴(아래) */
+.admin-dashboard .left-sidebar > div {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* (2) 로고 영역: 위쪽 여백 + 메뉴와 분리 */
+.admin-dashboard .left-sidebar .brand-logo {
+  min-height: auto;
+  padding: 22px 18px;
+  margin: 0;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+/* 로고 정렬(가운데 느낌) */
+.admin-dashboard .left-sidebar .brand-logo .logo-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 스크롤 메뉴 영역이 남은 높이를 전부 먹게 */
+.admin-dashboard .left-sidebar .scroll-sidebar {
+  flex: 1;
+  height: auto;
+  max-height: none;
+  padding: 14px 12px 18px;
+}
+
+/* 메뉴 버튼을 참고 이미지처럼 "pill" 느낌으로 */
+.admin-dashboard .left-sidebar .sidebar-item {
+  margin: 6px 0;
+}
+
+.admin-dashboard .left-sidebar .sidebar-link {
+  border-radius: 14px;
+  padding: 10px 12px;
+  transition: background .15s ease, color .15s ease;
+}
+
+/* hover */
+.admin-dashboard .left-sidebar .sidebar-link:hover {
+  background: rgba(30,136,255,0.08);
+}
+
+/* active 표현 (selected 또는 active 클래스가 있으면 강조) */
+.admin-dashboard .left-sidebar .sidebar-item.selected > .sidebar-link,
+.admin-dashboard .left-sidebar .sidebar-link.active {
+  background: rgba(30,136,255,0.12);
+  color: #1e88ff;
+}
+
+/* 메뉴 앞에 작은 점을 만들어서 '아이콘 느낌' */
+.admin-dashboard .left-sidebar .sidebar-link::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.18);
+  display: inline-block;
+  margin-right: 10px;
+  flex: 0 0 auto;
+}
+
+.admin-dashboard .left-sidebar .sidebar-item.selected > .sidebar-link::before,
+.admin-dashboard .left-sidebar .sidebar-link.active::before {
+  background: #1e88ff;
+}
+
+html { scrollbar-gutter: stable; }
+@supports not (scrollbar-gutter: stable) {
+  html { overflow-y: scroll; }
 }

@@ -5,102 +5,117 @@
 
 <!-- active 클래스 계산 (B 네이밍 유지) -->
 <c:set var="homeCls" value="" />
-<c:if test="${activeMenu eq 'HOME'}"><c:set var="homeCls" value="active" /></c:if>
+<c:if test="${activeMenu eq 'HOME'}">
+   <c:set var="homeCls" value="active" />
+</c:if>
 
 <c:set var="aniCls" value="" />
-<c:if test="${activeMenu eq 'ANILIST'}"><c:set var="aniCls" value="active" /></c:if>
+<c:if test="${activeMenu eq 'ANILIST'}">
+   <c:set var="aniCls" value="active" />
+</c:if>
 
 <c:set var="comCls" value="" />
-<c:if test="${activeMenu eq 'COMMUNITY'}"><c:set var="comCls" value="active" /></c:if>
+<c:if test="${activeMenu eq 'COMMUNITY'}">
+   <c:set var="comCls" value="active" />
+</c:if>
 
 <c:set var="newsCls" value="" />
-<c:if test="${activeMenu eq 'NEWS'}"><c:set var="newsCls" value="active" /></c:if>
+<c:if test="${activeMenu eq 'NEWS'}">
+   <c:set var="newsCls" value="active" />
+</c:if>
+<style>
+.header-profile-icon{
+  font-size: 18px;
+  color: #ffffff;
+  line-height: 1;
+  display: inline-block;
+  transform: translateY(-1px);
+  /* 더 올리고 싶으면 -2px, -3px로 */
+}
+</style>
 
 <header class="header">
-  <div class="container">
-    <div class="row align-items-center">
+   <div class="container">
+      <div class="row align-items-center">
 
-      <%-- Logo --%>
-      <div class="col-lg-2">
-        <div class="header__logo">
-          <a href="${ctx}/mainPage" class="logo-img">
-            <img src="${ctx}/img/animale-logo.png" alt="AniMale 로고" />
-          </a>
-        </div>
-      </div>
-
-      <%-- Menu --%>
-      <div class="col-lg-8">
-        <nav class="header__menu">
-          <ul>
-            <li class="${homeCls}">
-              <a href="${ctx}/mainPage">HOME</a>
-            </li>
-
-            <li class="${aniCls}">
-              <a href="${ctx}/animeList">ANILIST</a>
-            </li>
-
-            <li class="dropdown ${comCls}">
-              <a href="javascript:void(0)">COMMUNITY</a>
-              <ul class="dropdown-menu">
-                <li>
-                  <a href="${ctx}/boardList?boardCategory=ANIME">ANIME</a>
-                </li>
-              </ul>
-            </li>
-
-            <li class="${newsCls}">
-              <a href="${ctx}/newsList">NEWS</a>
-            </li>
-          </ul>
-        </nav>
-      </div>
-
-      <%-- Right --%>
-      <div class="col-lg-2">
-        <div class="header__right">
-
-          <%-- Profile Icon --%>
-          <c:if test="${hideProfileIcon ne true}">
-            <div class="header__right__icons">
-              <c:choose>
-
-                <%-- 비로그인: 로그인 페이지로 --%>
-                <c:when test="${empty sessionScope.memberId}">
-                  <a href="${ctx}/login">
-                    <span class="icon_profile"></span>
-                  </a>
-                </c:when>
-
-                <%-- 관리자 --%>
-                <c:when test="${sessionScope.memberRole eq 'ADMIN'}">
-                  <a href="${ctx}/adminPage">
-                    <span class="icon_profile"></span>
-                  </a>
-                </c:when>
-
-                <%-- 일반 회원 --%>
-                <c:otherwise>
-                  <a href="${ctx}/myPage">
-                    <span class="icon_profile"></span>
-                  </a>
-                </c:otherwise>
-
-              </c:choose>
+         <%-- Logo --%>
+         <div class="col-lg-2">
+            <div class="header__logo">
+               <a href="${ctx}/mainPage" class="logo-img"> <img
+                  src="${ctx}/img/animale-logo.png" alt="AniMale 로고" />
+               </a>
             </div>
-          </c:if>
+         </div>
 
-          <%-- 로그아웃 버튼 (로그인 상태에서만) --%>
-          <c:if test="${not empty sessionScope.memberId}">
-            <a href="${ctx}/logout" class="logout-link">로그아웃</a>
-          </c:if>
+         <%-- Menu --%>
+         <div class="col-lg-8">
+            <nav class="header__menu">
+               <ul>
+                  <li class="${homeCls}"><a href="${ctx}/mainPage">HOME</a></li>
 
-        </div>
+                  <li class="${aniCls}"><a href="${ctx}/animeList">ANILIST</a></li>
+
+                  <li class="dropdown ${comCls}"><a href="javascript:void(0)">COMMUNITY</a>
+                     <ul class="dropdown-menu">
+                        <li><a href="${ctx}/boardList?boardCategory=ANIME">ANIME</a></li>
+                     </ul></li>
+                     
+                     <li class="${newsCls}"><a href="${ctx}/newsList">NEWS</a></li>
+                     <!-- 임시 네이버 스토어 >> 추후 오너먼트 페이지 사이트로 변경!! -->
+                  <li><a href="https://snxbest.naver.com/home" target="_blank" rel="noopener noreferrer">SHOP</a></li>
+                  
+               </ul>
+            </nav>
+         </div>
+
+         <%-- Right --%>
+         <div class="col-lg-2">
+            <div class="header__right">
+
+               <%-- Profile Icon --%>
+               <c:if test="${hideProfileIcon ne true}">
+                  <div class="header__right__icons">
+                     <c:choose>
+
+                        <c:when test="${not empty profileHref}">
+                           <a href="${ctx}${profileHref}" title="프로필"> <i
+                              class="fa fa-user header-profile-icon"></i>
+                           </a>
+                        </c:when>
+
+                        <c:when test="${empty sessionScope.memberId}">
+                           <a href="${ctx}/login" title="로그인"> <i
+                              class="fa fa-user header-profile-icon"></i>
+                           </a>
+                        </c:when>
+
+                        <c:when test="${sessionScope.memberRole eq 'ADMIN'}">
+                           <a href="${ctx}/admindashboard" title="관리자 대시보드"> <i
+                              class="fa fa-user header-profile-icon"></i>
+                           </a>
+                        </c:when>
+
+                        <c:otherwise>
+                           <a href="${ctx}/myPage" title="마이페이지"> <i
+                              class="fa fa-user header-profile-icon"></i>
+                           </a>
+                        </c:otherwise>
+
+                     </c:choose>
+                  </div>
+               </c:if>
+
+
+               <%-- 로그아웃 버튼 (로그인 상태에서만) --%>
+               <c:if test="${not empty sessionScope.memberId}">
+                  <a href="${ctx}/logout" class="logout-link">로그아웃</a>
+               </c:if>
+
+            </div>
+         </div>
+
       </div>
-
-    </div>
-  </div>
+   </div>
 </header>
 
 <!-- 제재 안내 모달 -->
@@ -132,4 +147,12 @@
     </div>
 </div>
 </c:if>
+
+<%-- ChatAI 위젯 (전 페이지 공통) --%>
+<jsp:include page='/WEB-INF/common/chatai.jsp' />
+
+<%-- ChatAI 전용 CSS/JS (전 페이지 공통 1회 로드) --%>
+<link rel='stylesheet' href='${ctx}/css/chatai.css' />
+<script src='${ctx}/js/chatai.js' defer></script>
+
 <script src="${ctx}/js/header.js" defer></script>

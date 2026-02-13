@@ -8,6 +8,10 @@
 <%-- 컨텍스트 경로: /assets 같은 정적 리소스 및 내부 링크에 공통으로 사용 --%>
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
 
+<c:if test="${empty sessionScope.memberRole or sessionScope.memberRole ne 'ADMIN'}">
+  <c:redirect url="${ctx}/mainPage" />
+</c:if>
+
 <!doctype html>
 <html lang="ko">
 <head>
@@ -17,8 +21,7 @@
 <title>Admin | Cash Dashboard</title>
 
 <%-- 파비콘 + 템플릿 기본 CSS --%>
-<link rel="icon" type="image/png"
-	href="${ctx}/assets/images/logos/favicon.png" />
+<link rel="icon" type="image/png" href="${ctx}/favicon.png" />
 <link rel="stylesheet" href="${ctx}/assets/css/styles.min.css" />
 
 <%--
@@ -30,6 +33,9 @@
 
 <body class="admin-dashboard">
 
+	  <!-- 우상단 버튼(너가 만든 플로팅 include 쓰는 걸 추천) -->
+      <jsp:include page="dashboardheader.jsp" />
+
 	<div class="page-wrapper" id="main-wrapper" data-layout="vertical"
 		data-navbarbg="skin6" data-sidebartype="full"
 		data-sidebar-position="fixed" data-header-position="fixed">
@@ -40,8 +46,7 @@
 		<aside class="left-sidebar">
 			<div>
 
-				<div
-					class="brand-logo d-flex align-items-center justify-content-between">
+				<div class="brand-logo d-flex align-items-center justify-content-center">
 					<a href="${ctx}/admindashboard" class="text-nowrap logo-img"> <img
 						src="${ctx}/assets/images/logos/animale-logo.svg" width="150"
 						alt="AniMale Logo">
