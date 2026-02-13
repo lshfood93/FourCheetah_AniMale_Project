@@ -298,8 +298,8 @@ public class MemberController {
 		boolean profileColorChanged = (!newProfileColor.isEmpty() && !newProfileColor.equals(cur.getMemberProfileColor()));
 		boolean nicknameColorChanged = (!newNicknameColor.isEmpty() && !newNicknameColor.equals(cur.getMemberNicknameColor()));
 
-		 boolean profileColorRequested = (memberProfileColor != null && !memberProfileColor.trim().isEmpty());
-		 boolean nicknameColorRequested = (memberNicknameColor != null && !memberNicknameColor.trim().isEmpty());
+		boolean profileColorRequested = (memberProfileColor != null && !memberProfileColor.trim().isEmpty());
+		boolean nicknameColorRequested = (memberNicknameColor != null && !memberNicknameColor.trim().isEmpty());
 		
 		 // 요청은 했는데 DB랑 동일한 색이면: 차감/업데이트 없이 메시지
 		 if (profileColorRequested && !profileColorChanged
