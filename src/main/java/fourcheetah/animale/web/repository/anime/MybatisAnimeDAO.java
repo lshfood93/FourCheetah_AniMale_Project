@@ -79,6 +79,32 @@ public class MybatisAnimeDAO {
                 return sqlSession.selectList(NAMESPACE + "animeListPageStory", param);
             }
 
+            // ========================================
+            // 필터 검색 - 필터만 (검색 없음)
+            // ========================================
+            if ("ANIME_FILTER".equals(condition)) {
+                Map<String, Object> param = buildFilterParam(dto, offset, rows);
+                return sqlSession.selectList(NAMESPACE + "animeListFilter", param);
+            }
+
+            // ========================================
+            // 필터 검색 - 필터 + 제목 검색
+            // ========================================
+            if ("ANIME_FILTER_SEARCH_TITLE".equals(condition)) {
+                Map<String, Object> param = buildFilterParam(dto, offset, rows);
+                param.put("keyword", safeKeyword(dto.getKeyword()));
+                return sqlSession.selectList(NAMESPACE + "animeListFilterTitle", param);
+            }
+
+            // ========================================
+            // 필터 검색 - 필터 + 내용 검색
+            // ========================================
+            if ("ANIME_FILTER_SEARCH_STORY".equals(condition)) {
+                Map<String, Object> param = buildFilterParam(dto, offset, rows);
+                param.put("keyword", safeKeyword(dto.getKeyword()));
+                return sqlSession.selectList(NAMESPACE + "animeListFilterStory", param);
+            }
+
             return Collections.emptyList();
         } catch (Exception e) {
             e.printStackTrace();
@@ -118,6 +144,41 @@ public class MybatisAnimeDAO {
                 dto.setKeyword(safeKeyword(dto.getKeyword()));
                 Integer cnt = sqlSession.selectOne(NAMESPACE + "animeCountStory", dto);
 
+                AnimeDTO data = new AnimeDTO();
+                data.setAnimeCount(cnt == null ? 0 : cnt);
+                return data;
+            }
+
+            // ========================================
+            // 필터 COUNT - 필터만
+            // ========================================
+            if ("ANIME_COUNT_FILTER".equals(condition)) {
+                Map<String, Object> param = buildFilterCountParam(dto);
+                Integer cnt = sqlSession.selectOne(NAMESPACE + "animeCountFilter", param);
+                AnimeDTO data = new AnimeDTO();
+                data.setAnimeCount(cnt == null ? 0 : cnt);
+                return data;
+            }
+
+            // ========================================
+            // 필터 COUNT - 필터 + 제목 검색
+            // ========================================
+            if ("ANIME_COUNT_FILTER_TITLE".equals(condition)) {
+                Map<String, Object> param = buildFilterCountParam(dto);
+                param.put("keyword", safeKeyword(dto.getKeyword()));
+                Integer cnt = sqlSession.selectOne(NAMESPACE + "animeCountFilterTitle", param);
+                AnimeDTO data = new AnimeDTO();
+                data.setAnimeCount(cnt == null ? 0 : cnt);
+                return data;
+            }
+
+            // ========================================
+            // 필터 COUNT - 필터 + 내용 검색
+            // ========================================
+            if ("ANIME_COUNT_FILTER_STORY".equals(condition)) {
+                Map<String, Object> param = buildFilterCountParam(dto);
+                param.put("keyword", safeKeyword(dto.getKeyword()));
+                Integer cnt = sqlSession.selectOne(NAMESPACE + "animeCountFilterStory", param);
                 AnimeDTO data = new AnimeDTO();
                 data.setAnimeCount(cnt == null ? 0 : cnt);
                 return data;
@@ -168,6 +229,10 @@ public class MybatisAnimeDAO {
         }
     }
 
+    // ========================================
+    // 헬퍼 메서드
+    // ========================================
+
     private String safeKeyword(String keyword) {
         return keyword == null ? "" : keyword.trim();
     }
@@ -180,5 +245,48 @@ public class MybatisAnimeDAO {
     private int calcRows(AnimeDTO dto) {
         int rows = dto.getEndRow() - dto.getStartRow() + 1;
         return Math.max(rows, 0);
+    }
+
+    /**
+     * 필터 파라미터 구성 (LIST용 - offset, rows 포함)
+     */
+    private Map<String, Object> buildFilterParam(AnimeDTO dto, int offset, int rows) {
+        Map<String, Object> param = new HashMap<>();
+        param.put("sort", dto.getSort());
+        param.put("offset", offset);
+        param.put("rows", rows);
+
+        // year 필터
+        if (dto.getYear() != null) {
+            param.put("year", dto.getYear());
+        }
+
+        // quarter 필터 (숫자 1~4를 "1분기" 형식으로 변환)
+        if (dto.getQuarter() != null) {
+            String quarterStr = dto.getQuarter() + "분기";
+            param.put("quarter", quarterStr);
+        }
+
+        return param;
+    }
+
+    /**
+     * 필터 파라미터 구성 (COUNT용 - offset, rows 제외)
+     */
+    private Map<String, Object> buildFilterCountParam(AnimeDTO dto) {
+        Map<String, Object> param = new HashMap<>();
+
+        // year 필터
+        if (dto.getYear() != null) {
+            param.put("year", dto.getYear());
+        }
+
+        // quarter 필터 (숫자 1~4를 "1분기" 형식으로 변환)
+        if (dto.getQuarter() != null) {
+            String quarterStr = dto.getQuarter() + "분기";
+            param.put("quarter", quarterStr);
+        }
+
+        return param;
     }
 }

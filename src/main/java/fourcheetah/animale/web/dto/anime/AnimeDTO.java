@@ -31,6 +31,12 @@ public class AnimeDTO {
     private String page;
 
     // =========================
+    // [필터 검색용 추가 필드]
+    // =========================
+    private Integer year;               // 년도 필터 (1980~2026)
+    private Integer quarter;            // 분기 필터 (1~4, 프론트에서 숫자로 전송)
+
+    // =========================
     // [요청 바인딩 전용] (DB 저장 X)
     // =========================
     // 수정 시 "기존 썸네일 유지" 용 hidden input 값
@@ -152,6 +158,23 @@ public class AnimeDTO {
     }
 
     // =========================
+    // 필터 검색용 getter/setter
+    // =========================
+    public Integer getYear() {
+        return year;
+    }
+    public void setYear(Integer year) {
+        this.year = year;
+    }
+
+    public Integer getQuarter() {
+        return quarter;
+    }
+    public void setQuarter(Integer quarter) {
+        this.quarter = quarter;
+    }
+
+    // =========================
     // 요청 바인딩 전용 getter/setter
     // =========================
     public String getExistingThumbUrl() {
@@ -185,6 +208,8 @@ public class AnimeDTO {
                 + ", endRow=" + endRow
                 + ", condition=" + condition
                 + ", keyword=" + keyword
+                + ", year=" + year
+                + ", quarter=" + quarter
                 + ", existingThumbUrl=" + existingThumbUrl
                 + ", thumbFile=" + (thumbFile != null && !thumbFile.isEmpty())
                 + "]";

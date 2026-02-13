@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import fourcheetah.animale.web.dto.member.MemberDTO;
+import fourcheetah.animale.web.dto.member.MemberWarningDTO;
 import fourcheetah.animale.web.service.member.MemberService;
 
 @Service
@@ -24,6 +25,24 @@ public class MemberServiceImpl implements MemberService {
         return memberDAO.selectOne(dto);
     }
 
+    /**
+     * ⭐ 활성 제재 조회 (로그인 시 사용)
+     */
+    @Override
+    public MemberWarningDTO selectActiveWarning(int memberId) {
+        System.out.println("[MemberService] selectActiveWarning 호출 - memberId=" + memberId);
+        
+        MemberWarningDTO warning = memberDAO.selectActiveWarning(memberId);
+        
+        if (warning != null) {
+            System.out.println("[MemberService] 제재 정보 발견 - warningType=" + warning.getWarningType());
+        } else {
+            System.out.println("[MemberService] 제재 없음 (정상 회원)");
+        }
+        
+        return warning;
+    }
+
     @Override
     public boolean insert(MemberDTO dto) {
         return memberDAO.insert(dto);
@@ -38,10 +57,4 @@ public class MemberServiceImpl implements MemberService {
     public boolean delete(MemberDTO dto) {
         return memberDAO.delete(dto);
     }
-
-	@Override
-	public MemberDTO selectActiveWarning(int memberId) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }
