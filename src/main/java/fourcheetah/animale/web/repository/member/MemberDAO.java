@@ -204,9 +204,14 @@ public class MemberDAO {
             "WHERE member_id = ? AND member_cash >= ?";
 
     private static final String UPDATE_MEMBER_INFORM =
-            "UPDATE MEMBER " +
-            "SET member_nickname = ?, member_profile_image = ?, member_cash = member_cash - ? " +
-            "WHERE member_id = ? AND member_cash >= ?";
+    	    "UPDATE MEMBER " +
+    	    "SET " +
+    	    "  member_nickname = COALESCE(?, member_nickname), " +
+    	    "  member_profile_image = COALESCE(?, member_profile_image), " +
+    	    "  member_profile_color = COALESCE(?, member_profile_color), " +
+    	    "  member_nickname_color = COALESCE(?, member_nickname_color), " +
+    	    "  member_cash = member_cash - ? " +
+    	    "WHERE member_id = ? AND member_cash >= ?";
 
     // 관리자: 캐시 차감/조건 없이 업데이트만
     private static final String ADMIN_UPDATE_NICKNAME =
@@ -220,9 +225,13 @@ public class MemberDAO {
             "WHERE member_id = ?";
 
     private static final String ADMIN_UPDATE_MEMBER_INFORM =
-            "UPDATE MEMBER " +
-            "SET member_nickname = ?, member_profile_image = ? " +
-            "WHERE member_id = ?";
+    	    "UPDATE MEMBER " +
+    	    "SET " +
+    	    "  member_nickname = COALESCE(?, member_nickname), " +
+    	    "  member_profile_image = COALESCE(?, member_profile_image), " +
+    	    "  member_profile_color = COALESCE(?, member_profile_color), " +
+    	    "  member_nickname_color = COALESCE(?, member_nickname_color) " +
+    	    "WHERE member_id = ?";
 
     private static final String UPDATE_PASSWORD =
             "UPDATE MEMBER " +
@@ -245,9 +254,9 @@ public class MemberDAO {
             "WHERE member_id = ?";
 
     private static final String UPDATE_COLORS =
-            "UPDATE MEMBER " +
-            "SET member_profile_color = ?, member_nickname_color = ? " +
-            "WHERE member_id = ?";
+    	    "UPDATE MEMBER " +
+    	    "SET member_profile_color = ?, member_nickname_color = ?, member_cash = member_cash - ? " +
+    	    "WHERE member_id = ? AND member_cash >= ?";
 
     private static final String UPDATE_NOTICE_SET =
             "UPDATE MEMBER " +
@@ -265,7 +274,7 @@ public class MemberDAO {
     /* =========================
        RowMapper
        ========================= */
-
+    
     private static final RowMapper<MemberDTO> ID_ONLY_ROW_MAPPER = (rs, rowNum) -> {
         MemberDTO data = new MemberDTO();
         data.setMemberId(rs.getInt("MEMBER_ID"));
@@ -424,42 +433,8 @@ public class MemberDAO {
         }
     }
     
-    /**
-     * 현재 활성화된 제재 정보 조회 (추가!)
-     */
-    
-    
-    /*
-    public MemberDTO selectActiveWarning(int memberId) {
-        try {
-            return jdbcTemplate.queryForObject(
-                SELECT_ACTIVE_WARNING,
-                (rs, rowNum) -> {
-                    MemberDTO dto = new MemberDTO();
-                    dto.setMemberStatus(rs.getString("warning_type"));
-                    dto.setSanctionReason(rs.getString("reason"));
-                    
-                    Timestamp endTime = rs.getTimestamp("end_at");
-                    if (endTime == null) {
-                        dto.setSanctionEndAt("영구 정지");
-                    } else {
-                        dto.setSanctionEndAt(endTime.toString());
-                    }
-                    
-                    return dto;
-                },
-                memberId
-            );
-        } catch (EmptyResultDataAccessException e) {
-            return null; // 제재 없음
-        } catch (Exception e) {
-            System.out.println("[MemberDAO] 제재 조회 에러: " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
-    }
+ 
 
-*/
     /* =========================
        INSERT
        ========================= */
@@ -521,12 +496,14 @@ public class MemberDAO {
             if ("MEMBER_INFORM_UPDATE".equals(condition)) {
                 int pay = dto.getMemberPayCash();
                 int result = jdbcTemplate.update(
-                        UPDATE_MEMBER_INFORM,
-                        dto.getMemberNickname(),
-                        dto.getMemberProfileImage(),
-                        pay,
-                        dto.getMemberId(),
-                        pay
+                    UPDATE_MEMBER_INFORM,
+                    dto.getMemberNickname(),
+                    dto.getMemberProfileImage(),
+                    dto.getMemberProfileColor(),
+                    dto.getMemberNicknameColor(),
+                    pay,
+                    dto.getMemberId(),
+                    pay
                 );
                 return result > 0;
             }
@@ -552,14 +529,15 @@ public class MemberDAO {
 
             if ("ADMIN_MEMBER_INFORM_UPDATE".equals(condition)) {
                 int result = jdbcTemplate.update(
-                        ADMIN_UPDATE_MEMBER_INFORM,
-                        dto.getMemberNickname(),
-                        dto.getMemberProfileImage(),
-                        dto.getMemberId()
+                    ADMIN_UPDATE_MEMBER_INFORM,
+                    dto.getMemberNickname(),
+                    dto.getMemberProfileImage(),
+                    dto.getMemberProfileColor(),
+                    dto.getMemberNicknameColor(),
+                    dto.getMemberId()
                 );
                 return result > 0;
             }
-
             if ("MEMBER_PASSWORD_UPDATE".equals(condition)) {
                 int result = jdbcTemplate.update(
                         UPDATE_PASSWORD,
