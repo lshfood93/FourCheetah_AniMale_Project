@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import fourcheetah.animale.web.aop.DeletedBoardCheck;
+import fourcheetah.animale.web.aop.SanctionCheck;
 import fourcheetah.animale.web.dto.board.BoardDTO;
 import fourcheetah.animale.web.dto.board.BoardLikeDTO;
 import fourcheetah.animale.web.dto.board.ReplyDTO;
@@ -37,6 +39,8 @@ public class BoardApiController {
 
     // =========================================================
     // 1) 좋아요 토글 API (POST /BoardLikeToggle)
+    @SanctionCheck
+    @DeletedBoardCheck
     @PostMapping("/BoardLikeToggle")
     public ResponseEntity<Map<String, Object>> toggleLike(
             BoardLikeDTO boardLikeDTO,  // boardId 바인딩

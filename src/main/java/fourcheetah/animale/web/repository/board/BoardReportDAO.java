@@ -178,7 +178,7 @@ public class BoardReportDAO {
         }
 
         int pageSize = dto.getPageSize();
-        int currentPage = dto.getCurrentPage();
+        int currentPage = dto.getPage();
         int offset = (currentPage - 1) * pageSize;
 
         String sortOrder = dto.getSortOrder();
