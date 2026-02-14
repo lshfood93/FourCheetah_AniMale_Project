@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Anime">
+
+  <select id="mainAnimeList" resultType="animeDTO">
+    SELECT
+      anime_id            AS animeId,
+      anime_title         AS animeTitle,
+      anime_year          AS animeYear,
+      anime_quarter       AS animeQuarter,
+      anime_thumbnail_url AS animeThumbnailUrl
+    FROM ANIME
+    ORDER BY anime_id DESC
+    LIMIT 12
+  </select>
+
+  <select id="animeListRecent" resultType="animeDTO">
+    SELECT
+      anime_id            AS animeId,
+      anime_title         AS animeTitle,
+      anime_year          AS animeYear,
+      anime_quarter       AS animeQuarter,
+      anime_thumbnail_url AS animeThumbnailUrl
+    FROM ANIME
+    ORDER BY anime_id DESC
+  </select>
+
+  <select id="animeListTitle" resultType="animeDTO">
+    SELECT
+      anime_id            AS animeId,
+      anime_title         AS animeTitle,
+      anime_year          AS animeYear,
+      anime_quarter       AS animeQuarter,
+      anime_thumbnail_url AS animeThumbnailUrl
+    FROM ANIME
+    ORDER BY anime_title ASC, anime_id DESC
+  </select>
+
+  <select id="animeListYear" resultType="animeDTO">
+    SELECT
+      anime_id            AS animeId,
+      anime_title         AS animeTitle,
+      anime_year          AS animeYear,
+      anime_quarter       AS animeQuarter,
+      anime_thumbnail_url AS animeThumbnailUrl
+    FROM ANIME
+    ORDER BY (anime_year IS NULL) ASC, anime_year DESC, anime_id DESC
+  </select>
+
+  <!-- 제목 검색: dto로 받고 keyword 사용 -->
+  <select id="animeSearchTitle" parameterType="animeDTO" resultType="animeDTO">
+    SELECT
+      anime_id            AS animeId,
+      anime_title         AS animeTitle,
+      anime_year          AS animeYear,
+      anime_quarter       AS animeQuarter,
+      anime_thumbnail_url AS animeThumbnailUrl
+    FROM ANIME
+    WHERE anime_title LIKE CONCAT('%', #{keyword}, '%')
+    ORDER BY anime_id DESC
+  </select>
+
+  <!-- 내용 검색: dto로 받고 keyword 사용 -->
+  <select id="animeSearchStory" parameterType="animeDTO" resultType="animeDTO">
+    SELECT
+      anime_id            AS animeId,
+      anime_title         AS animeTitle,
+      anime_year          AS animeYear,
+      anime_quarter       AS animeQuarter,
+      anime_thumbnail_url AS animeThumbnailUrl
+    FROM ANIME
+    WHERE INSTR(anime_story, #{keyword}) > 0
+    ORDER BY anime_id DESC
+  </select>
+
+  <select id="animeListPageBase" parameterType="map" resultType="animeDTO">
+    SELECT
+      anime_id            AS animeId,
+      anime_title         AS animeTitle,
+      anime_year          AS animeYear,
+      anime_quarter       AS animeQuarter,
+      anime_thumbnail_url AS animeThumbnailUrl
+    FROM ANIME
+    <choose>
+      <when test="sort == 'OLDEST'">
+        ORDER BY anime_id ASC
+      </when>
+      <when test="sort == 'TITLE'">
+        ORDER BY anime_title ASC, anime_id DESC
+      </when>
+      <otherwise>
+        ORDER BY anime_id DESC
+      </otherwise>
+    </choose>
+    LIMIT #{offset}, #{rows}
+  </select>
+
+  <!-- 페이징 + 제목: map keyword에 raw 문자열만 넣고, SQL에서 CONCAT 처리 -->
+  <select id="animeListPageTitle" parameterType="map" resultType="animeDTO">
+    SELECT
+      anime_id            AS animeId,
+      anime_title         AS animeTitle,
+      anime_year          AS animeYear,
+      anime_quarter       AS animeQuarter,
+      anime_thumbnail_url AS animeThumbnailUrl
+    FROM ANIME
+    WHERE anime_title LIKE CONCAT('%', #{keyword}, '%')
+    <choose>
+      <when test="sort == 'OLDEST'">
+        ORDER BY anime_id ASC
+      </when>
+      <when test="sort == 'TITLE'">
+        ORDER BY anime_title ASC, anime_id DESC
+      </when>
+      <otherwise>
+        ORDER BY anime_id DESC
+      </otherwise>
+    </choose>
+    LIMIT #{offset}, #{rows}
+  </select>
+
+  <select id="animeListPageStory" parameterType="map" resultType="animeDTO">
+    SELECT
+      anime_id            AS animeId,
+      anime_title         AS animeTitle,
+      anime_year          AS animeYear,
+      anime_quarter       AS animeQuarter,
+      anime_thumbnail_url AS animeThumbnailUrl
+    FROM ANIME
+    WHERE INSTR(anime_story, #{keyword}) > 0
+    <choose>
+      <when test="sort == 'OLDEST'">
+        ORDER BY anime_id ASC
+      </when>
+      <when test="sort == 'TITLE'">
+        ORDER BY anime_title ASC, anime_id DESC
+      </when>
+      <otherwise>
+        ORDER BY anime_id DESC
+      </otherwise>
+    </choose>
+    LIMIT #{offset}, #{rows}
+  </select>
+
+  <!-- 상세: dto로 받고 animeId 사용 -->
+  <select id="animeDetail" parameterType="animeDTO" resultType="animeDTO">
+    SELECT
+      anime_id            AS animeId,
+      anime_title         AS animeTitle,
+      original_title      AS originalTitle,
+      anime_year          AS animeYear,
+      anime_quarter       AS animeQuarter,
+      anime_story         AS animeStory,
+      anime_thumbnail_url AS animeThumbnailUrl,
+      anime_genres        AS animeGenres,
+      anime_tags          AS animeTags
+    FROM ANIME
+    WHERE anime_id = #{animeId}
+  </select>
+
+  <!-- COUNT -->
+  <select id="animeCountRecent" resultType="int">
+    SELECT COUNT(*) FROM ANIME
+  </select>
+
+  <!-- 제목 COUNT: dto로 받고 CONCAT 처리 -->
+  <select id="animeCountTitle" parameterType="animeDTO" resultType="int">
+    SELECT COUNT(*)
+    FROM ANIME
+    WHERE anime_title LIKE CONCAT('%', #{keyword}, '%')
+  </select>
+
+  <!-- 내용 COUNT -->
+  <select id="animeCountStory" parameterType="animeDTO" resultType="int">
+    SELECT COUNT(*)
+    FROM ANIME
+    WHERE INSTR(anime_story, #{keyword}) > 0
+  </select>
+
+  <insert id="insertAnime" parameterType="animeDTO">
+    INSERT INTO ANIME
+      (anime_title, original_title, anime_year, anime_quarter, anime_story,
+       anime_thumbnail_url, anime_genres, anime_tags)
+    VALUES
+      (#{animeTitle}, #{originalTitle}, #{animeYear}, #{animeQuarter}, #{animeStory},
+       #{animeThumbnailUrl}, #{animeGenres}, #{animeTags})
+  </insert>
+
+  <update id="updateAnime" parameterType="animeDTO">
+    UPDATE ANIME
+    SET
+      anime_title = #{animeTitle},
+      original_title = #{originalTitle},
+      anime_year = #{animeYear},
+      anime_quarter = #{animeQuarter},
+      anime_story = #{animeStory},
+      anime_thumbnail_url = #{animeThumbnailUrl},
+      anime_genres = #{animeGenres},
+      anime_tags = #{animeTags}
+    WHERE anime_id = #{animeId}
+  </update>
+
+  <!-- 삭제: dto로 받고 animeId 사용 -->
+  <delete id="deleteAnime" parameterType="animeDTO">
+    DELETE FROM ANIME WHERE anime_id = #{animeId}
+  </delete>
+
+</mapper>
