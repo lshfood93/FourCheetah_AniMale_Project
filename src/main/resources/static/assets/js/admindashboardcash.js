@@ -7,7 +7,8 @@
                최대치로 축소(=전체 12개월 뷰)로 돌아오면 다시 표시
    - y축: 100만 단위 통일
    ========================================================= */
-
+/* (async function () { */
+	//페치 사용을 위해 함수 async 필요
 (function () {
   // =========================================================
   // 더미 데이터(ViewModel)
@@ -28,6 +29,101 @@
       2900000, 3300000, 2800000, 3600000, 4100000, 4500000
     ]
   };
+  /*
+  // =========================================================
+  // 0) 대시보드 데이터 로딩(하드코딩 vm 제거)
+  // - JSP에서 window.APP_CTX / window.DASH_INIT 를 세팅했음
+  // - DASH_INIT은 '화면에 날짜를 보여주는 용도'가 아니라
+  //   API 호출 시 year/month 파라미터 기본값으로 쓰는 용도임
+  // =========================================================
+
+  // 서버 API 호출
+  const fetchDashboard = async (year, month) => {
+    const qs = new URLSearchParams({ year: String(year), month: String(month) });
+    const url = window.APP_CTX + '/api/admin/cash/admindashboard?' + qs.toString();
+
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error('dashboard api failed: ' + res.status);
+
+    return res.json();
+  };
+
+  // 서버 응답 → 기존 vm 형태로 정리(프론트 렌더링이 기대하는 필드로 맞춤)
+  const toVM = (api, fallbackYear, fallbackMonth) => {
+    const year = Number(api.year ?? fallbackYear);
+    const month = Number(api.month ?? fallbackMonth);
+
+    const thisMonthTotal = Number(api.thisMonthTotal ?? 0);
+    const lastMonthTotal = Number(api.lastMonthTotal ?? 0);
+
+    // 서버가 momPercent를 내려주면 사용, 없으면 null (기존 JS가 null 처리 분기 가지고 있음)
+    const momPercent = (api.momPercent == null) ? null : Number(api.momPercent);
+
+    // providerList: [{provider:'KAKAOPAY', cashAmount:합계}, ...]
+    let kakaoTotal = 0;
+    let tossTotal = 0;
+    const providerList = Array.isArray(api.providerList) ? api.providerList : [];
+
+    for (const row of providerList) {
+      const p = String(row.provider ?? '');
+      const total = Number(row.cashAmount ?? 0);
+      if (p === 'KAKAOPAY') kakaoTotal = total;
+      if (p === 'TOSSPAY') tossTotal = total;
+    }
+
+    // 퍼센트(이번달 총액 기준). 둘만 쓰니까 합 100 맞추는 보정 포함
+    let kakaoPercent = 0;
+    let tossPercent = 0;
+    if (thisMonthTotal > 0) {
+      kakaoPercent = Math.round((kakaoTotal * 100) / thisMonthTotal);
+      tossPercent = Math.max(0, 100 - kakaoPercent);
+    }
+
+    // yearMonthly: [{month:1, cashAmount:합계}, ...] → 12칸 배열로 변환
+    const monthlyTotals = new Array(12).fill(0);
+    const yearMonthly = Array.isArray(api.yearMonthly) ? api.yearMonthly : [];
+    for (const row of yearMonthly) {
+      const m = Number(row.month);
+      const total = Number(row.cashAmount ?? 0);
+      if (m >= 1 && m <= 12) monthlyTotals[m - 1] = total;
+    }
+
+    return {
+      year,
+      month,
+      thisMonthTotal,
+      lastMonthTotal,
+      momPercent,
+      kakaoPercent,
+      tossPercent,
+      monthlyTotals
+    };
+  };
+
+  // 초기 파라미터: 브라우저 기준으로 잡아둔 값(JSP에서 넣어둔 DASH_INIT 사용)
+  const init = window.DASH_INIT || {};
+  const initYear = Number(init.year || new Date().getFullYear());
+  const initMonth = Number(init.month || (new Date().getMonth() + 1));
+
+  // 최초 1회 로딩
+  let vm;
+  try {
+    const api = await fetchDashboard(initYear, initMonth);
+    vm = toVM(api, initYear, initMonth);
+  } catch (e) {
+    console.error(e);
+    // 서버가 아직 준비 안 된 상황에서도 화면이 완전히 죽지 않게 최소 fallback
+    vm = {
+      year: initYear,
+      month: initMonth,
+      thisMonthTotal: 0,
+      lastMonthTotal: 0,
+      momPercent: null,
+      kakaoPercent: 0,
+      tossPercent: 0,
+      monthlyTotals: new Array(12).fill(0)
+    };
+  }*/
 
   // =========================================================
   // 공통 유틸
@@ -274,14 +370,24 @@
   // =========================================================
   const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 
-  const monthlyByYear = {
+  const monthlyByYear = { //더미데이터, 필요없어지면 아래 주석 코딩으로 변경
     2026: normalizeMonthly(vm.monthlyTotals),
     2025: normalizeMonthly([
       900000, 1400000, 2000000, 1700000, 2300000, 2600000,
       2400000, 2800000, 2200000, 3000000, 3400000, 3800000
     ])
-  };
-
+  };  
+  /*
+  // =========================================================
+  // 연도별 월간합계 캐시
+  // - 기존 컨셉 유지: 연도 선택 시 '월별 그래프만 교체'
+  // - 선택한 연도의 데이터가 없으면 그때 API로 받아와서 캐시에 저장
+  // =========================================================
+  const monthlyByYear = {};
+  // 최초 로딩한 연도의 월별합계를 캐시에 저장
+  monthlyByYear[vm.year] = normalizeMonthly(vm.monthlyTotals);
+  */
+ 
   let monthlyAreaChart = null;
   let lastMM = null;
 
@@ -714,11 +820,32 @@
   const yearSelect = document.getElementById('yearSelect');
   if (yearSelect) {
     yearSelect.value = String(initYear);
-    yearSelect.addEventListener('change', function () {
+    yearSelect.addEventListener('change', function () {//더미데이터 기준, 추후 아래 주석코딩으로 변경
       const year = Number(this.value);
       renderMonthly(year);
       vm.year = year;
     });
+	/*
+	yearSelect.addEventListener('change', async function () {
+	  const year = Number(this.value);
+
+	  // 캐시에 없으면: 해당 연도 데이터만 API로 받아서 월별 그래프용으로 저장
+	  if (!monthlyByYear[year]) {
+	    try {
+	      // month는 기존 컨셉대로 '초기 month'를 유지 (월별 그래프만 교체)
+	      const apiY = await fetchDashboard(year, vm.month);
+	      const vmY = toVM(apiY, year, vm.month);
+
+	      monthlyByYear[year] = normalizeMonthly(vmY.monthlyTotals);
+	    } catch (e) {
+	      console.error(e);
+	      // API 실패 시 0으로라도 그래프는 그리게 처리
+	      monthlyByYear[year] = new Array(12).fill(0);
+	    }
+	  }
+	  renderMonthly(year);
+	  vm.year = year;	  
+	});*/
   }
 
   let _resizeTimer = null;

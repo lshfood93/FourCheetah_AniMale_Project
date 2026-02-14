@@ -1,0 +1,540 @@
+/* =========================================================
+   AniMale - anime-list.css (FINAL)
+   Scope: .anime-list-page + Anime List 상단 검색 UI
+========================================================= */
+
+.anime-list-page .product__page__title{ margin-bottom: 30px; }
+
+/* 우측 컨트롤 전체 */
+.anime-list-page .anime-controls{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+/* =========================
+   1줄: 검색 + 버튼들
+========================= */
+.anime-list-page .anime-search-wrapper{
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.anime-list-page .anime-search-box{
+  flex: 0 1 340px;
+  max-width: 360px;
+  min-width: 260px;
+}
+
+.anime-list-page .anime-search-box input{ min-width: 120px; }
+
+@media (max-width: 575px){
+  .anime-list-page .anime-controls{ align-items: flex-start; }
+  .anime-list-page .anime-search-wrapper{
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .anime-list-page .anime-search-box{
+    flex: 1 1 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+/* =========================
+   2줄: 연도/분기 + 정렬
+   - 적용 ↔ 정렬 간격도 같이 줄이기
+========================= */
+.anime-list-page .anime-sub-controls{
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;            /* 기존 18 -> 8 */
+  padding-top: 6px;
+}
+
+/* 라벨 */
+.anime-list-page .product__page__filter p{
+  margin: 0 4px 0 0;
+  white-space: nowrap;
+  font-size: 11px;
+  color: rgba(255,255,255,0.60);
+}
+
+/* 필터 상태 텍스트 */
+.anime-list-page .filter-status{
+  margin-left: 6px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.55);
+  white-space: nowrap;
+}
+
+/* status 비어있으면 자리 제거(공백 방지) */
+.anime-list-page #filterStatus:empty{ display: none; }
+
+/* =========================
+   커스텀 드롭다운(am-dd)
+   - 빈공간 원인: 버튼 폭이 큼
+   - 해결: 버튼 폭 줄이고, 컨텐츠 가운데 정렬
+========================= */
+.anime-list-page .am-dd{
+  position: relative;
+  display: inline-flex;
+}
+
+.anime-list-page .am-dd__btn{
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(11, 12, 42, 0.72);
+  color: rgba(255,255,255,0.92);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;   /* 텍스트가 왼쪽에 바짝 붙는 느낌 제거 */
+  gap: 14px;
+
+  cursor: pointer;
+  outline: none;
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  box-sizing: border-box;
+}
+
+/* 텍스트 */
+.anime-list-page .am-dd__text{
+  display: inline-block;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  font-size: 12px;          /* ✅ 전체연도/전체분기/최신등록순 모두 동일 톤 */
+  font-weight: 800;
+}
+
+/* 화살표 */
+.anime-list-page .am-dd__chev{
+  flex: 0 0 auto;
+  font-size: 12px;
+  line-height: 1;
+  color: rgba(255,255,255,0.80);
+  transition: transform .15s ease;
+}
+
+/* hover/focus 빨강 */
+.anime-list-page .am-dd__btn:hover{
+  border-color: rgba(229,54,55,0.55);
+}
+.anime-list-page .am-dd__btn:focus{
+  border-color: rgba(229,54,55,0.65);
+  box-shadow: 0 0 0 3px rgba(229,54,55,0.14);
+}
+
+/* 열림 상태 */
+.anime-list-page .am-dd.is-open .am-dd__btn{
+  border-color: rgba(229,54,55,0.65);
+  box-shadow: 0 0 0 3px rgba(229,54,55,0.12);
+}
+.anime-list-page .am-dd.is-open .am-dd__chev{
+  transform: rotate(180deg);
+}
+
+/* 리스트 */
+.anime-list-page .am-dd__list{
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+
+  min-width: 100%;
+  padding: 6px 0;
+  margin: 0;
+
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(11, 12, 42, 0.94);
+
+  box-shadow: 0 18px 45px rgba(0,0,0,0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  z-index: 500;
+
+  display: none;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.anime-list-page .am-dd.is-open .am-dd__list{ display: block; }
+
+/* 항목 */
+.anime-list-page .am-dd__list li{
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.92);
+  cursor: pointer;
+  transition: background .12s ease, color .12s ease;
+}
+
+.anime-list-page .am-dd__list li:hover{
+  background: rgba(229,54,55,0.22);
+  color: #fff;
+}
+.anime-list-page .am-dd__list li.active{
+  background: rgba(229,54,55,0.95);
+  color: #fff;
+}
+
+/* ✅ 여기서 "빈공간"을 실제로 줄임: 버튼 폭 자체를 줄임 */
+.anime-list-page .am-dd--year .am-dd__btn{ width: 112px; }
+.anime-list-page .am-dd--quarter .am-dd__btn{ width: 112px; }
+.anime-list-page .am-dd--sort .am-dd__btn{ width: 136px; } /* '제목 가나다순'까지 잘 안 잘리는 선 */
+
+/* =========================
+   적용 버튼
+========================= */
+.anime-list-page .anime-filter-apply{
+  height: 34px;
+  min-width: 52px;
+  padding: 0 12px;
+  border-radius: 999px;
+
+  border: 1px solid rgba(229,54,55,0.55);
+  background: rgba(229,54,55,0.16);
+  color: #fff;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+
+  transition: background .15s ease, transform .15s ease, border-color .15s ease;
+}
+
+.anime-list-page .anime-filter-apply:hover{
+  background: rgba(229,54,55,0.28);
+  border-color: rgba(229,54,55,0.75);
+  transform: translateY(-1px);
+}
+
+/* =========================
+   카드(애니 리스트 전용)
+========================= */
+@keyframes animeCardIn{
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.anime-list-page .anime-card{ animation: animeCardIn .35s ease both; }
+
+.anime-list-page a.anime-link,
+.anime-list-page a.anime-link:hover,
+.anime-list-page a.anime-link:focus,
+.anime-list-page a.anime-link:visited{
+  color: inherit;
+  text-decoration: none;
+  outline: none;
+}
+
+.anime-list-page .product__item{
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 12px 12px 16px;
+  margin-bottom: 28px;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+
+.anime-list-page .product__item:hover{
+  transform: translateY(-4px);
+  border-color: rgba(229, 54, 55, 0.35);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+}
+
+.anime-list-page .product__item__pic{
+  height: 330px;
+  border-radius: 12px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #070720;
+}
+
+.anime-list-page .product__item__text{
+  padding-top: 14px;
+  text-align: left;
+}
+
+.anime-list-page .anime-meta{
+  display: flex;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.anime-list-page .anime-meta li{
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.anime-list-page .anime-meta li.badge-q{
+  color: #ffffff;
+  background: rgba(229, 54, 55, 0.16);
+  border-color: rgba(229, 54, 55, 0.35);
+}
+
+.anime-list-page .anime-title{
+  margin: 0;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.35;
+  letter-spacing: 0.2px;
+  opacity: 0.95;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.anime-list-page .product__item:hover .anime-title{
+  color: #e53637;
+  opacity: 1;
+}
+
+/* =========================
+   페이지네이션
+========================= */
+.anime-list-page .pagination-wrapper{
+  position: relative;
+  z-index: 50;
+}
+
+.anime-list-page .anime-pagination{
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 40px;
+  position: relative;
+  z-index: 51;
+}
+
+.anime-list-page .anime-pagination li{ list-style: none; }
+
+.anime-list-page .anime-pagination li a{
+  min-width: 38px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.40);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  text-decoration: none;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.anime-list-page .anime-pagination li a:hover{
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.anime-list-page .anime-pagination li.active a{
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.80);
+  font-weight: 900;
+}
+
+/* =========================================================
+   Anime List 상단 검색 UI (pill)
+========================================================= */
+:root{
+  --am-search-h: 42px;
+  --am-search-radius: 25px;
+  --am-search-font: 13px;
+
+  --am-search-bg: rgba(11, 12, 42, 0.72);
+  --am-search-border: rgba(255,255,255,0.14);
+  --am-accent: #e53637;
+}
+
+.anime-search-box{
+  height: var(--am-search-h);
+  padding: 0 10px;
+  border-radius: var(--am-search-radius);
+  background: var(--am-search-bg);
+  border: 1px solid var(--am-search-border);
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  box-sizing: border-box;
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.anime-search-box:focus-within{
+  border-color: rgba(229,54,55,0.55);
+  box-shadow: 0 0 0 3px rgba(229,54,55,0.14);
+}
+
+/* select(제목/줄거리) - 화살표 옆 공간 줄이기 */
+.anime-search-box select{
+  min-width: 80px;
+  height: calc(var(--am-search-h) - 2px);
+  background: transparent;
+  border: none;
+  outline: none;
+
+  color: rgba(255,255,255,0.85);
+  font-size: var(--am-search-font);
+  font-weight: 700;
+  cursor: pointer;
+
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  padding: 0 20px 0 10px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255,255,255,0.70) 50%),
+    linear-gradient(135deg, rgba(255,255,255,0.70) 50%, transparent 50%);
+  background-position:
+    calc(100% - 10px) 50%,
+    calc(100% - 5px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+
+  box-sizing: border-box;
+  color-scheme: dark;
+}
+
+.anime-search-box select option{
+  background: #0b0c2a;
+  color: #fff;
+  font-size: var(--am-search-font);
+}
+
+.anime-search-box input{
+  height: calc(var(--am-search-h) - 2px);
+  background: transparent;
+  border: none;
+  outline: none;
+
+  color: rgba(255,255,255,0.9);
+  font-size: var(--am-search-font);
+  flex: 1;
+  min-width: 160px;
+  box-sizing: border-box;
+}
+
+.anime-search-box input::placeholder{
+  color: rgba(255,255,255,0.55);
+}
+
+.anime-search-box button{
+  width: calc(var(--am-search-h) - 12px);
+  height: calc(var(--am-search-h) - 12px);
+  border-radius: 50%;
+  padding: 0;
+
+  border: 1px solid var(--am-accent);
+  background: transparent;
+  color: var(--am-accent);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+
+  transition: background .15s ease, color .15s ease, transform .15s ease;
+}
+
+.anime-search-box button:hover{
+  background: var(--am-accent);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.anime-search-box button i{ font-size: 13px; }
+
+.anime-reset-btn,
+.anime-admin-btn{
+  height: var(--am-search-h);
+  padding: 0 14px;
+  border-radius: var(--am-search-radius);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+
+  box-sizing: border-box;
+  text-decoration: none;
+
+  transition: background .15s ease, border-color .15s ease, transform .15s ease, color .15s ease;
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.anime-reset-btn{
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.16);
+  color: rgba(255,255,255,0.82);
+  cursor: pointer;
+}
+
+.anime-reset-btn:hover{
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.24);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.anime-admin-btn{
+  background: rgba(229,54,55,0.92);
+  border: 1px solid rgba(229,54,55,0.60);
+  color: #ffffff !important;
+}
+
+.anime-admin-btn:hover{
+  background: rgba(229,54,55,1);
+  border-color: rgba(229,54,55,0.80);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 575px){
+  .anime-search-box input{ min-width: 120px; }
+}
