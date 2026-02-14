@@ -183,7 +183,8 @@
 									<select id="yearSelect" class="form-select">
 										<option value="2026" selected>2026년</option>
 										<option value="2025">2025년</option>
-									</select>
+									</select>									
+	<%--<select id="yearSelect" class="form-select"></select> 데이터 추가 시 이렇게 빈 셀렉트로 변경--%>
 								</div>
 
 								<%-- 여기 오타 수정: method-legend 쓰면 안 됨. 기존처럼 mt-3 유지 --%>
@@ -211,8 +212,18 @@
 	<script src="${ctx}/assets/libs/simplebar/dist/simplebar.js"></script>
 
 	<script>
-		window.APP_CTX = '${ctx}';
-	</script>
+ 	 // 프로젝트 컨텍스트 경로
+ 	 // 예) /animale
+ 	 window.APP_CTX = '${ctx}';
+
+     // 대시보드 초기 조회 기준값(연/월)
+ 	 // 지금은 서버에서 값을 안 내려주니까, 브라우저 기준 날짜로 잡는다.
+ 	 // (서버 작업 완료되면 여기 값을 EL로 바꿔서 서버 기준으로 통일하면 됨)
+	 window.DASH_INIT = {
+      year: new Date().getFullYear(),
+      month: new Date().getMonth() + 1 // JS의 month는 0~11이라 +1 필요
+ 	 };
+</script>
 
 	<script src="${ctx}/assets/js/admindashboardcash.js"></script>
 
