@@ -27,12 +27,22 @@ public class ReplyDAO {
 
 	private static final String SELECT_REPLY_LIST_RECENT = "SELECT " + "  r.reply_id, " + "  r.board_id, "
 			+ "  r.member_id, " + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' "
-			+ "       ELSE m.member_nickname END AS writer_nickname, " + "  r.reply_content " + "FROM reply r "
+			+ "       ELSE m.member_nickname END AS writer_nickname, "
+			+ "  m.member_profile_image AS writer_profile_image, "  // ⬅️ 프로필 이미지 추가
+			+ "  r.reply_content, "
+			+ "  r.reply_created_at, "  // ⬅️ 작성일 추가
+			+ "  r.reply_updated_at "    // ⬅️ 수정일 추가
+			+ "FROM reply r "
 			+ "JOIN member m ON m.member_id = r.member_id " + "WHERE r.board_id = ? " + "ORDER BY r.reply_id DESC";
 
 	private static final String SELECT_REPLY_LIST_OLDEST = "SELECT " + "  r.reply_id, " + "  r.board_id, "
 			+ "  r.member_id, " + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' "
-			+ "       ELSE m.member_nickname END AS writer_nickname, " + "  r.reply_content " + "FROM reply r "
+			+ "       ELSE m.member_nickname END AS writer_nickname, "
+			+ "  m.member_profile_image AS writer_profile_image, "  // ⬅️ 프로필 이미지 추가
+			+ "  r.reply_content, "
+			+ "  r.reply_created_at, "  // ⬅️ 작성일 추가
+			+ "  r.reply_updated_at "    // ⬅️ 수정일 추가
+			+ "FROM reply r "
 			+ "JOIN member m ON m.member_id = r.member_id " + "WHERE r.board_id = ? " + "ORDER BY r.reply_id ASC";
 
 	// =========================================================
@@ -82,7 +92,10 @@ public class ReplyDAO {
 			data.setBoardId(rs.getInt("board_id"));
 			data.setMemberId(rs.getInt("member_id"));
 			data.setWriterNickname(rs.getString("writer_nickname"));
+			data.setWriterProfileImage(rs.getString("writer_profile_image"));  // ⬅️ 프로필 이미지
 			data.setReplyContent(rs.getString("reply_content"));
+			data.setReplyCreatedAt(rs.getString("reply_created_at"));  // ⬅️ 작성일
+			data.setReplyUpdatedAt(rs.getString("reply_updated_at"));  // ⬅️ 수정일
 			return data;
 		}, dto.getBoardId());
 
