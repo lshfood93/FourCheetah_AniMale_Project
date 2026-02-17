@@ -3,6 +3,7 @@ package fourcheetah.animale.web.repository.member;
 import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
+import java.util.ArrayList; 
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -442,6 +443,61 @@ public class MemberDAO {
 				int result = jdbcTemplate.update(UPDATE_NOTICE_CLEAR, dto.getMemberId());
 				return result > 0;
 			}
+			if ("UPDATE_DECORATION".equals(condition)) {
+			    StringBuilder sql = new StringBuilder("UPDATE member SET ");
+			    List<Object> params = new ArrayList<>();
+			    
+			    boolean hasNickname = dto.getMemberNicknameColor() != null;
+			    boolean hasBorder = dto.getMemberProfileColor() != null;
+			    
+			    if (hasNickname) {
+			        sql.append("member_nickname_color = ?");
+			        params.add(dto.getMemberNicknameColor());
+			    }
+			    
+			    if (hasBorder) {
+			        if (hasNickname) sql.append(", ");
+			        sql.append("member_profile_color = ?");
+			        params.add(dto.getMemberProfileColor());
+			    }
+			    
+			    if (hasNickname || hasBorder) {
+			        sql.append(", member_cash = member_cash - ?");
+			        params.add(dto.getMemberPayCash());
+			    }
+			    
+			    sql.append(" WHERE member_id = ?");
+			    params.add(dto.getMemberId());
+			    
+			    int rows = jdbcTemplate.update(sql.toString(), params.toArray());
+			    return rows > 0;
+			}
+
+			if ("UPDATE_ADMIN_DECORATION".equals(condition)) {
+			    StringBuilder sql = new StringBuilder("UPDATE member SET ");
+			    List<Object> params = new ArrayList<>();
+			    
+			    boolean hasNickname = dto.getMemberNicknameColor() != null;
+			    boolean hasBorder = dto.getMemberProfileColor() != null;
+			    
+			    if (hasNickname) {
+			        sql.append("member_nickname_color = ?");
+			        params.add(dto.getMemberNicknameColor());
+			    }
+			    
+			    if (hasBorder) {
+			        if (hasNickname) sql.append(", ");
+			        sql.append("member_profile_color = ?");
+			        params.add(dto.getMemberProfileColor());
+			    }
+			    
+			    sql.append(" WHERE member_id = ?");
+			    params.add(dto.getMemberId());
+			    
+			    int rows = jdbcTemplate.update(sql.toString(), params.toArray());
+			    return rows > 0;
+			}
+			
 
 			return false;
 

@@ -461,4 +461,241 @@ public class MemberApiController {
         res.put("message", "인증이 완료되었습니다.");
         return res;
     }
+
+    /**
+     * 프로필 꾸미기 적용 (일반 회원용)
+     */
+    @PostMapping("/member/apply-decoration")
+    public Map<String, Object> applyDecoration(
+            @RequestParam(required = false) String nicknameColor,
+            @RequestParam(required = false) String borderColor,
+            HttpSession session
+    ) {
+        Map<String, Object> result = new HashMap<>();
+
+        // 1. 로그인 체크
+        Integer memberId = (Integer) session.getAttribute("memberId");
+        if (memberId == null) {
+            result.put("code", "NOT_LOGGED_IN");
+            result.put("message", "로그인이 필요합니다.");
+            return result;
+        }
+
+        System.out.println("[꾸미기 적용] memberId=" + memberId);
+        System.out.println("[꾸미기 적용] nicknameColor=" + nicknameColor);
+        System.out.println("[꾸미기 적용] borderColor=" + borderColor);
+
+        // 2. 현재 회원 정보 조회
+        MemberDTO dto = new MemberDTO();
+        dto.setCondition("MEMBER_MYPAGE");
+        dto.setMemberId(memberId);
+
+        MemberDTO currentMember = memberService.selectOne(dto);
+        if (currentMember == null) {
+            result.put("code", "MEMBER_NOT_FOUND");
+            result.put("message", "회원 정보를 찾을 수 없습니다.");
+            return result;
+        }
+
+        String currentNicknameColor = currentMember.getMemberNicknameColor();
+        String currentBorderColor = currentMember.getMemberProfileColor();
+        int currentCash = currentMember.getMemberCash();
+
+        System.out.println("[꾸미기 적용] 현재 닉네임 색상: " + currentNicknameColor);
+        System.out.println("[꾸미기 적용] 현재 테두리 색상: " + currentBorderColor);
+        System.out.println("[꾸미기 적용] 현재 캐시: " + currentCash);
+
+        // 3. 변경 여부 및 금액 계산
+        boolean nicknameChanged = false;
+        boolean borderChanged = false;
+        int totalPrice = 0;
+
+        if (nicknameColor != null && !nicknameColor.equals(currentNicknameColor)) {
+            nicknameChanged = true;
+            totalPrice += 200;
+        }
+
+        if (borderColor != null && !borderColor.equals(currentBorderColor)) {
+            borderChanged = true;
+            totalPrice += 200;
+        }
+
+        System.out.println("[꾸미기 적용] 닉네임 변경: " + nicknameChanged);
+        System.out.println("[꾸미기 적용] 테두리 변경: " + borderChanged);
+        System.out.println("[꾸미기 적용] 총 금액: " + totalPrice);
+
+        // 4. 변경사항 없음
+        if (totalPrice == 0) {
+            result.put("code", "NO_CHANGE");
+            result.put("message", "변경사항이 없습니다.");
+            return result;
+        }
+
+        // 5. 캐시 부족
+        if (currentCash < totalPrice) {
+            result.put("code", "NOT_ENOUGH_CASH");
+            result.put("message", "캐시가 부족합니다.");
+            result.put("required", totalPrice);
+            result.put("current", currentCash);
+            result.put("shortage", totalPrice - currentCash);
+            return result;
+        }
+
+        // 6. DB 업데이트
+        try {
+            MemberDTO updateDto = new MemberDTO();
+            updateDto.setMemberId(memberId);
+            updateDto.setCondition("UPDATE_DECORATION");
+            
+            if (nicknameChanged) {
+                updateDto.setMemberNicknameColor(nicknameColor);
+            }
+            if (borderChanged) {
+                updateDto.setMemberProfileColor(borderColor);
+            }
+            
+            updateDto.setMemberPayCash(totalPrice);
+
+            boolean updated = memberService.update(updateDto);
+
+            if (!updated) {
+                result.put("code", "UPDATE_FAILED");
+                result.put("message", "업데이트에 실패했습니다.");
+                return result;
+            }
+
+            // 7. 세션 업데이트
+            if (nicknameChanged) {
+                session.setAttribute("memberNicknameColor", nicknameColor);
+            }
+            if (borderChanged) {
+                session.setAttribute("memberProfileColor", borderColor);
+            }
+
+            // 8. 성공 응답
+            result.put("code", "SUCCESS");
+            result.put("message", "프로필 수정이 완료되었습니다!");
+            result.put("totalPrice", totalPrice);
+            result.put("newCashBalance", currentCash - totalPrice);
+            result.put("appliedNicknameColor", nicknameChanged ? nicknameColor : currentNicknameColor);
+            result.put("appliedBorderColor", borderChanged ? borderColor : currentBorderColor);
+
+            System.out.println("[꾸미기 적용] 성공!");
+            return result;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            result.put("code", "ERROR");
+            result.put("message", "처리 중 오류가 발생했습니다.");
+            return result;
+        }
+    }
+
+    /**
+     * 관리자 프로필 꾸미기 (무료)
+     */
+    @PostMapping("/admin/apply-decoration")
+    public Map<String, Object> applyAdminDecoration(
+            @RequestParam(required = false) String nicknameRainbow,
+            @RequestParam(required = false) String borderRainbow,
+            HttpSession session
+    ) {
+        Map<String, Object> result = new HashMap<>();
+
+        Integer memberId = (Integer) session.getAttribute("memberId");
+        String memberRole = (String) session.getAttribute("memberRole");
+
+        if (memberId == null) {
+            result.put("code", "NOT_LOGGED_IN");
+            result.put("message", "로그인이 필요합니다.");
+            return result;
+        }
+
+        if (!"ADMIN".equals(memberRole)) {
+            result.put("code", "NO_PERMISSION");
+            result.put("message", "관리자만 사용할 수 있습니다.");
+            return result;
+        }
+
+        System.out.println("[관리자 꾸미기] memberId=" + memberId);
+        System.out.println("[관리자 꾸미기] nicknameRainbow=" + nicknameRainbow);
+        System.out.println("[관리자 꾸미기] borderRainbow=" + borderRainbow);
+
+        MemberDTO dto = new MemberDTO();
+        dto.setCondition("MEMBER_ADMINPAGE");
+        dto.setMemberId(memberId);
+
+        MemberDTO currentMember = memberService.selectOne(dto);
+        if (currentMember == null) {
+            result.put("code", "MEMBER_NOT_FOUND");
+            result.put("message", "회원 정보를 찾을 수 없습니다.");
+            return result;
+        }
+
+        String newNicknameColor = null;
+        String newBorderColor = null;
+        boolean hasChange = false;
+
+        if (nicknameRainbow != null) {
+            newNicknameColor = "ON".equals(nicknameRainbow) ? "RAINBOW" : null;
+            if (!String.valueOf(newNicknameColor).equals(String.valueOf(currentMember.getMemberNicknameColor()))) {
+                hasChange = true;
+            }
+        }
+
+        if (borderRainbow != null) {
+            newBorderColor = "ON".equals(borderRainbow) ? "RAINBOW" : null;
+            if (!String.valueOf(newBorderColor).equals(String.valueOf(currentMember.getMemberProfileColor()))) {
+                hasChange = true;
+            }
+        }
+
+        if (!hasChange) {
+            result.put("code", "NO_CHANGE");
+            result.put("message", "변경사항이 없습니다.");
+            return result;
+        }
+
+        try {
+            MemberDTO updateDto = new MemberDTO();
+            updateDto.setMemberId(memberId);
+            updateDto.setCondition("UPDATE_ADMIN_DECORATION");
+            
+            if (nicknameRainbow != null) {
+                updateDto.setMemberNicknameColor(newNicknameColor);
+            }
+            if (borderRainbow != null) {
+                updateDto.setMemberProfileColor(newBorderColor);
+            }
+
+            boolean updated = memberService.update(updateDto);
+
+            if (!updated) {
+                result.put("code", "UPDATE_FAILED");
+                result.put("message", "업데이트에 실패했습니다.");
+                return result;
+            }
+
+            if (nicknameRainbow != null) {
+                session.setAttribute("memberNicknameColor", newNicknameColor);
+            }
+            if (borderRainbow != null) {
+                session.setAttribute("memberProfileColor", newBorderColor);
+            }
+
+            result.put("code", "SUCCESS");
+            result.put("message", "프로필 수정이 완료되었습니다!");
+            result.put("appliedNicknameColor", newNicknameColor);
+            result.put("appliedBorderColor", newBorderColor);
+
+            System.out.println("[관리자 꾸미기] 성공!");
+            return result;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            result.put("code", "ERROR");
+            result.put("message", "처리 중 오류가 발생했습니다.");
+            return result;
+        }
+    }
 }

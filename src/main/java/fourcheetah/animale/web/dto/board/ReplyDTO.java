@@ -10,7 +10,8 @@ public class ReplyDTO {
 	
 	// condition / join / view
 	private String condition;
-	private String writerNickname; // JOIN MEMBER + 탈퇴회원 
+	private String writerNickname; // JOIN MEMBER + 탈퇴회원
+	private String writerProfileImage; // JOIN MEMBER 프로필 이미지 추가!
 	
 	public int getReplyId() {
 		return replyId;
@@ -60,10 +61,17 @@ public class ReplyDTO {
 	public void setWriterNickname(String writerNickname) {
 		this.writerNickname = writerNickname;
 	}
+	public String getWriterProfileImage() {
+		return writerProfileImage;
+	}
+	public void setWriterProfileImage(String writerProfileImage) {
+		this.writerProfileImage = writerProfileImage;
+	}
 	@Override
 	public String toString() {
 		return "ReplyDTO [replyId=" + replyId + ", boardId=" + boardId + ", memberId=" + memberId + ", replyContent="
 				+ replyContent + ", replyCreatedAt=" + replyCreatedAt + ", replyUpdatedAt=" + replyUpdatedAt
-				+ ", condition=" + condition + ", writerNickname=" + writerNickname + "]";
+				+ ", condition=" + condition + ", writerNickname=" + writerNickname 
+				+ ", writerProfileImage=" + writerProfileImage + "]";
 	}
 }
