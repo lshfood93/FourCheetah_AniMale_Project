@@ -1,7 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 
-<%-- ✅ jsp:include로 들어가는 header.jsp에서도 ctx를 쓰게 하려면 request scope 필수 --%>
+<%-- jsp:include로 들어가는 header.jsp에서도 ctx를 쓰게 하려면 request scope 필수 --%>
 <c:set var="ctx" value="${pageContext.request.contextPath}" scope="request" />
 
 <c:set var="isLogin" value="${not empty sessionScope.memberId}" />
@@ -14,13 +14,23 @@
 <c:set var="createdAt" value="${boardData.boardCreatedAt}" />
 <c:set var="updatedAt" value="${boardData.boardUpdatedAt}" />
 
-<%-- ✅ 게시글 관리 권한(작성자 or ADMIN) --%>
+
+<%-- 게시글 관리 권한(작성자 or ADMIN) --%>
 <c:set var="canManagePost"
        value="${isLogin and (sessionMemberId eq boardData.memberId or sessionMemberRole eq 'ADMIN')}" />
 
-<%-- ✅ 신고 버튼 노출: 로그인 + (자기 글은 보통 신고 막음) 필요하면 조건 바꿔 --%>
+<%-- 신고 여부: C/M이 isReported 내려주면 그걸 쓰고, 없으면 false로 폴백 --%>
+<c:set var="isReportedFlag"
+       value="${isReported == true or isReported == 1 or isReported == '1'}" />
+       
+<%-- 신고 버튼 노출: 로그인 + 이미 신고한 게시글 여부 판단 --%>
 <c:set var="canReportPost"
-       value="${isLogin and (sessionMemberId ne boardData.memberId)}" />
+       value="${isLogin and (sessionMemberId ne boardData.memberId) and (not isReportedFlag)}" />
+   
+<%-- 게시글 수정 여부: C/M이 isReported 내려주면 그걸 쓰고, 없으면 false로 폴백 --%>       
+<c:set var="boardIsEdited"
+       value="${boardData.isEdited == 1 or boardData.isEdited == true or boardData.isEdited == '1'
+               or (not empty updatedAt and updatedAt ne createdAt)}" />
 
 <!doctype html>
 <html lang="ko">
@@ -31,7 +41,7 @@
 
   <link rel="icon" type="image/png" href="${ctx}/favicon.png" />
 
-  <%-- ✅ 공용 페이지들과 동일한 CSS 세트 (헤더/푸터 깨짐 방지) --%>
+  <%-- 공용 페이지들과 동일한 CSS 세트 (헤더/푸터 깨짐 방지) --%>
   <link rel="stylesheet" href="${ctx}/css/bootstrap.min.css" type="text/css" />
   <link rel="stylesheet" href="${ctx}/css/font-awesome.min.css" type="text/css" />
   <link rel="stylesheet" href="${ctx}/css/elegant-icons.css" type="text/css" />
@@ -39,7 +49,7 @@
   <link rel="stylesheet" href="${ctx}/css/slicknav.min.css" type="text/css" />
   <link rel="stylesheet" href="${ctx}/css/style.css" />
 
-  <%-- ✅ 보드디테일 전용 CSS --%>
+  <%-- 보드디테일 전용 CSS --%>
   <link rel="stylesheet" href="${ctx}/css/boarddetail.css" />
 </head>
 
@@ -65,7 +75,7 @@
               작성일 <c:out value="${createdAt}" />
             </span>
 
-            <c:if test="${not empty updatedAt and updatedAt ne createdAt}">
+            <c:if test="${boardIsEdited and not empty updatedAt}">
               <span class="meta-chip">
                 <i class="fa fa-pencil"></i>
                 수정일 <c:out value="${updatedAt}" />
@@ -93,7 +103,7 @@
           </div>
         </div>
 
-        <%-- ✅ 액션 영역: 목록/수정/삭제/신고 + 좋아요 --%>
+        <%-- 액션 영역: 목록/수정/삭제/신고 + 좋아요 --%>
         <div class="bd-actions">
           <div class="left">
             <%-- BoardController의 /boardList는 boardCategory 필수라서 붙여줌 --%>
@@ -118,7 +128,7 @@
             </c:if>
 
             <c:if test="${canReportPost}">
-              <button id="btnReport" type="button" class="bd-btn">
+              <button id="btnReport" type="button" class="bd-btn danger">
                 신고
               </button>
             </c:if>
@@ -183,7 +193,7 @@
           </c:when>
           <c:otherwise>
             <form id="replyForm" class="reply-form">
-              <%-- ✅ 핵심: 댓글 작성 시 boardId가 빠지면 DTO 바인딩이 0이 되어 AOP에서 "존재하지 않는 게시글" 터질 수 있음 --%>
+              <%-- 핵심: 댓글 작성 시 boardId가 빠지면 DTO 바인딩이 0이 되어 AOP에서 "존재하지 않는 게시글" 터질 수 있음 --%>
               <input type="hidden" id="replyBoardId" name="boardId" value="${boardData.boardId}" />
               <textarea id="replyContent" name="replyContent" placeholder="댓글을 입력하세요"></textarea>
               <button type="submit" class="bd-btn accent">등록</button>
@@ -199,7 +209,7 @@
     </div>
   </section>
 
-  <%-- ✅ 신고 모달(부트스트랩) --%>
+  <%-- 신고 모달(부트스트랩) --%>
   <div class="modal fade" id="reportModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
@@ -239,6 +249,7 @@
     const isLogin = ${isLogin};
     const sessionMemberId = '${sessionMemberId}';
     const sessionMemberRole = '${sessionMemberRole}';
+    const isReported = ${isReportedFlag};
   </script>
 
   <%-- 공용 JS 세트 --%>

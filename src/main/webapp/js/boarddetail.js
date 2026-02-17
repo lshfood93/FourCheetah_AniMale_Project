@@ -1,24 +1,18 @@
 (function () {
   'use strict';
 
-  // JSP에서 내려온 전역: ctx, boardId, isLogin, sessionMemberId, sessionMemberRole
+  // JSP에서 내려온 전역: ctx, boardId, isLogin, sessionMemberId, sessionMemberRole, isReported
 
   // =========================================================
-  // API 매핑 (Spring Boot Controller 기준)
+  // API 매핑
   // =========================================================
   var API = {
-    // 좋아요(네 프로젝트 기존 유지)
-    likeToggle: ctx + '/BoardLikeToggle',     // POST  {boardId}
-    likeMembers: ctx + '/LikeMemberList',     // GET   ?boardId=
-    replyOrder: ctx + '/ReplyListOrder',      // GET   ?boardId=&condition=
-
-    // ✅ 댓글(네 ReplyController 기준: /replyWrite, /replyEdit, /replyDelete)
+    likeToggle: ctx + '/BoardLikeToggle',     // POST {boardId}
+    likeMembers: ctx + '/LikeMemberList',     // GET  ?boardId=
+    replyOrder: ctx + '/ReplyListOrder',      // GET  ?boardId=&condition=
     replyWrite: ctx + '/replyWrite',          // POST {boardId, replyContent}
     replyEdit: ctx + '/replyEdit',            // POST {boardId, replyId, replyContent}
     replyDelete: ctx + '/replyDelete',        // POST {boardId, replyId}
-
-    // ✅ 게시글 신고(프론트만 먼저 추가)
-    // 백엔드 컨트롤러는 /boardReport 로 맞춰서 만들면 됨
     boardReport: ctx + '/boardReport'         // POST {boardId, reportReason, reportContent}
   };
 
@@ -40,7 +34,6 @@
   var CONDITION_RECENT = 'REPLY_LIST_RECENT';
   var CONDITION_OLDEST = 'REPLY_LIST_OLDEST';
 
-  // 신고
   var $btnReport = document.getElementById('btnReport');
   var $btnReportSubmit = document.getElementById('btnReportSubmit');
   var $reportReason = document.getElementById('reportReason');
@@ -61,6 +54,29 @@
 
   function nl2br(v) {
     return escapeHtml(v).replace(/\r?\n/g, '<br/>');
+  }
+
+  function sanitizeColor(v) {
+    if (!v) return '';
+    var s = String(v).trim();
+
+    if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(s)) return s;
+    if (/^(rgb|rgba|hsl|hsla)\(\s*[-0-9.,% ]+\s*\)$/.test(s)) return s;
+    if (/^[a-zA-Z]+$/.test(s)) return s;
+
+    return '';
+  }
+
+  function normalizeUrl(src) {
+    if (!src) return '';
+    var s = String(src).trim();
+    if (!s) return '';
+
+    if (/^(https?:|data:|blob:)/i.test(s)) return s;
+    if (ctx && s.indexOf(ctx + '/') === 0) return s;
+
+    if (s.charAt(0) === '/') return ctx + s;
+    return ctx + '/' + s;
   }
 
   function setReplyCount(n) {
@@ -89,6 +105,10 @@
     if (!isLogin) return false;
     if (String(r.memberId) === String(sessionMemberId)) return true;
     return String(sessionMemberRole) === 'ADMIN';
+  }
+
+  function isTruthy(v) {
+    return v === true || v === 1 || v === '1' || v === 'true';
   }
 
   // =========================================================
@@ -184,8 +204,6 @@
       var url = API.likeMembers + '?boardId=' + encodeURIComponent(boardId);
       httpGetJson(url)
         .then(function (json) {
-          // 응답 포맷이 프로젝트마다 다를 수 있으니 여기만 맞춰주면 됨
-          // 예: { ok:true, users:[{memberNickname:"..."}] }
           if (!json || json.ok === false) {
             alert((json && json.message) ? json.message : '목록을 불러오지 못했습니다.');
             return;
@@ -217,25 +235,45 @@
     return (v === CONDITION_OLDEST) ? CONDITION_OLDEST : CONDITION_RECENT;
   }
 
-  // ✅ 댓글 작성자 프로필 노출(서버가 내려주면 표시)
-  // r.writerNickname, r.writerProfileImg, r.writerDecoClass 같은 필드가 있으면 바로 반영됨
   function renderReplyItem(r) {
     var nickname = (r.writerNickname && String(r.writerNickname).trim() !== '')
       ? r.writerNickname
       : r.memberId;
 
-    var profileImg = r.writerProfileImg;     // 서버에서 내려주면 사용
-    var decoClass = r.writerDecoClass || ''; // 서버에서 내려주면 사용(꾸미기 효과)
+    // 서버 필드명 폴백들
+    var profileImgRaw = r.writerProfileImage || r.writerProfileImg || r.writer_profile_image || '';
+    var profileImg = normalizeUrl(profileImgRaw);
+
+    var nickColor = sanitizeColor(r.writerNicknameColor || r.writer_nickname_color || '');
+    var profileColor = sanitizeColor(r.writerProfileColor || r.writer_profile_color || '');
+    var decoClass = (r.writerDecoClass || r.writer_deco_class || '').trim();
+
+    // 아바타 스타일
+    var avatarFx = '';
+    if (profileColor) {
+      avatarFx =
+        'border-color:' + escapeHtml(profileColor) + ';' +
+        'box-shadow:0 0 0 3px rgba(255,255,255,0.06), 0 0 18px ' + escapeHtml(profileColor) + ';';
+    }
 
     var avatarHtml = '';
     if (profileImg) {
-      avatarHtml = "<img class='reply-avatar' src='" + escapeHtml(profileImg) + "' alt='profile'/>";
+      avatarHtml =
+        "<img class='reply-avatar' style='" + avatarFx + "' src='" + escapeHtml(profileImg) + "' alt='profile'/>";
     } else {
-      // fallback: 첫 글자
       var initial = String(nickname).charAt(0);
-      avatarHtml = "<div class='reply-avatar' style='width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.12);font-weight:900;'>" + escapeHtml(initial) + "</div>";
+      var bg = profileColor ? ('background:' + escapeHtml(profileColor) + ';') : 'background:rgba(255,255,255,0.10);';
+      avatarHtml =
+        "<div class='reply-avatar' style='width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;" +
+        bg + "border:1px solid rgba(255,255,255,0.12);font-weight:900;" + avatarFx + "'>" +
+        escapeHtml(initial) +
+        "</div>";
     }
 
+    // 닉네임 스타일
+    var nickStyleAttr = nickColor ? (" style='color:" + escapeHtml(nickColor) + ";'") : '';
+
+    // 액션
     var actions = '';
     if (canEditReply(r) || canDeleteReply(r)) {
       actions += "<div class='reply-actions'>";
@@ -244,16 +282,24 @@
       actions += "</div>";
     }
 
+    // 수정 여부
+    var edited = isTruthy(r.isEdited);
+    if (typeof r.isEdited === 'undefined' || r.isEdited === null) {
+      edited = !!(r.replyUpdatedAt && r.replyCreatedAt && String(r.replyUpdatedAt) !== String(r.replyCreatedAt));
+    }
+
     return (
       "<div class='reply-item' data-reply-id='" + escapeHtml(r.replyId) + "'>" +
         "<div class='reply-top'>" +
           "<div style='display:flex; gap:10px; align-items:flex-start;'>" +
             avatarHtml +
             "<div>" +
-              "<div class='reply-writer " + escapeHtml(decoClass) + "'>" + escapeHtml(nickname) + "</div>" +
+              "<div class='reply-writer " + escapeHtml(decoClass) + "'" + nickStyleAttr + ">" +
+                escapeHtml(nickname) +
+              "</div>" +
               "<div class='reply-times'>" +
                 "<span class='t-created'>작성 " + escapeHtml(r.replyCreatedAt || '') + "</span>" +
-                (r.replyUpdatedAt && String(r.replyUpdatedAt) !== String(r.replyCreatedAt)
+                (edited && r.replyUpdatedAt
                   ? "<span class='t-updated'>수정 " + escapeHtml(r.replyUpdatedAt) + "</span>"
                   : "") +
               "</div>" +
@@ -296,8 +342,6 @@
 
   function writeReply(content) {
     var fd = new FormData();
-
-    // ✅ hidden input이 있으면 그걸 우선 사용(바인딩 실패 방지)
     var bid = ($replyBoardId && $replyBoardId.value) ? $replyBoardId.value : boardId;
 
     fd.append('boardId', bid);
@@ -308,7 +352,7 @@
 
   function editReply(replyId, content) {
     var fd = new FormData();
-    fd.append('boardId', boardId);     // ✅ ReplyController가 boardId 검증함 (필수)
+    fd.append('boardId', boardId);
     fd.append('replyId', replyId);
     fd.append('replyContent', content);
     return httpPostForm(API.replyEdit, fd);
@@ -316,13 +360,12 @@
 
   function deleteReply(replyId) {
     var fd = new FormData();
-    fd.append('boardId', boardId);     // ✅ ReplyController가 boardId 검증함 (필수)
+    fd.append('boardId', boardId);
     fd.append('replyId', replyId);
     return httpPostForm(API.replyDelete, fd);
   }
 
   function bindReplyEvents() {
-    // nice-select 적용(있으면)
     if ($replySort && window.jQuery && window.jQuery.fn && window.jQuery.fn.niceSelect) {
       try { window.jQuery($replySort).niceSelect(); } catch (e) {}
     }
@@ -357,7 +400,6 @@
           })
           .catch(function (err) {
             console.error(err);
-            // 여기서 500이 나면, 서버(ReplyController/AOP)에서 boardId=0으로 본 케이스가 많음
             alert('댓글 등록에 실패했습니다.');
           });
       });
@@ -411,12 +453,17 @@
   function initReport() {
     if (!$btnReport || !$btnReportSubmit) return;
 
+    // JSP에서 버튼 자체를 안 그리지만, 혹시 남는 케이스 대비
+    if (typeof isReported !== 'undefined' && isReported) {
+      $btnReport.style.display = 'none';
+      return;
+    }
+
     $btnReport.addEventListener('click', function () {
       if (!isLogin) {
         alert('로그인 후 이용 가능합니다.');
         return;
       }
-      // bootstrap modal
       if (window.jQuery) window.jQuery('#reportModal').modal('show');
     });
 
@@ -430,11 +477,13 @@
       fd.append('reportContent', content);
 
       httpPostForm(API.boardReport, fd)
-        .then(function (res) {
-          // 서버가 JSON을 주면 여기서 res.json()으로 바꿔도 됨
+        .then(function () {
           alert('신고가 접수되었습니다.');
           if ($reportContent) $reportContent.value = '';
           if (window.jQuery) window.jQuery('#reportModal').modal('hide');
+
+          // 즉시 UX 반영
+          if ($btnReport) $btnReport.style.display = 'none';
         })
         .catch(function (e) {
           console.error(e);
