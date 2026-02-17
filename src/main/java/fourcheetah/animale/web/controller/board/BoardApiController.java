@@ -209,7 +209,6 @@ public class BoardApiController {
         if (replyList == null) replyList = Collections.emptyList();
 
         System.out.println("[댓글 정렬 API 로그] 댓글 조회 완료 count=" + replyList.size());
-    
 
         // 4) 성공: JSON 배열(List) 반환
         return ResponseEntity.ok(replyList);

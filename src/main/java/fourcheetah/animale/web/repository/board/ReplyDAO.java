@@ -25,39 +25,15 @@ public class ReplyDAO {
 	// =========================================================
 	// SELECT (최신순 / 오래된순)
 
-	private static final String SELECT_REPLY_LIST_RECENT =
-	        "SELECT " +
-	        "  r.reply_id, " +
-	        "  r.board_id, " +
-	        "  r.member_id, " +
-	        "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' " +
-	        "       ELSE m.member_nickname END AS writer_nickname, " +
-	        "  r.reply_content, " +
-	        "  r.reply_created_at, " +
-	        "  m.member_profile_image  AS writer_profile_image, " +
-	        "  m.member_profile_color  AS writer_profile_color, " +
-	        "  m.member_nickname_color AS writer_nickname_color " +
-	        "FROM reply r " +
-	        "JOIN member m ON m.member_id = r.member_id " +
-	        "WHERE r.board_id = ? " +
-	        "ORDER BY r.reply_id DESC";
+	private static final String SELECT_REPLY_LIST_RECENT = "SELECT " + "  r.reply_id, " + "  r.board_id, "
+			+ "  r.member_id, " + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' "
+			+ "       ELSE m.member_nickname END AS writer_nickname, " + "  r.reply_content " + "FROM reply r "
+			+ "JOIN member m ON m.member_id = r.member_id " + "WHERE r.board_id = ? " + "ORDER BY r.reply_id DESC";
 
-	private static final String SELECT_REPLY_LIST_OLDEST =
-	        "SELECT " +
-	        "  r.reply_id, " +
-	        "  r.board_id, " +
-	        "  r.member_id, " +
-	        "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' " +
-	        "       ELSE m.member_nickname END AS writer_nickname, " +
-	        "  r.reply_content, " +
-	        "  r.reply_created_at, " +
-	        "  m.member_profile_image  AS writer_profile_image, " +
-	        "  m.member_profile_color  AS writer_profile_color, " +
-	        "  m.member_nickname_color AS writer_nickname_color " +
-	        "FROM reply r " +
-	        "JOIN member m ON m.member_id = r.member_id " +
-	        "WHERE r.board_id = ? " +
-	        "ORDER BY r.reply_id ASC";
+	private static final String SELECT_REPLY_LIST_OLDEST = "SELECT " + "  r.reply_id, " + "  r.board_id, "
+			+ "  r.member_id, " + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' "
+			+ "       ELSE m.member_nickname END AS writer_nickname, " + "  r.reply_content " + "FROM reply r "
+			+ "JOIN member m ON m.member_id = r.member_id " + "WHERE r.board_id = ? " + "ORDER BY r.reply_id ASC";
 
 	// =========================================================
 	// INSERT (MySQL AUTO_INCREMENT 전제)
@@ -107,14 +83,8 @@ public class ReplyDAO {
 			data.setMemberId(rs.getInt("member_id"));
 			data.setWriterNickname(rs.getString("writer_nickname"));
 			data.setReplyContent(rs.getString("reply_content"));
-			data.setReplyCreatedAt(rs.getString("reply_created_at"));
-			data.setWriterProfileImage(rs.getString("writer_profile_image"));
-			data.setWriterProfileColor(rs.getString("writer_profile_color"));
-			data.setWriterNicknameColor(rs.getString("writer_nickname_color"));
 			return data;
 		}, dto.getBoardId());
-		
-		
 
 		return new ArrayList<>(list);
 	}
