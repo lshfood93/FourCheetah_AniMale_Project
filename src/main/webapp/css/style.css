@@ -1563,3 +1563,22 @@ label.mypage-btn:hover{
   }
 }
 
+/* =========================
+   Sticky Footer (공용)
+   - 콘텐츠가 짧아도 footer를 화면 하단에 붙임
+========================= */
+html, body {
+  height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ogani/템플릿 보통 footer 클래스가 .footer 임 */
+.footer {
+  margin-top: auto;
+}
+
