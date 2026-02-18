@@ -26,14 +26,23 @@
 <jsp:include page="/WEB-INF/common/header.jsp" />
 
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
-<c:set var="boardCategory" value="${requestScope.category}" />
+
+<!-- 컨트롤러가 boardCategory로 내려준다고 가정 -->
+<c:set var="boardCategory" value="${requestScope.boardCategory}" />
 <c:set var="condition" value="${requestScope.condition}" />
 <c:set var="keyword" value="${requestScope.keyword}" />
 
 <c:set var="keywordTrim" value="${fn:trim(keyword)}" />
 
-<c:set var="categoryKey" value="${fn:toUpperCase(fn:trim(category))}" />
+<c:set var="categoryKey" value="${fn:toUpperCase(fn:trim(boardCategory))}" />
 <c:set var="categoryTitle" value="${categoryKey} 게시판" />
+
+<!-- 로그인/제재 상태 -->
+<c:set var="isLogin" value="${not empty sessionScope.memberId}" />
+<c:set var="memberStatus" value="${sessionScope.memberStatus}" />
+
+<c:set var="isAnimeBoard" value="${categoryKey eq 'ANIME'}" />
+<c:set var="isSuspended" value="${memberStatus eq 'SUSPEND_7D' or memberStatus eq 'SUSPEND_30D'}" />
 
 <c:choose>
   <c:when test="${categoryKey eq 'ANIME'}"><c:set var="categoryTitle" value="애니 게시판" /></c:when>
@@ -61,7 +70,7 @@
       <div class="board-actions">
 
         <form id="boardSearchForm" action="${ctx}/boardList" method="get" class="board-search-box">
-          <input type="hidden" name="category" value="${categoryKey}" />
+          <input type="hidden" name="boardCategory" value="${categoryKey}" />
 
           <select name="condition" id="boardSearchType">
             <option value="BOARD_SEARCH_TITLE"  <c:if test="${selectedCondition eq 'BOARD_SEARCH_TITLE'}">selected</c:if>>제목</option>
@@ -81,7 +90,22 @@
           <a href="${ctx}/boardList?boardCategory=${categoryKey}" class="board-reset-btn">전체보기</a>
         </c:if>
 
-        <a href="${ctx}/boardWritePage?type=BOARD&boardCategory=${categoryKey}" class="board-write-btn">글 작성</a>
+		<c:choose>
+		  <c:when test="${isLogin and isAnimeBoard and isSuspended}">
+		    <a href="${ctx}/boardWritePage?type=BOARD&boardCategory=${categoryKey}"
+		       class="board-write-btn is-disabled"
+		       aria-disabled="true">
+		      글 작성
+		    </a>
+		  </c:when>
+		
+		  <c:otherwise>
+		    <a href="${ctx}/boardWritePage?type=BOARD&boardCategory=${categoryKey}"
+		       class="board-write-btn">
+		      글 작성
+		    </a>
+		  </c:otherwise>
+		</c:choose>
 
       </div>
     </div>
