@@ -1,52 +1,76 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 
-<%-- 
-  chatai.jsp (공통 위젯 조각)
-  - 목적: 모든 페이지에서 사용할 '우하단 채팅 위젯'의 HTML 구조(마크업)만 담당
-  - CSS/JS 로드는 여기서 하지 않고, header.jsp 같은 공통 로더에서 1번만 로드(중복 방지)
-  - JS는 아래 id들을 기준으로 요소를 찾아서 '열기/닫기 토글'을 수행한다
-    - chataiFab / chataiPanel / chataiClose / chataiForm / chataiInput / chataiMessages
---%>
-
-<%-- 프로젝트 컨텍스트 경로 (예: /animale) --%>
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
 
-<%-- 
-  [ROOT] 위젯 전체 컨테이너
-  - id="chatai" : JS가 위젯 전체를 제어할 때 사용하는 루트
-  - class="chatai" : CSS 범위(scope)를 잡기 위한 클래스
-  - data-endpoint : 나중에 AI 서버 API 붙일 때 JS가 읽어서 요청을 보내는 주소
-    예) POST ${ctx}/api/chat  로 { message: "..." } 보내고 { reply: "..." } 받는 형태
-  - aria-live="polite" : 보조기기(스크린리더)에게 메시지 변경을 부드럽게 알림(선택)
---%>
+<%-- =========================================================
+     ChatAI Widget (JSP 최종본 + 상세 주석판)
+     ---------------------------------------------------------
+     1) 포함 위치
+       - 보통 공용 footer.jsp / layout 하단에 include해서
+         모든 페이지에서 FAB(우하단 버튼) + 패널이 뜨게 만든다.
+
+     2) JS 연동 포인트
+       - 루트 id="chatai" 가 존재해야 /js/chatai.js가 동작한다.
+       - data-endpoint는 JS가 API base로 사용한다.
+         예) ${ctx}/api/ai-chat
+         실제 호출:
+           GET  ${ctx}/api/ai-chat/open
+           POST ${ctx}/api/ai-chat/message
+           POST ${ctx}/api/ai-chat/reset
+           POST ${ctx}/api/ai-chat/more
+           POST ${ctx}/api/ai-chat/change
+
+     3) 접근성(ARIA)
+       - aria-live="polite" : 새로운 메시지가 추가될 때
+         스크린리더가 '너무 끼어들지 않게' 부드럽게 알림.
+       - panel(role="dialog") + aria-hidden 토글:
+         JS가 열림/닫힘 상태를 명확히 표현.
+
+     4) 메시지 컨테이너 구조
+       - #chataiMessages 안에 #chataiQuick(칩 영역)을 고정으로 둔다.
+       - JS reset 시 메시지를 비우지만 quick 컨테이너는 유지한다.
+   ========================================================= --%>
+
 <div
   class="chatai"
   id="chatai"
-  data-endpoint="${ctx}/api/chat"
+  data-endpoint="${ctx}/api/ai-chat"
   aria-live="polite"
 >
-
-  <%-- 
-    [1] FAB 버튼(우하단 떠있는 아이콘)
-    - 화면 우하단 고정(fixed)은 CSS가 담당
-    - 클릭 시 JS가 위젯 상태를 토글해서 패널을 열거나 닫는다
-    - aria-label : 아이콘 버튼은 텍스트가 없으니 접근성용 라벨을 반드시 준다
-  --%>
-  <button type="button" class="chatai-fab" id="chataiFab" aria-label="AI 채팅 열기">
-	  <img src="${ctx}/img/chatai_icon.jpg" alt="AI" class="chatai-fab-img">
+  <%-- =========================================================
+       [FAB] Floating Action Button (우하단 동그란 버튼)
+       ---------------------------------------------------------
+       - JS: #chataiFab 클릭 → togglePanel()
+       - CSS: --chatai-fab-right/bottom 변수로 위치 조절
+       - 이미지 사용 시:
+         - alt는 스크린리더용 최소 정보 제공
+         - aria-label은 버튼 자체 의미(열기) 제공
+     ========================================================= --%>
+  <button
+    type="button"
+    class="chatai-fab"
+    id="chataiFab"
+    aria-label="AI 채팅 열기"
+  >
+    <img
+      src="${ctx}/img/chatai_icon.jpg"
+      alt="AI"
+      class="chatai-fab-img"
+    >
   </button>
 
-
-  <%-- 
-    [2] 채팅 패널(작게 펼쳐지는 창)
-    - 기본 상태는 '숨김'이다 (CSS/JS로 제어)
-    - JS가 열릴 때:
-        1) 루트(#chatai)에 is-open 같은 상태 클래스를 붙인다
-        2) aria-hidden="false" 로 바꾸고, 입력창에 focus 준다
-    - role="dialog" : 대화창 UI임을 명시(선택)
-    - aria-label : 패널 의미를 설명
-  --%>
+  <%-- =========================================================
+       [PANEL] 대화 패널(기본은 닫힘)
+       ---------------------------------------------------------
+       - aria-hidden="true" 상태에서 CSS가 visibility/opacity로 숨김 처리
+       - JS가 열면:
+         1) .chatai에 .is-open 클래스 추가
+         2) #chataiPanel aria-hidden="false"
+         3) input focus
+       - role="dialog": '대화 상자'임을 의미
+       - aria-label: dialog의 목적 설명
+     ========================================================= --%>
   <section
     class="chatai-panel"
     id="chataiPanel"
@@ -54,63 +78,89 @@
     role="dialog"
     aria-label="AI 채팅"
   >
-
-    <%-- 
-      [2-1] 패널 상단 헤더
-      - 제목 + 닫기 버튼 영역
-      - 닫기 버튼 클릭 시 JS가 패널을 닫는다
-    --%>
+    <%-- =========================================================
+         [HEADER] 상단 제목 + 우측 액션(Reset/Close)
+         ---------------------------------------------------------
+         - reset 버튼은 대화 세션을 새로 시작(callReset)
+         - close 버튼은 단순히 UI만 닫는다(closePanel)
+       ========================================================= --%>
     <header class="chatai-panel-header">
       <div class="chatai-title">AI 챗봇</div>
 
-      <button
-        type="button"
-        class="chatai-close"
-        id="chataiClose"
-        aria-label="닫기"
-      >
-        ✕
-      </button>
+      <div class="chatai-header-actions">
+        <%-- 새 대화(Reset)
+             - JS: #chataiResetBtn 클릭 → callReset()
+             - busy일 때는 JS에서 disabled 처리됨 --%>
+        <button
+          type="button"
+          class="chatai-header-btn"
+          id="chataiResetBtn"
+          aria-label="새 대화"
+          title="새 대화"
+        >↻</button>
+
+        <%-- 닫기
+             - JS: #chataiClose 클릭 → closePanel() --%>
+        <button
+          type="button"
+          class="chatai-close"
+          id="chataiClose"
+          aria-label="닫기"
+        >✕</button>
+      </div>
     </header>
 
-
-    <%-- 
-      [2-2] 메시지 리스트 영역(스크롤 영역)
-      - 메시지가 계속 쌓이는 컨테이너
-      - CSS에서 이 영역만 overflow: auto 로 스크롤 되게 만드는 게 일반적
-      - JS가 사용자/봇 메시지를 여기에 append 한다
-      - msg-bot / msg-user 클래스로 좌우 정렬(말풍선 색 등)을 구분한다
-    --%>
+    <%-- =========================================================
+         [MESSAGES] 메시지 출력 영역
+         ---------------------------------------------------------
+         - JS가 말풍선 DOM을 여기 아래에 append한다.
+         - #chataiQuick은 '칩 버튼 자리'로 고정 존재.
+           JS가 open/reset 때 QUICK_LIST를 렌더링한다.
+       ========================================================= --%>
     <div class="chatai-messages" id="chataiMessages">
-
-      <%-- 초기 안내 메시지(봇) 1개 --%>
-      <div class="chatai-msg chatai-msg-bot">
-        <div class="chatai-bubble">안녕하세요. 무엇을 도와드릴까요?</div>
-      </div>
-
+      <div
+        class="chatai-quick"
+        id="chataiQuick"
+        aria-label="빠른 추천 예시"
+      ></div>
     </div>
 
+    <%-- =========================================================
+         [ACTIONS] 추천 이후에만 보이는 하단 액션바
+         ---------------------------------------------------------
+         - 기본 hidden
+         - JS에서 추천 카드가 1번이라도 나오면:
+           hasRecs=true + showActions() 로 표시
+         - 더 추천: /more
+         - 조건 바꾸기: /change (input 값을 사용)
+       ========================================================= --%>
+    <div class="chatai-actions" id="chataiActions" hidden>
+      <button type="button" class="chatai-action-btn" id="chataiMoreBtn">더 추천</button>
+      <button type="button" class="chatai-action-btn" id="chataiChangeBtn">조건 바꾸기</button>
+    </div>
 
-    <%-- 
-      [2-3] 입력 바(하단 고정 영역)
-      - form 제출(submit) 이벤트를 JS가 가로채서(fetch 등) 서버 요청을 보낸다
-      - autocomplete="off" : 브라우저 자동완성 방지(취향)
-      - input은 메시지 입력, button은 전송
-    --%>
+    <%-- =========================================================
+         [INPUT] 입력 바(전송 폼)
+         ---------------------------------------------------------
+         - form submit(엔터/전송 버튼) → sendUserMessage()
+         - input placeholder는 /open 또는 /reset 응답의 initialPrompt로 교체 가능
+         - busy일 때 input/send는 JS에서 disabled 처리됨
+       ========================================================= --%>
     <form class="chatai-inputbar" id="chataiForm" autocomplete="off">
-
       <input
         type="text"
         class="chatai-input"
         id="chataiInput"
         placeholder="메시지를 입력하세요"
       />
-
-      <button type="submit" class="chatai-send" aria-label="보내기">
+      <button
+        type="submit"
+        class="chatai-send"
+        id="chataiSendBtn"
+        aria-label="보내기"
+      >
         전송
       </button>
-
     </form>
-
   </section>
 </div>
