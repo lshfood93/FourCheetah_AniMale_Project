@@ -208,8 +208,7 @@ public class BoardController {
 
             BoardLikeDTO checkRes = boardLikeService.selectOne(boardLikeDTO);
             likedByMe = (checkRes != null && checkRes.getIsLiked() > 0);
-        }
-        model.addAttribute("likedByMe", likedByMe);
+        }model.addAttribute("isLiked", likedByMe);
 
         // 5) 댓글 목록
         replyDTO.setBoardId(boardId);
