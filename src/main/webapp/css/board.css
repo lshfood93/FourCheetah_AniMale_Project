@@ -247,3 +247,12 @@
 .board-sort-box .sort-list li:hover{
   background:rgba(255,255,255,0.08);
 }
+
+.board-write-btn.is-disabled{
+  opacity: 0.45;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+.board-write-btn.is-disabled:hover{
+  text-decoration: none;
+}
