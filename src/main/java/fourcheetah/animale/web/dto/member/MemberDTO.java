@@ -98,4 +98,19 @@ public class MemberDTO {
                 + ", condition=" + condition
                 + "]";
     }
+<<<<<<< HEAD
+=======
+	public Object getSanctionReason() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	public Object getSanctionEndAt() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	public String getMemberStatus() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 }

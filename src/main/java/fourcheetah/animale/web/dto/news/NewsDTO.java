@@ -1,11 +1,21 @@
 package fourcheetah.animale.web.dto.news;
 
+<<<<<<< HEAD
+=======
+import org.apache.ibatis.type.Alias;
+
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 /**
  * 뉴스 DTO (Spring Boot + MySQL 버전)
  * - 중프 Oracle 코드를 최프 MySQL 스키마에 맞춰 변환
  * - CLOB → LONGTEXT 변환
  * - 필드명은 중프와 동일하게 유지 (호환성)
  */
+<<<<<<< HEAD
+=======
+
+@Alias("newsDTO")
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 public class NewsDTO {
 
     // ========== 기본 필드 (DB 컬럼) ==========
@@ -19,8 +29,13 @@ public class NewsDTO {
     // ========== 페이징 관련 ==========
     private int newsCount;                 // COUNT(*) 결과 담기용
     private int startRow;                  // 페이징 시작 행
+<<<<<<< HEAD
     private int endRow;  
     private int page; // 페이징 끝 행
+=======
+    private int endRow;                    // 페이징 끝 행
+    private int page;                      // 현재 페이지
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
     // ========== 검색/정렬 관련 ==========
     private String condition;              // DAO 분기용 컨디션
@@ -31,8 +46,15 @@ public class NewsDTO {
     private Integer animeYear;             // 방영 연도 (NULL 가능)
     private String animeQuarter;           // 방영 분기
     private String animeThumbnailUrl;      // 애니 썸네일
+<<<<<<< HEAD
 	private int startNum;
 	private int listSize;
+=======
+    
+    // ========== MyBatis/LIMIT-OFFSET 용 ==========
+    private int startNum;                  // OFFSET
+    private int listSize;                  // LIMIT
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
     // ========== Getter/Setter ==========
     
@@ -108,6 +130,17 @@ public class NewsDTO {
         this.endRow = endRow;
     }
 
+<<<<<<< HEAD
+=======
+    public int getPage() {
+        return page;
+    }
+
+    public void setPage(int page) {
+        this.page = page;
+    }
+
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
     public String getCondition() {
         return condition;
     }
@@ -156,18 +189,31 @@ public class NewsDTO {
         this.animeThumbnailUrl = animeThumbnailUrl;
     }
 
+<<<<<<< HEAD
     public int getCnt() {
         return this.newsCount;
+=======
+    public int getStartNum() {
+        return startNum;
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
     }
 
     public void setStartNum(int startNum) {
         this.startNum = startNum;
     }
 
+<<<<<<< HEAD
+=======
+    public int getListSize() {
+        return listSize;
+    }
+
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
     public void setListSize(int listSize) {
         this.listSize = listSize;
     }
 
+<<<<<<< HEAD
 	public int getListSize() {
 		return this.listSize;
 	}
@@ -197,3 +243,15 @@ public class NewsDTO {
 }
 
 
+=======
+    @Override
+    public String toString() {
+        return "NewsDTO [newsId=" + newsId + ", animeId=" + animeId + ", newsTitle=" + newsTitle + ", newsContent="
+                + newsContent + ", newsImageUrl=" + newsImageUrl + ", newsThumbnailUrl=" + newsThumbnailUrl
+                + ", newsCount=" + newsCount + ", startRow=" + startRow + ", endRow=" + endRow + ", page=" + page
+                + ", condition=" + condition + ", keyword=" + keyword + ", animeTitle=" + animeTitle + ", animeYear="
+                + animeYear + ", animeQuarter=" + animeQuarter + ", animeThumbnailUrl=" + animeThumbnailUrl
+                + ", startNum=" + startNum + ", listSize=" + listSize + "]";
+    }
+}
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871

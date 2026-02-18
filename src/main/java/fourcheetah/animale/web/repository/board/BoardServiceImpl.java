@@ -32,9 +32,14 @@ public class BoardServiceImpl implements BoardService{
 	}
 
 	@Override
+<<<<<<< HEAD
 	public Integer insertReturnId(BoardDTO boardDTO) {
 
 		return boardDAO.insertReturnId(boardDTO);
+=======
+	public boolean insert(BoardDTO boardDTO) {
+		return boardDAO.insert(boardDTO);
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	}
 
 	@Override

@@ -1,4 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<<<<<<< HEAD
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 
@@ -11,6 +12,22 @@
 
 <%-- 게시글 관리는 category 없으면 튕기니까 현재 존재하는 ANIME만 강제 링크 --%>
 <c:set var="urlBoardManageAnime" value="${ctx}/board/list?category=ANIME"/>
+=======
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+
+<c:set var="ctx" value="${pageContext.request.contextPath}" />
+
+<!-- 실제 컨트롤러 매핑에 맞게 수정 -->
+<c:set var="urlNewsManage" value="${ctx}/newsList"/>
+<c:set var="urlAnimeListManage" value="${ctx}/animeList"/>
+<c:set var="urlMyPosts" value="${ctx}/myPostPage" />
+<c:set var="urlChangePasswordPage" value="${ctx}/changePasswordPage"/>
+
+<%-- 게시글 관리는 category 없으면 튕기니까 현재 존재하는 ANIME만 강제 링크 --%>
+<c:set var="urlBoardManageAnime" value="${ctx}/boardList?boardCategory=ANIME"/>
+
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
 <c:if test="${empty sessionScope.memberId}">
   <c:redirect url="${ctx}/login" />
@@ -477,7 +494,11 @@ body.mypage-editing .mypage-right-card{
 							</li>
 
 							<li>
+<<<<<<< HEAD
 								<a class="menu-link" href="${urlChangePassword}">
+=======
+								<a class="menu-link" href="${urlChangePasswordPage}">
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 									<i class="fa fa-lock"></i><span>비밀번호 변경</span>
 								</a>
 							</li>

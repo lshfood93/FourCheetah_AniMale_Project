@@ -5,11 +5,19 @@ public class BoardLikeDTO {
 	private int boardLikeId;
 	private int boardId;
 	private int memberId;
+<<<<<<< HEAD
+=======
+	private String createdAt;  // 작성일시
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	
 	// condition / view
 	private String condition;
 	private int likeCnt; // 좋아요 개수(LIKE_CNT)
 	private int isLiked; // 내가 눌렀는지(0/1, IS_LIKED)
+<<<<<<< HEAD
+=======
+	
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	public int getBoardLikeId() {
 		return boardLikeId;
 	}
@@ -28,6 +36,15 @@ public class BoardLikeDTO {
 	public void setMemberId(int memberId) {
 		this.memberId = memberId;
 	}
+<<<<<<< HEAD
+=======
+	public String getCreatedAt() {
+		return createdAt;
+	}
+	public void setCreatedAt(String createdAt) {
+		this.createdAt = createdAt;
+	}
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	public String getCondition() {
 		return condition;
 	}
@@ -49,6 +66,12 @@ public class BoardLikeDTO {
 	@Override
 	public String toString() {
 		return "BoardLikeDTO [boardLikeId=" + boardLikeId + ", boardId=" + boardId + ", memberId=" + memberId
+<<<<<<< HEAD
 				+ ", condition=" + condition + ", likeCnt=" + likeCnt + ", isLiked=" + isLiked + "]";
 	}
 }
+=======
+				+ ", createdAt=" + createdAt + ", condition=" + condition + ", likeCnt=" + likeCnt + ", isLiked=" + isLiked + "]";
+	}
+}
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871

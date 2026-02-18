@@ -12,7 +12,11 @@ import fourcheetah.animale.web.service.news.NewsService;
 public class NewsServiceImpl implements NewsService {
 
     @Autowired
+<<<<<<< HEAD
     private NewsDAO newsDAO;
+=======
+    private MybatisNewsDAO newsDAO; // (수정) JdbcTemplate NewsDAO → MybatisNewsDAO
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
     @Override
     public NewsDTO selectOne(NewsDTO newsDTO) {

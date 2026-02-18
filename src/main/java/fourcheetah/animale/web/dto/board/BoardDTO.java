@@ -9,6 +9,13 @@ public class BoardDTO {
 	private String boardContent; // CLOB
 	private int boardViews;
 	private String boardCategory;
+<<<<<<< HEAD
+=======
+	private String boardStatus;  // '정상' 또는 '내용삭제'
+	private String contentDeletedAt;  // 내용 삭제 처리 일시
+	private String boardUpdatedAt;    // 수정일시
+	private String boardCreatedAt;    // 작성일시
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
 
 	// 최프 최종 추가 컬럼들
@@ -63,6 +70,33 @@ public class BoardDTO {
 	public void setBoardCategory(String boardCategory) {
 		this.boardCategory = boardCategory;
 	}
+<<<<<<< HEAD
+=======
+	public String getBoardStatus() {
+		return boardStatus;
+	}
+	public void setBoardStatus(String boardStatus) {
+		this.boardStatus = boardStatus;
+	}
+	public String getContentDeletedAt() {
+		return contentDeletedAt;
+	}
+	public void setContentDeletedAt(String contentDeletedAt) {
+		this.contentDeletedAt = contentDeletedAt;
+	}
+	public String getBoardUpdatedAt() {
+		return boardUpdatedAt;
+	}
+	public void setBoardUpdatedAt(String boardUpdatedAt) {
+		this.boardUpdatedAt = boardUpdatedAt;
+	}
+	public String getBoardCreatedAt() {
+		return boardCreatedAt;
+	}
+	public void setBoardCreatedAt(String boardCreatedAt) {
+		this.boardCreatedAt = boardCreatedAt;
+	}
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	public String getCondition() {
 		return condition;
 	}
@@ -115,8 +149,14 @@ public class BoardDTO {
 	@Override
 	public String toString() {
 		return "BoardDTO [boardId=" + boardId + ", memberId=" + memberId + ", boardTitle=" + boardTitle + ", boardContent="
+<<<<<<< HEAD
 				+ boardContent + ", boardViews=" + boardViews + ", boardCategory=" + boardCategory + ", condition="
 				+ condition + ", keyword=" + keyword + ", writerNickname=" + writerNickname + ", writerRole=" + writerRole
+=======
+				+ boardContent + ", boardViews=" + boardViews + ", boardCategory=" + boardCategory + ", boardStatus=" + boardStatus
+				+ ", contentDeletedAt=" + contentDeletedAt + ", boardUpdatedAt=" + boardUpdatedAt + ", boardCreatedAt=" + boardCreatedAt
+				+ ", condition=" + condition + ", keyword=" + keyword + ", type=" + type + ", writerNickname=" + writerNickname + ", writerRole=" + writerRole
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 				+ ", likeCnt=" + likeCnt + ", isLiked=" + isLiked + ", likeMemberNickname=" + likeMemberNickname + "]";
 	}
 

@@ -1,12 +1,21 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<<<<<<< HEAD
     <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+=======
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
 
 <%-- 1) 로그인 세션 없으면 로그인 페이지로 --%>
 <c:if test="${empty sessionScope.memberId}">
+<<<<<<< HEAD
     <c:redirect url="${ctx}/login" />
+=======
+	<c:redirect url="${ctx}/login" />
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 </c:if>
 
 <!DOCTYPE html>
@@ -18,8 +27,17 @@
 
 <link rel="icon" type="image/png" href="${ctx}/favicon.png">
 
+<<<<<<< HEAD
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+=======
+<link
+	href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap"
+	rel="stylesheet">
+<link
+	href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700;800;900&display=swap"
+	rel="stylesheet">
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
 <link rel="stylesheet" href="${ctx}/css/bootstrap.min.css">
 <link rel="stylesheet" href="${ctx}/css/font-awesome.min.css">
@@ -27,6 +45,7 @@
 
 <style>
 /* MyPage */
+<<<<<<< HEAD
 .mypage-title{
 	margin-top: 24px;
 	text-align: center;
@@ -50,6 +69,22 @@
 
 /* Buttons */
 .mypage-btn{
+=======
+.mypage-title { margin-top: 24px; text-align: center; }
+.mypage-title__h1 { font-weight: 800; margin: 0; }
+.mypage-spad { padding-top: 60px; padding-bottom: 80px; }
+
+/* 마이페이지 카드 (좌/우 공통 베이스) */
+.login-box-clean {
+	background: rgba(255, 255, 255, 0.02);
+	border-radius: 18px;
+	padding: 28px;
+	box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+
+/* Buttons */
+.mypage-btn {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	display: block;
 	width: 100%;
 	text-align: center;
@@ -65,26 +100,38 @@
 	box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
 	transform: translateY(0);
 }
+<<<<<<< HEAD
 .mypage-btn:hover{
 	background: rgba(255, 255, 255, 0.12);
 	transform: translateY(-1px);
 }
 .mypage-btn:active{ transform: translateY(0); }
 .mypage-btn::after{
+=======
+.mypage-btn:hover { background: rgba(255, 255, 255, 0.12); transform: translateY(-1px); }
+.mypage-btn:active { transform: translateY(0); }
+.mypage-btn::after {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	content: "";
 	position: absolute;
 	top: -40%;
 	left: -60%;
 	width: 60%;
 	height: 180%;
+<<<<<<< HEAD
 	background: linear-gradient(90deg,
 		rgba(255, 255, 255, 0) 0%,
 		rgba(255, 255, 255, 0.16) 50%,
 		rgba(255, 255, 255, 0) 100%);
+=======
+	background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%,
+		rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0) 100%);
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	transform: skewX(-18deg);
 	transition: left .45s ease;
 	pointer-events: none;
 }
+<<<<<<< HEAD
 .mypage-btn:hover::after{ left: 120%; }
 
 .primary-red{
@@ -109,6 +156,28 @@
   background: #0b0c2a;
 }
 .profile-img-wrap img{
+=======
+.mypage-btn:hover::after { left: 120%; }
+
+.primary-red {
+	background: linear-gradient(135deg, #ff4c4c 0%, #e53637 55%, #c92c2d 100%) !important;
+	color: #fff !important;
+}
+.primary-red:hover { filter: brightness(1.04); }
+.disabled-btn { opacity: 0.45; pointer-events: none; }
+
+/* Profile Image (Loader) */
+.profile-img-wrap {
+	width: 256px;
+	height: 256px;
+	margin: 0 auto 16px;
+	border-radius: 18px;
+	overflow: hidden;
+	position: relative;
+	background: #0b0c2a;
+}
+.profile-img-wrap img {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
@@ -117,6 +186,7 @@
 	opacity: 1;
 	transition: opacity .2s ease;
 }
+<<<<<<< HEAD
 .profile-img-wrap.is-loading{
 	background: linear-gradient(110deg,
 		rgba(255, 255, 255, .03) 20%,
@@ -128,6 +198,17 @@
 .profile-img-wrap.is-loading img{ opacity: 0; }
 
 .profile-loader{
+=======
+.profile-img-wrap.is-loading {
+	background: linear-gradient(110deg, rgba(255, 255, 255, .03) 20%,
+		rgba(255, 255, 255, .07) 40%, rgba(255, 255, 255, .03) 60%), #0b0c2a;
+	background-size: 220% 100%;
+	animation: skeletonShimmer 1.15s ease-in-out infinite;
+}
+.profile-img-wrap.is-loading img { opacity: 0; }
+
+.profile-loader {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	position: absolute;
 	inset: 0;
 	display: none;
@@ -139,6 +220,7 @@
 	backdrop-filter: blur(4px);
 	-webkit-backdrop-filter: blur(4px);
 }
+<<<<<<< HEAD
 .profile-img-wrap.is-loading .profile-loader{ display: flex; }
 
 .loader-bar{
@@ -148,6 +230,12 @@
 	position: relative;
 }
 .loader-bar::before{
+=======
+.profile-img-wrap.is-loading .profile-loader { display: flex; }
+
+.loader-bar { width: 54px; height: 54px; border-radius: 999px; position: relative; }
+.loader-bar::before {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	content: "";
 	position: absolute;
 	inset: 0;
@@ -157,7 +245,11 @@
 	border-right-color: rgba(229, 54, 55, .85);
 	animation: spin .9s linear infinite;
 }
+<<<<<<< HEAD
 .loader-bar::after{
+=======
+.loader-bar::after {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	content: "";
 	position: absolute;
 	inset: 13px;
@@ -166,13 +258,18 @@
 	box-shadow: 0 0 18px rgba(255, 255, 255, .08);
 	animation: pulse 1.1s ease-in-out infinite;
 }
+<<<<<<< HEAD
 .loader-text{
+=======
+.loader-text {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	font-size: 12px;
 	font-weight: 900;
 	color: rgba(255, 255, 255, .78);
 	letter-spacing: .2px;
 	animation: textPulse 1.2s ease-in-out infinite;
 }
+<<<<<<< HEAD
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulse{
 	0%,100%{ transform: scale(.98); opacity: .75; }
@@ -414,10 +511,192 @@ body.mypage-editing .split-pill--editable{
 	padding: 18px;
 }
 .cost-row{
+=======
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100%{ transform: scale(.98); opacity: .75; } 50%{ transform: scale(1.03); opacity: 1; } }
+@keyframes textPulse { 0%,100%{ opacity: .65; } 50%{ opacity: 1; } }
+@keyframes skeletonShimmer { 0%{ background-position: 120% 0; } 100%{ background-position: -80% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+	.profile-img-wrap.is-loading, .loader-bar::before, .loader-bar::after, .loader-text {
+		animation: none !important;
+	}
+}
+
+/* 프로필 버튼 */
+.mypage-btn.profile-btn {
+	width: 256px !important;
+	height: auto !important;
+	padding: 14px 18px !important;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 1.2;
+	font-size: inherit;
+	font-weight: 600;
+	margin-left: auto;
+	margin-right: auto;
+	cursor: pointer;
+}
+.mypage-btn.profile-btn .btn-text { font-size: 16px; font-weight: inherit; line-height: 1.2; }
+
+/* 안내문구 */
+.msg-area { margin-top: 10px; font-size: 13px; line-height: 1.35; }
+.msg-ok { color: #25d366; font-weight: 800; }
+.msg-error { color: #ff4c4c; font-weight: 800; }
+.msg-info { color: rgba(255, 255, 255, 0.75); }
+
+.cost-hint { text-align: center; }
+.cost-hint__text { display: inline-block; line-height: 1.35; }
+.cost-hint__text b { line-height: 1; }
+
+:root {
+	--accent: 229, 54, 55;
+	--hud-bg: rgba(255, 255, 255, 0.030);
+	--hud-border: rgba(255, 255, 255, 0.095);
+	--hud-ink: rgba(255, 255, 255, 0.92);
+	--hud-muted: rgba(255, 255, 255, 0.62);
+}
+
+.split-pill {
+	height: 52px;
+	border-radius: 16px;
+	display: flex;
+	align-items: center;
+	overflow: hidden;
+	position: relative;
+	background: var(--hud-bg);
+	border: 1px solid var(--hud-border);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+	box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+	margin-bottom: 14px;
+}
+.split-pill::before, .split-pill::after { content: none !important; display: none !important; }
+
+.split-label {
+	width: 154px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 0 14px 0 16px;
+	position: relative;
+	z-index: 1;
+}
+.split-label::after {
+	content: "";
+	position: absolute;
+	right: 0;
+	top: 10px;
+	bottom: 10px;
+	width: 1px;
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.split-label .split-icon {
+	width: 34px;
+	height: 34px;
+	border-radius: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(255, 255, 255, 0.035);
+	border: 1px solid rgba(var(--accent), 0.22);
+	box-shadow: 0 10px 18px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.split-label svg {
+	width: 16px;
+	height: 16px;
+	stroke: rgba(var(--accent), 0.90);
+	stroke-width: 2;
+	fill: none;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+.split-label .split-text {
+	font-size: 12px;
+	font-weight: 700;
+	padding-left: 4px;
+	letter-spacing: 0.45px;
+	color: rgba(255, 255, 255, 0.58);
+	white-space: nowrap;
+}
+
+.split-value {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	padding: 0 18px;
+	position: relative;
+	z-index: 1;
+}
+.split-value input {
+	width: 100%;
+	height: 52px;
+	border: 0;
+	outline: 0;
+	background: transparent;
+	padding-left: 12px;
+	font-size: 14.5px;
+	font-weight: 620;
+	letter-spacing: -0.25px;
+	color: rgba(255, 255, 255, 0.90);
+}
+.split-value input[readonly] { color: rgba(255, 255, 255, 0.86); }
+#cashDisplay { font-variant-numeric: tabular-nums; letter-spacing: -0.15px; }
+
+body.mypage-editing .split-pill--editable {
+	border-color: rgba(var(--accent), 0.22);
+	box-shadow: 0 12px 28px rgba(0, 0, 0, 0.26),
+		inset 0 1px 0 rgba(255, 255, 255, 0.05),
+		0 0 0 3px rgba(var(--accent), 0.08);
+}
+
+.split-row {
+	display: grid;
+	grid-template-columns: 1fr 128px;
+	gap: 12px;
+	align-items: center;
+	margin-bottom: 14px;
+}
+.split-row .split-pill { margin-bottom: 0; }
+
+.nick-check-btn {
+	height: 52px;
+	border-radius: 16px;
+	font-weight: 800;
+	letter-spacing: .2px;
+	background: linear-gradient(135deg, rgba(255, 76, 76, 0.18) 0%,
+		rgba(229, 54, 55, 0.10) 55%, rgba(201, 44, 45, 0.08) 100%);
+	border: 1px solid rgba(var(--accent), 0.28);
+	color: rgba(255, 255, 255, 0.92);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: .18s ease;
+	box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.nick-check-btn:hover { filter: brightness(1.05); border-color: rgba(var(--accent), 0.36); }
+.nick-check-btn.disabled-btn { opacity: .45; pointer-events: none; }
+
+#nicknameMsg { margin: 6px 0 6px !important; }
+#nicknameMsg:empty { display: none; margin: 0 !important; }
+
+.cost-box {
+	margin-top: 18px;
+	background: rgba(255, 255, 255, 0.035);
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	border-radius: 16px;
+	padding: 18px;
+}
+.cost-row {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	display: flex;
 	justify-content: space-between;
 	padding: 10px 0;
 	border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+<<<<<<< HEAD
 	font-size: 14.5px;         
 	line-height: 1.2;
 }
@@ -445,6 +724,24 @@ body.mypage-editing .split-pill--editable{
 .modal-backdrop-custom{
 	position: fixed;
 	left: 0; top: 0;
+=======
+	font-size: 14.5px;
+	line-height: 1.2;
+}
+.cost-row:last-child { border-bottom: none; }
+.cost-row .label { color: rgba(255, 255, 255, 0.78); font-weight: 600; }
+.cost-row .value { color: #fff; font-size: 14.5px; font-weight: 800; }
+#cashWarn { word-break: keep-all; }
+
+.edit-actions { margin-top: 20px; display: flex; gap: 12px; }
+.edit-actions .mypage-btn { width: 100%; }
+
+/* Modal */
+.modal-backdrop-custom {
+	position: fixed;
+	left: 0;
+	top: 0;
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	width: 100%;
 	height: 100%;
 	background: rgba(0, 0, 0, 0.65);
@@ -457,46 +754,76 @@ body.mypage-editing .split-pill--editable{
 	padding: 14px;
 	box-sizing: border-box;
 }
+<<<<<<< HEAD
 .modal-box{
 	width: min(560px, 96vw);
 	background: rgba(15, 20, 60, 0.98);
 	border-radius: 18px;
 	box-shadow: 0 16px 60px rgba(0,0,0,0.55);
+=======
+.modal-box {
+	width: min(560px, 96vw);
+	background: rgba(15, 20, 60, 0.98);
+	border-radius: 18px;
+	box-shadow: 0 16px 60px rgba(0, 0, 0, 0.55);
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	padding: 32px 34px 24px;
 	box-sizing: border-box;
 	max-height: 90vh;
 	overflow-y: auto;
 }
+<<<<<<< HEAD
 .modal-title{
 	font-size: 21px;              /* 제목 크기 */
+=======
+.modal-title {
+	font-size: 21px;
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	font-weight: 900;
 	color: #fff;
 	margin-bottom: 6px;
 	line-height: 1.25;
 	word-break: keep-all;
 }
+<<<<<<< HEAD
 .modal-desc{
 	font-size: 14px;              /* 안내 문구 크기 */
+=======
+.modal-desc {
+	font-size: 14px;
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	color: rgba(255, 255, 255, 0.78);
 	margin-bottom: 14px;
 	line-height: 1.5;
 	word-break: keep-all;
 }
+<<<<<<< HEAD
 .modal-cost{
 	background: rgba(255,255,255,0.05);
+=======
+.modal-cost {
+	background: rgba(255, 255, 255, 0.05);
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	border-radius: 14px;
 	padding: 18px 20px;
 	margin-bottom: 14px;
 	box-sizing: border-box;
 }
+<<<<<<< HEAD
 .modal-cost .row{
 	margin: 0 !important;
 	padding: 10px 8px;            
+=======
+.modal-cost .row {
+	margin: 0 !important;
+	padding: 10px 8px;
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	gap: 12px;
 }
+<<<<<<< HEAD
 .modal-cost .row .l{
 	color: rgba(255, 255, 255, 0.78);
 	font-weight: 650;
@@ -521,6 +848,29 @@ body.mypage-editing .split-pill--editable{
 	gap: 10px;
 }
 .modal-btn{
+=======
+.modal-cost .row .l {
+	color: rgba(255, 255, 255, 0.78);
+	font-weight: 650;
+	font-size: 14px;
+	min-width: 0;
+	flex: 1;
+}
+.modal-cost .row .r {
+	color: #fff;
+	font-weight: 850;
+	font-size: 14.5px;
+	white-space: nowrap;
+	flex: 0 0 auto;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	padding: 5px 10px;
+	border-radius: 999px;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.modal-actions { display: flex; gap: 10px; }
+.modal-btn {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	flex: 1;
 	border: none;
 	border-radius: 999px;
@@ -530,13 +880,22 @@ body.mypage-editing .split-pill--editable{
 	background: rgba(255, 255, 255, 0.10);
 	transition: .2s;
 }
+<<<<<<< HEAD
 .modal-btn:hover{ background: rgba(255, 255, 255, 0.16); }
 .modal-btn.yes{
+=======
+.modal-btn:hover { background: rgba(255, 255, 255, 0.16); }
+.modal-btn.yes {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	background: linear-gradient(135deg, #ff4c4c 0%, #e53637 55%, #c92c2d 100%) !important;
 }
 
 /* LEFT MENU */
+<<<<<<< HEAD
 .side-menu{
+=======
+.side-menu {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	list-style: none;
 	padding-left: 0;
 	margin: 0;
@@ -544,8 +903,13 @@ body.mypage-editing .split-pill--editable{
 	flex-direction: column;
 	gap: 10px;
 }
+<<<<<<< HEAD
 .side-menu .menu-item{ width: 100%; }
 .side-menu .menu-link, .side-menu .menu-btn{
+=======
+.side-menu .menu-item { width: 100%; }
+.side-menu .menu-link, .side-menu .menu-btn {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	width: 100%;
 	display: flex;
 	align-items: center;
@@ -558,32 +922,50 @@ body.mypage-editing .split-pill--editable{
 	font-weight: 600;
 	transition: 0.18s ease;
 }
+<<<<<<< HEAD
 .side-menu .menu-link i, .side-menu .menu-btn i{
 	width: 18px;
 	text-align: center;
 	opacity: 0.9;
 }
 .side-menu .menu-link:hover, .side-menu .menu-btn:hover{
+=======
+.side-menu .menu-link i, .side-menu .menu-btn i { width: 18px; text-align: center; opacity: 0.9; }
+.side-menu .menu-link:hover, .side-menu .menu-btn:hover {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	background: rgba(255, 255, 255, 0.06);
 	border-color: rgba(255, 255, 255, 0.10);
 	transform: translateY(-1px);
 }
+<<<<<<< HEAD
 .side-menu .menu-link.is-active{
+=======
+.side-menu .menu-link.is-active {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	background: rgba(229, 54, 55, 0.10);
 	border-color: rgba(229, 54, 55, 0.22);
 	color: #fff;
 }
+<<<<<<< HEAD
 .side-menu .menu-btn.danger{
+=======
+.side-menu .menu-btn.danger {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	color: #ff6b6b;
 	background: rgba(229, 54, 55, 0.06);
 	border-color: rgba(229, 54, 55, 0.18);
 }
+<<<<<<< HEAD
 .side-menu .menu-btn.danger:hover{
+=======
+.side-menu .menu-btn.danger:hover {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	background: rgba(229, 54, 55, 0.10);
 	border-color: rgba(229, 54, 55, 0.26);
 }
 
 /* Layout fix */
+<<<<<<< HEAD
 .mypage-col-left{ padding-right: 28px !important; }
 .mypage-col-right{ padding-left: 28px !important; }
 
@@ -635,11 +1017,57 @@ body.mypage-editing .mypage-right-card{
   line-height: 1;
 }
 #nickCostMsg b{ line-height: 1; }
+=======
+.mypage-col-left { padding-right: 28px !important; }
+.mypage-col-right { padding-left: 28px !important; }
+
+.mypage-side-card { position: relative; z-index: 2; overflow: visible; }
+.mypage-right-card {
+	position: relative;
+	z-index: 1;
+	overflow: hidden;
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	box-shadow: 0 18px 60px rgba(0, 0, 0, .35);
+}
+body.mypage-editing .mypage-right-card {
+	border-color: rgba(229, 54, 55, .18);
+	box-shadow: 0 18px 60px rgba(0, 0, 0, .45);
+}
+.mypage-side-card.text-center { display: flex; flex-direction: column; align-items: center; }
+
+/* 모바일 */
+@media (max-width: 991.98px) {
+	.mypage-col-left { padding-right: 0 !important; margin-bottom: 18px; }
+	.mypage-col-right { padding-left: 0 !important; }
+	.split-row { grid-template-columns: 1fr; }
+	.nick-check-btn { width: 100%; }
+	.split-label { width: 128px; }
+	.split-value { padding: 0 14px; }
+	.split-value input { padding-left: 10px; }
+	.modal-actions { flex-direction: column; }
+	.profile-img-wrap { width: 100%; max-width: 256px; height: auto; aspect-ratio: 1/1; }
+}
+
+/* "닉네임 변경 시 300원..." 문구 정렬 */
+#nickCostMsg {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 22px;
+	margin: 8px 0 14px;
+	line-height: 1;
+}
+#nickCostMsg b { line-height: 1; }
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 </style>
 </head>
 
 <body>
+<<<<<<< HEAD
 <%@ include file="/WEB-INF/common/header.jsp" %>
+=======
+	<%@ include file="/WEB-INF/common/header.jsp"%>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
 	<c:if test="${not empty msg}">
 		<div class="container" style="margin-top: 18px;">
@@ -658,6 +1086,7 @@ body.mypage-editing .mypage-right-card{
 				<div class="col-12 col-lg-4 mypage-col-left">
 					<div class="login-box-clean mypage-side-card text-center">
 
+<<<<<<< HEAD
 						<div class="profile-img-wrap is-loading" id="profileWrap">
 							<c:choose>
 								<c:when test="${not empty memberData.memberProfileImage}">
@@ -674,6 +1103,20 @@ body.mypage-editing .mypage-right-card{
 										src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
 								</c:otherwise>
 							</c:choose>
+=======
+						<%-- ✅ 프로필 src를 항상 채움: 프로필 없으면 기본 이미지로 --%>
+						<c:set var="profileSrc"
+							value="${not empty memberData.memberProfileImage
+								? ctx.concat(memberData.memberProfileImage)
+								: ctx.concat('/img/profile-default.jpg')}" />
+
+						<div class="profile-img-wrap is-loading" id="profileWrap">
+							<img id="profilePreview" alt="프로필 이미지"
+								data-real-src="${profileSrc}"
+								data-initial-src="${profileSrc}"
+								data-default-src="${ctx}/img/profile-default.jpg"
+								src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
 							<div class="profile-loader" role="status" aria-live="polite">
 								<div class="loader-bar" aria-hidden="true"></div>
@@ -686,7 +1129,12 @@ body.mypage-editing .mypage-right-card{
 							<input type="file" id="profileInput" accept="image/*" hidden>
 						</label>
 
+<<<<<<< HEAD
 						<div class="msg-area msg-info cost-hint" id="profileCostMsg" style="margin-top: 10px; display: none;">
+=======
+						<div class="msg-area msg-info cost-hint" id="profileCostMsg"
+							style="margin-top: 10px; display: none;">
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 							<span class="cost-hint__text">
 								※ 프로필 사진 변경 시 <b>500원</b> 이 차감됩니다.
 							</span>
@@ -697,22 +1145,38 @@ body.mypage-editing .mypage-right-card{
 						<ul class="side-menu">
 							<li class="menu-item">
 								<a class="menu-link ${activeMenu eq 'PW' ? 'is-active' : ''}"
+<<<<<<< HEAD
 									href="${ctx}/changepassword">
+=======
+									href="${ctx}/changePasswordPage">
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 									<i class="fa fa-lock"></i><span>비밀번호 변경</span>
 								</a>
 							</li>
 
 							<li class="menu-item">
 								<a class="menu-link ${activeMenu eq 'MYPOST' ? 'is-active' : ''}"
+<<<<<<< HEAD
 									href="${ctx}/mypost">
+=======
+									href="${ctx}/myPostPage">
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 									<i class="fa fa-pencil-square-o"></i><span>내 글 보기</span>
 								</a>
 							</li>
 
 							<li class="menu-item">
 								<form action="${ctx}/member/withdraw" method="post"
+<<<<<<< HEAD
 									onsubmit="return confirm('정말 탈퇴하시겠습니까?');">
 									<button type="submit" class="btn btn-danger">회원 탈퇴</button>
+=======
+									style="margin: 0;"
+									onsubmit="return confirm('정말 탈퇴하시겠습니까?\n탈퇴 후에는 복구할 수 없습니다.');">
+									<button type="submit" class="menu-btn danger">
+										<i class="fa fa-sign-out"></i><span>회원 탈퇴</span>
+									</button>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 								</form>
 							</li>
 						</ul>
@@ -724,7 +1188,12 @@ body.mypage-editing .mypage-right-card{
 						<h5 style="margin-bottom: 24px;">내 정보</h5>
 
 						<form id="mypageForm" action="${ctx}/member/profile" method="post">
+<<<<<<< HEAD
 							<input type="hidden" id="temporaryProfileImageToken" name="temporaryProfileImageToken" value="" />
+=======
+							<input type="hidden" id="temporaryProfileImageToken"
+								name="temporaryProfileImageToken" value="" />
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
 							<!-- 아이디 -->
 							<div class="split-pill" id="idPill">
@@ -742,8 +1211,11 @@ body.mypage-editing .mypage-right-card{
 								</div>
 							</div>
 
+<<<<<<< HEAD
  
 
+=======
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 							<!-- 이메일 -->
 							<div class="split-pill" id="emailPill">
 								<div class="split-label">
@@ -780,7 +1252,12 @@ body.mypage-editing .mypage-right-card{
 									</div>
 								</div>
 
+<<<<<<< HEAD
 								<button id="nickCheckBtn" class="nick-check-btn disabled-btn" type="button">중복 확인</button>
+=======
+								<button id="nickCheckBtn" class="nick-check-btn disabled-btn"
+									type="button">중복 확인</button>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 							</div>
 
 							<div class="msg-area" id="nicknameMsg"></div>
@@ -789,7 +1266,12 @@ body.mypage-editing .mypage-right-card{
 								※ 닉네임 변경 시 <b>300원</b>이 차감됩니다.
 							</div>
 
+<<<<<<< HEAD
 							<c:set var="cashSafe" value="${empty memberData.memberCash ? 0 : memberData.memberCash}" />
+=======
+							<c:set var="cashSafe"
+								value="${empty memberData.memberCash ? 0 : memberData.memberCash}" />
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 							<fmt:formatNumber value="${cashSafe}" type="number" var="cashFmt" />
 
 							<!-- 보유 캐시 -->
@@ -827,9 +1309,14 @@ body.mypage-editing .mypage-right-card{
 									<div class="label">차감 후 보유 캐시</div>
 									<div class="value" id="cashAfter">-</div>
 								</div>
+<<<<<<< HEAD
 								<div class="msg-area msg-error" id="cashWarn" style="display: none; margin-top: 10px;">
 									보유 캐시를 확인해주세요.
 								</div>
+=======
+								<div class="msg-area msg-error" id="cashWarn"
+									style="display: none; margin-top: 10px;">보유 캐시를 확인해주세요.</div>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 							</div>
 
 							<div class="row" style="margin-top: 30px;" id="viewActions">
@@ -842,7 +1329,12 @@ body.mypage-editing .mypage-right-card{
 							</div>
 
 							<div class="edit-actions" id="editActions" style="display: none;">
+<<<<<<< HEAD
 								<button id="saveBtn" type="button" class="mypage-btn primary-red disabled-btn">수정 완료</button>
+=======
+								<button id="saveBtn" type="button"
+									class="mypage-btn primary-red disabled-btn">수정 완료</button>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 								<button id="cancelBtn" type="button" class="mypage-btn">취소</button>
 							</div>
 
@@ -854,7 +1346,11 @@ body.mypage-editing .mypage-right-card{
 		</div>
 	</section>
 
+<<<<<<< HEAD
 <%@ include file="/WEB-INF/common/footer.jsp" %>
+=======
+	<%@ include file="/WEB-INF/common/footer.jsp"%>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
 	<!-- 확인 모달 -->
 	<div id="modalBackdrop" class="modal-backdrop-custom">
@@ -871,7 +1367,12 @@ body.mypage-editing .mypage-right-card{
 					<div class="l">프로필 사진 변경</div>
 					<div class="r" id="mCostProfile">0원</div>
 				</div>
+<<<<<<< HEAD
 				<div class="row" style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 6px; padding-top: 10px;">
+=======
+				<div class="row"
+					style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 6px; padding-top: 10px;">
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 					<div class="l">총 차감 캐시</div>
 					<div class="r" id="mCostTotal">0원</div>
 				</div>
@@ -888,6 +1389,7 @@ body.mypage-editing .mypage-right-card{
 	<script src="${ctx}/js/bootstrap.min.js"></script>
 
 	<script>
+<<<<<<< HEAD
 	/* 프로필 이미지 로딩/재시도 */
 	(function() {
 		function addCacheBust(url) {
@@ -922,10 +1424,38 @@ body.mypage-editing .mypage-right-card{
 
 				if (elapsed >= MAX_WAIT_MS) {
 					img.src = addCacheBust(fallback || initial);
+=======
+		/* ✅ 프로필 이미지 로딩/재시도 (real이 비어도 로더 유지, DOMContentLoaded 레이스 방지) */
+		(function() {
+			function addCacheBust(url) {
+				if (!url) return url;
+				const sep = url.includes("?") ? "&" : "?";
+				return url + sep + "v=" + Date.now();
+			}
+
+			function initProfileLoader() {
+				const wrap = document.getElementById("profileWrap");
+				const img = document.getElementById("profilePreview");
+				if (!wrap || !img) return;
+
+				const real = (img.dataset.realSrc || "").trim();
+				const initial = (img.dataset.initialSrc || img.dataset.defaultSrc || "").trim();
+				const fallback = (img.dataset.defaultSrc || initial || "").trim();
+
+				// 로더 ON (이미 HTML에 is-loading 있어도 안전)
+				wrap.classList.add("is-loading");
+
+				// 최종 목표 URL(빈값이면 fallback)
+				const target = real || initial || fallback;
+
+				if (!target) {
+					// 표시할 게 아예 없으면 로더만 끄고 종료
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 					wrap.classList.remove("is-loading");
 					return;
 				}
 
+<<<<<<< HEAD
 				const testSrc = addCacheBust(real);
 				const pre = new Image();
 
@@ -1237,3 +1767,362 @@ body.mypage-editing .mypage-right-card{
 
 </body>
 </html>
+=======
+				const INTERVAL_MS = 250;
+				const MAX_WAIT_MS = 15000;
+				const startAt = Date.now();
+
+				function preload(url, onOk, onFail) {
+					const pre = new Image();
+					pre.onload = onOk;
+					pre.onerror = onFail;
+					pre.src = url;
+				}
+
+				function done(src) {
+					img.src = src;
+					wrap.classList.remove("is-loading");
+				}
+
+				function tryLoad(urlToTry) {
+					const elapsed = Date.now() - startAt;
+
+					// 시간이 초과되면 fallback로 1회 전환
+					if (elapsed >= MAX_WAIT_MS) {
+						const fb = fallback || urlToTry;
+						const fbSrc = addCacheBust(fb);
+						preload(
+							fbSrc,
+							function() { done(fbSrc); },
+							function() { done(fbSrc); } // fallback도 실패하면 그냥 끔
+						);
+						return;
+					}
+
+					const testSrc = addCacheBust(urlToTry);
+					preload(
+						testSrc,
+						function() { done(testSrc); },
+						function() { setTimeout(function() { tryLoad(urlToTry); }, INTERVAL_MS); }
+					);
+				}
+
+				// 바로 시도
+				tryLoad(target);
+			}
+
+			if (document.readyState === "loading") {
+				document.addEventListener("DOMContentLoaded", initProfileLoader);
+			} else {
+				initProfileLoader();
+			}
+		})();
+	</script>
+
+	<script>
+		$(function() {
+
+			const URL_PROFILE_UPLOAD = "${ctx}/member/profile/upload";
+			const URL_NICK_CHECK = "${ctx}/MemberNickNameCheck";
+
+			const NICK_REGEX = /^[A-Za-z0-9가-힣]{2,12}$/;
+			const COST_NICK = 300;
+			const COST_PROFILE = 500;
+
+			let editMode = false;
+			let nicknameChecked = false;
+			let profileChanged = false;
+
+			const originalNickname = $("#nicknameInput").val().trim();
+			const originalProfileSrc = ($("#profilePreview").data("initialSrc") || "").toString();
+
+			function addCacheBust(url) {
+				if (!url) return url;
+				const sep = url.indexOf("?") >= 0 ? "&" : "?";
+				return url + sep + "v=" + Date.now();
+			}
+
+			function formatWon(num) {
+				return (num || 0).toLocaleString("ko-KR") + "원";
+			}
+
+			$("#editBtn").on("click", function() {
+				editMode = true;
+				$("body").addClass("mypage-editing");
+
+				$("#viewActions").hide();
+				$("#editActions").show();
+				$("#costBox").show();
+
+				$("#nicknameInput").prop("readonly", false);
+				$("#nickCheckBtn").removeClass("disabled-btn");
+				$("#profileBtnLabel").removeClass("disabled-btn");
+
+				$("#nickCostMsg").show();
+				$("#profileCostMsg").show();
+
+				nicknameChecked = false;
+				profileChanged = false;
+				$("#nicknameMsg").text("");
+
+				$("#temporaryProfileImageToken").val("");
+				$("#profileInput").val("");
+
+				updateCostAndButtons();
+			});
+
+			$("#cancelBtn").on("click", function() {
+				exitEditMode(true);
+			});
+
+			function exitEditMode(resetValues) {
+				editMode = false;
+				$("body").removeClass("mypage-editing");
+
+				if (resetValues) {
+					$("#nicknameInput").val(originalNickname);
+
+					// ✅ 원복 시에도 로더를 "이미지 로드 이벤트"로 끔
+					const base = (originalProfileSrc || "").split("?")[0];
+					const target = addCacheBust(base || $("#profilePreview").data("defaultSrc"));
+
+					$("#profileWrap").addClass("is-loading");
+
+					const $img = $("#profilePreview");
+					$img.off("load.__revert error.__revert");
+					$img.on("load.__revert error.__revert", function() {
+						$("#profileWrap").removeClass("is-loading");
+						$img.off("load.__revert error.__revert");
+					});
+					$img.attr("src", target);
+
+					$("#temporaryProfileImageToken").val("");
+					$("#profileInput").val("");
+				}
+
+				$("#nicknameInput").prop("readonly", true);
+				$("#nickCheckBtn").addClass("disabled-btn").text("중복 확인");
+				$("#profileBtnLabel").addClass("disabled-btn");
+
+				$("#nickCostMsg").hide();
+				$("#profileCostMsg").hide();
+
+				$("#costBox").hide();
+				$("#editActions").hide();
+				$("#viewActions").show();
+
+				$("#cashWarn").hide();
+				$("#nicknameMsg").text("");
+
+				nicknameChecked = false;
+				profileChanged = false;
+
+				updateCostAndButtons();
+			}
+
+			$("#nicknameInput").on("input", function() {
+				if (!editMode) return;
+
+				const val = $("#nicknameInput").val().trim();
+				if (val.length > 0 && !NICK_REGEX.test(val)) {
+					$("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
+						.text("닉네임은 2~12자, 한글/영문/숫자만 사용할 수 있습니다.");
+				} else {
+					$("#nicknameMsg").text("");
+				}
+
+				nicknameChecked = false;
+				$("#nickCheckBtn").text("중복 확인");
+				updateCostAndButtons();
+			});
+
+			$("#nickCheckBtn").on("click", function() {
+				if (!editMode) return;
+
+				const nickname = $("#nicknameInput").val().trim();
+
+				if (!NICK_REGEX.test(nickname)) {
+					$("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
+						.text("닉네임은 2~12자, 한글/영문/숫자만 사용할 수 있습니다.");
+					nicknameChecked = false;
+					updateCostAndButtons();
+					return;
+				}
+
+				if (nickname === originalNickname) {
+					$("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
+						.text("현재 닉네임과 동일합니다.");
+					nicknameChecked = false;
+					updateCostAndButtons();
+					return;
+				}
+
+				$.ajax({
+					url: URL_NICK_CHECK,
+					type: "GET",
+					dataType: "json",
+					data: { memberNickname: nickname },
+					success: function(res) {
+						if (!res || res.success !== true) {
+							$("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
+								.text((res && res.message) ? res.message : "중복확인에 실패했습니다.");
+							nicknameChecked = false;
+							$("#nickCheckBtn").text("중복 확인");
+							updateCostAndButtons();
+							return;
+						}
+
+						if (res.available === true) {
+							$("#nicknameMsg").removeClass("msg-error").addClass("msg-ok")
+								.text("사용 가능한 닉네임입니다.");
+							nicknameChecked = true;
+							$("#nickCheckBtn").text("확인 완료");
+						} else {
+							$("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
+								.text("이미 사용 중인 닉네임입니다.");
+							nicknameChecked = false;
+							$("#nickCheckBtn").text("중복 확인");
+						}
+						updateCostAndButtons();
+					},
+					error: function() {
+						$("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
+							.text("중복확인 서버 호출에 실패했습니다.");
+						nicknameChecked = false;
+						$("#nickCheckBtn").text("중복 확인");
+						updateCostAndButtons();
+					}
+				});
+			});
+
+			$("#profileInput").on("change", function() {
+				if (!editMode) return;
+
+				const file = this.files[0];
+				if (!file) return;
+
+				if (!file.type || !file.type.startsWith("image/")) {
+					alert("이미지 파일만 선택할 수 있습니다.");
+					$(this).val("");
+					return;
+				}
+
+				$("#profileWrap").addClass("is-loading");
+
+				const formData = new FormData();
+				formData.append("profileImageFile", file);
+
+				$.ajax({
+					url: URL_PROFILE_UPLOAD,
+					type: "POST",
+					data: formData,
+					processData: false,
+					contentType: false,
+					dataType: "json",
+					success: function(res) {
+						if (!res || res.result !== "SUCCESS") {
+							alert((res && res.errorMessage) ? res.errorMessage : "업로드에 실패했습니다.");
+							$("#profileInput").val("");
+							$("#profileWrap").removeClass("is-loading");
+							return;
+						}
+
+						const tempUrl = addCacheBust(res.temporaryProfileImageUrl);
+
+						// ✅ 업로드 후에도 이미지 load 이벤트로 로더 끔
+						const $img = $("#profilePreview");
+						$img.off("load.__upload error.__upload");
+						$img.on("load.__upload error.__upload", function() {
+							$("#profileWrap").removeClass("is-loading");
+							$img.off("load.__upload error.__upload");
+						});
+						$img.attr("src", tempUrl);
+
+						$("#temporaryProfileImageToken").val(res.temporaryProfileImageToken);
+
+						profileChanged = true;
+						updateCostAndButtons();
+					},
+					error: function(xhr) {
+						alert("프로필 업로드 실패(" + xhr.status + "). 다시 시도해주세요.");
+						$("#profileInput").val("");
+						$("#profileWrap").removeClass("is-loading");
+					}
+				});
+			});
+
+			function updateCostAndButtons() {
+				const currentCash = parseInt($("#cashRaw").val(), 10) || 0;
+				const newNickname = $("#nicknameInput").val().trim();
+				const token = $("#temporaryProfileImageToken").val().trim();
+
+				const nickChanged = editMode && (newNickname !== originalNickname);
+				const nickCost = nickChanged ? COST_NICK : 0;
+
+				const profileCost = (editMode && profileChanged && token.length > 0) ? COST_PROFILE : 0;
+
+				const totalCost = nickCost + profileCost;
+				const cashAfter = currentCash - totalCost;
+
+				$("#costNick").text(formatWon(nickCost));
+				$("#costProfile").text(formatWon(profileCost));
+				$("#costTotal").text(formatWon(totalCost));
+				$("#cashAfter").text(formatWon(Math.max(cashAfter, 0)));
+
+				let canSave = true;
+
+				if (!nickChanged && !(profileChanged && token.length > 0)) canSave = false;
+
+				if (nickChanged) {
+					if (!NICK_REGEX.test(newNickname)) canSave = false;
+					if (!nicknameChecked) canSave = false;
+				}
+
+				if (profileChanged && token.length === 0) canSave = false;
+
+				if (totalCost > currentCash) {
+					canSave = false;
+					$("#cashWarn").show();
+				} else {
+					$("#cashWarn").hide();
+				}
+
+				if (editMode && canSave) $("#saveBtn").removeClass("disabled-btn");
+				else $("#saveBtn").addClass("disabled-btn");
+
+				$("#mCostNick").text(formatWon(nickCost));
+				$("#mCostProfile").text(formatWon(profileCost));
+				$("#mCostTotal").text(formatWon(totalCost));
+			}
+
+			$("#saveBtn").on("click", function() {
+				if ($(this).hasClass("disabled-btn")) return;
+				$("#modalBackdrop").css("display", "flex");
+			});
+
+			function hideConfirmModal() {
+				$("#modalBackdrop").hide();
+			}
+
+			$(".modal-box").on("click", function(e) {
+				e.stopPropagation();
+			});
+
+			$("#modalNoBtn").on("click", function() {
+				hideConfirmModal();
+				exitEditMode(true);
+			});
+
+			$("#modalYesBtn").on("click", function() {
+				if ($("#saveBtn").hasClass("disabled-btn")) return;
+				$("#modalYesBtn").prop("disabled", true);
+				$("#mypageForm").submit();
+			});
+
+			updateCostAndButtons();
+		});
+	</script>
+
+</body>
+</html>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871

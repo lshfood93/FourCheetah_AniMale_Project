@@ -5,6 +5,10 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+<<<<<<< HEAD
+=======
+
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 import org.springframework.stereotype.Repository;
 
 import fourcheetah.animale.web.dto.board.ReplyDTO;
@@ -24,6 +28,7 @@ public class ReplyDAO {
 	// =========================================================
 	// SELECT (최신순 / 오래된순)
 
+<<<<<<< HEAD
 	private static final String SELECT_REPLY_LIST_RECENT = "SELECT " + "  r.reply_id, " + "  r.board_id, "
 			+ "  r.member_id, " + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' "
 			+ "       ELSE m.member_nickname END AS writer_nickname, " + "  r.reply_content " + "FROM reply r "
@@ -33,6 +38,41 @@ public class ReplyDAO {
 			+ "  r.member_id, " + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' "
 			+ "       ELSE m.member_nickname END AS writer_nickname, " + "  r.reply_content " + "FROM reply r "
 			+ "JOIN member m ON m.member_id = r.member_id " + "WHERE r.board_id = ? " + "ORDER BY r.reply_id ASC";
+=======
+	private static final String SELECT_REPLY_LIST_RECENT =
+	        "SELECT " +
+	        "  r.reply_id, " +
+	        "  r.board_id, " +
+	        "  r.member_id, " +
+	        "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' " +
+	        "       ELSE m.member_nickname END AS writer_nickname, " +
+	        "  r.reply_content, " +
+	        "  r.reply_created_at, " +
+	        "  m.member_profile_image  AS writer_profile_image, " +
+	        "  m.member_profile_color  AS writer_profile_color, " +
+	        "  m.member_nickname_color AS writer_nickname_color " +
+	        "FROM reply r " +
+	        "JOIN member m ON m.member_id = r.member_id " +
+	        "WHERE r.board_id = ? " +
+	        "ORDER BY r.reply_id DESC";
+
+	private static final String SELECT_REPLY_LIST_OLDEST =
+	        "SELECT " +
+	        "  r.reply_id, " +
+	        "  r.board_id, " +
+	        "  r.member_id, " +
+	        "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' " +
+	        "       ELSE m.member_nickname END AS writer_nickname, " +
+	        "  r.reply_content, " +
+	        "  r.reply_created_at, " +
+	        "  m.member_profile_image  AS writer_profile_image, " +
+	        "  m.member_profile_color  AS writer_profile_color, " +
+	        "  m.member_nickname_color AS writer_nickname_color " +
+	        "FROM reply r " +
+	        "JOIN member m ON m.member_id = r.member_id " +
+	        "WHERE r.board_id = ? " +
+	        "ORDER BY r.reply_id ASC";
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
 	// =========================================================
 	// INSERT (MySQL AUTO_INCREMENT 전제)
@@ -82,8 +122,19 @@ public class ReplyDAO {
 			data.setMemberId(rs.getInt("member_id"));
 			data.setWriterNickname(rs.getString("writer_nickname"));
 			data.setReplyContent(rs.getString("reply_content"));
+<<<<<<< HEAD
 			return data;
 		}, dto.getBoardId());
+=======
+			data.setReplyCreatedAt(rs.getString("reply_created_at"));
+			data.setWriterProfileImage(rs.getString("writer_profile_image"));
+			data.setWriterProfileColor(rs.getString("writer_profile_color"));
+			data.setWriterNicknameColor(rs.getString("writer_nickname_color"));
+			return data;
+		}, dto.getBoardId());
+		
+		
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
 		return new ArrayList<>(list);
 	}

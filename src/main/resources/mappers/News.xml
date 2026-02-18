@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="News">
+
+  <select id="mainBannerNewsList" resultType="newsDTO">
+    SELECT NEWS_ID AS newsId,
+           NEWS_TITLE AS newsTitle,
+           NEWS_THUMBNAIL_URL AS newsThumbnailUrl
+    FROM NEWS
+    ORDER BY NEWS_ID DESC
+    LIMIT 3
+  </select>
+
+  <select id="newsList" resultType="newsDTO">
+    SELECT NEWS_ID AS newsId,
+           NEWS_TITLE AS newsTitle,
+           NEWS_THUMBNAIL_URL AS newsThumbnailUrl
+    FROM NEWS
+    ORDER BY NEWS_ID DESC
+  </select>
+
+  <select id="searchTitle" parameterType="newsDTO" resultType="newsDTO">
+    SELECT NEWS_ID AS newsId,
+           NEWS_TITLE AS newsTitle,
+           NEWS_THUMBNAIL_URL AS newsThumbnailUrl
+    FROM NEWS
+    WHERE NEWS_TITLE LIKE #{keyword}
+    ORDER BY NEWS_ID DESC
+  </select>
+
+  <select id="searchContent" parameterType="newsDTO" resultType="newsDTO">
+    SELECT NEWS_ID AS newsId,
+           NEWS_TITLE AS newsTitle,
+           NEWS_THUMBNAIL_URL AS newsThumbnailUrl
+    FROM NEWS
+    WHERE NEWS_CONTENT LIKE #{keyword}
+    ORDER BY NEWS_ID DESC
+  </select>
+
+  <select id="newsListPage" parameterType="newsDTO" resultType="newsDTO">
+    SELECT NEWS_ID AS newsId,
+           NEWS_TITLE AS newsTitle,
+           NEWS_THUMBNAIL_URL AS newsThumbnailUrl
+    FROM NEWS
+    ORDER BY NEWS_ID DESC
+    LIMIT #{listSize} OFFSET #{startNum}
+  </select>
+
+  <select id="newsListPageTitle" parameterType="newsDTO" resultType="newsDTO">
+    SELECT NEWS_ID AS newsId,
+           NEWS_TITLE AS newsTitle,
+           NEWS_THUMBNAIL_URL AS newsThumbnailUrl
+    FROM NEWS
+    WHERE NEWS_TITLE LIKE #{keyword}
+    ORDER BY NEWS_ID DESC
+    LIMIT #{listSize} OFFSET #{startNum}
+  </select>
+
+  <select id="newsListPageContent" parameterType="newsDTO" resultType="newsDTO">
+    SELECT NEWS_ID AS newsId,
+           NEWS_TITLE AS newsTitle,
+           NEWS_THUMBNAIL_URL AS newsThumbnailUrl
+    FROM NEWS
+    WHERE NEWS_CONTENT LIKE #{keyword}
+    ORDER BY NEWS_ID DESC
+    LIMIT #{listSize} OFFSET #{startNum}
+  </select>
+
+  <select id="newsDetail" parameterType="newsDTO" resultType="newsDTO">
+    SELECT
+      N.NEWS_ID AS newsId,
+      N.ANIME_ID AS animeId,
+      N.NEWS_TITLE AS newsTitle,
+      N.NEWS_CONTENT AS newsContent,
+      N.NEWS_IMAGE_URL AS newsImageUrl,
+      N.NEWS_THUMBNAIL_URL AS newsThumbnailUrl,
+      A.ANIME_TITLE AS animeTitle,
+      A.ANIME_YEAR AS animeYear,
+      A.ANIME_QUARTER AS animeQuarter,
+      A.ANIME_THUMBNAIL_URL AS animeThumbnailUrl
+    FROM NEWS N
+    LEFT JOIN ANIME A ON A.ANIME_ID = N.ANIME_ID
+    WHERE N.NEWS_ID = #{newsId}
+  </select>
+
+  <select id="newsCount" resultType="int">
+    SELECT COUNT(*) FROM NEWS
+  </select>
+
+  <select id="newsCountTitle" parameterType="newsDTO" resultType="int">
+    SELECT COUNT(*) FROM NEWS WHERE NEWS_TITLE LIKE #{keyword}
+  </select>
+
+  <select id="newsCountContent" parameterType="newsDTO" resultType="int">
+    SELECT COUNT(*) FROM NEWS WHERE NEWS_CONTENT LIKE #{keyword}
+  </select>
+
+  <insert id="insertNews" parameterType="newsDTO"
+          useGeneratedKeys="true" keyProperty="newsId">
+    INSERT INTO NEWS (ANIME_ID, NEWS_TITLE, NEWS_CONTENT, NEWS_IMAGE_URL, NEWS_THUMBNAIL_URL)
+    VALUES (#{animeId}, #{newsTitle}, #{newsContent}, #{newsImageUrl}, #{newsThumbnailUrl})
+  </insert>
+
+  <update id="updateNews" parameterType="newsDTO">
+    UPDATE NEWS
+    SET ANIME_ID = #{animeId},
+        NEWS_TITLE = #{newsTitle},
+        NEWS_CONTENT = #{newsContent},
+        NEWS_IMAGE_URL = #{newsImageUrl},
+        NEWS_THUMBNAIL_URL = #{newsThumbnailUrl}
+    WHERE NEWS_ID = #{newsId}
+  </update>
+
+  <delete id="deleteNews" parameterType="newsDTO">
+    DELETE FROM NEWS WHERE NEWS_ID = #{newsId}
+  </delete>
+
+</mapper>

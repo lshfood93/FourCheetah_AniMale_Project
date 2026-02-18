@@ -10,7 +10,11 @@ public interface BoardService {
 
 	ArrayList<BoardDTO> selectAll(BoardDTO boardDTO);
 
+<<<<<<< HEAD
 	Integer insertReturnId(BoardDTO boardDTO);
+=======
+	boolean insert(BoardDTO boardDTO);
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
 	boolean update(BoardDTO boardDTO);
 

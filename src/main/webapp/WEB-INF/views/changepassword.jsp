@@ -25,7 +25,11 @@
         backUrl = ctx + "/login";
         backText = "← 로그인 화면으로";
     } else {
+<<<<<<< HEAD
         backUrl  = isAdmin ? (ctx + "/admin") : (ctx + "/member/mypage");
+=======
+        backUrl  = isAdmin ? (ctx + "/adminPage") : (ctx + "/member/mypage");
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
         backText = isAdmin ? "← 관리자 페이지로" : "← 마이페이지로";
     }
 %>

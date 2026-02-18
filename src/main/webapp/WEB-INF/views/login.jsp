@@ -1,6 +1,10 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<<<<<<< HEAD
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 
+=======
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -168,6 +172,7 @@
       });
    </script>
 
+<<<<<<< HEAD
 	<!-- 비밀번호 변경 후 알림 -->
 
 
@@ -176,6 +181,14 @@
 			alert("비밀번호가 변경되었습니다. 다시 로그인 해주세요.");
 		</script>
 	</c:if>
+=======
+   <!-- 비밀번호 변경 후 알림 -->
+   <c:if test="${param.pwChanged eq 'true'}">
+      <script>
+         alert("비밀번호가 변경되었습니다. 다시 로그인 해주세요.");
+      </script>
+   </c:if>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
 </body>
 </html>

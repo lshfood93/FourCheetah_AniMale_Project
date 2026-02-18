@@ -4,6 +4,13 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+<<<<<<< HEAD
+=======
+### Secrets (keep in application.properties, but don't commit) ###
+src/main/resources/application.properties
+
+
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 ### STS ###
 .apt_generated
 .classpath
@@ -31,3 +38,10 @@ build/
 
 ### VS Code ###
 .vscode/
+<<<<<<< HEAD
+=======
+
+#### file upload ##
+/uploads/
+/src/main/webapp/upload/
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871

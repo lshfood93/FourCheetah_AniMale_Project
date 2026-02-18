@@ -1,0 +1,532 @@
+/* =========================================================
+   Admin Dashboard (Cash) UI
+   - Scope: .admin-dashboard 하위에만 적용
+   - Final (safe merge)
+     * 카드1: 기존(플렉스 + 변수 튜닝) 유지
+     * 카드2: 충전 수단 비교(최종 튜닝) 적용
+     * 월별 헤더(monthly-head) + kpi row 간격 유지
+     * Sidebar logo cut fix + Floating actions 추가
+   ========================================================= */
+
+/* =========================
+   1) Layout / Container
+   ========================= */
+.admin-dashboard .container-fluid {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* 상단 KPI row와 아래 차트 row 사이 간격 */
+.admin-dashboard .kpi-top-row {
+  margin-bottom: 22px;
+}
+
+/* 좌측 사이드바 폭 */
+.admin-dashboard .left-sidebar {
+  width: 220px;
+}
+.admin-dashboard .body-wrapper {
+  margin-left: 220px;
+}
+
+/* 반응형 */
+@media (max-width: 992px) {
+  .admin-dashboard .body-wrapper {
+    margin-left: 0;
+  }
+}
+
+/* =========================
+   2) Card Look & Feel
+   ========================= */
+.admin-dashboard .card {
+  border-radius: 18px;
+}
+.admin-dashboard .card-body {
+  padding: 24px;
+}
+.admin-dashboard .card-title {
+  margin-bottom: 10px;
+}
+
+/* =========================
+   3) 월별 충전 금액 헤더 (select 정상화)
+   ========================= */
+.admin-dashboard .monthly-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* form-select 기본 width:100% 끊기 */
+.admin-dashboard #yearSelect {
+  width: 120px;
+  max-width: 120px;
+  flex: 0 0 auto;
+  height: 38px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+/* =========================
+   4) 카드2: 충전 수단 비교 (위치/간격 튜닝 최종)
+   목표
+   - 카드1은 건드리지 않음
+   - 카드2는 높이는 카드1과 동일(이미 row stretch로 맞음)
+   - 그래프/범례가 아래로 밀리지 않게, 범례 위치를 확실히 위로 올릴 수 있게
+   ========================= */
+
+/* tooltip 잘림 방지 */
+.admin-dashboard .method-kpi-card,
+.admin-dashboard .method-kpi-card .card-body {
+  overflow: visible !important;
+}
+
+/* stretch 대응 */
+.admin-dashboard .method-kpi-card {
+  height: 100%;
+}
+
+/* 카드2 내부 레이아웃 */
+.admin-dashboard .method-kpi-card .card-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  /* 튜닝값: 여기 숫자만 만지면 됨 */
+  --chart-shift: 2px;       /* 차트(막대) 전체 이동 (음수=위) */
+  --legend-gap: 8px;        /* 차트와 범례 사이 간격 */
+  --legend-shift: 20px;     /* 범례 자체 이동 (음수=위) */
+}
+
+/* 헤더(제목/서브) */
+.admin-dashboard .method-kpi-card .method-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding-top: 10px;
+}
+
+.admin-dashboard .method-kpi-card .method-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.2px;
+}
+
+.admin-dashboard .method-kpi-card .method-sub {
+  margin: 0;
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+/* 차트 영역
+   - flex:1 금지(범례가 바닥으로 밀려 내려가는 원인)
+   - 고정 높이 + transform으로 위치만 튜닝
+*/
+.admin-dashboard .method-kpi-card #chart-method-bar {
+  flex: 0 0 auto;
+  height: 150px; /* 140~170에서 조절 가능 */
+  display: flex;
+  align-items: center;
+  margin-top: 0;
+  min-height: 0;
+  padding: 10px 0 6px;
+  transform: translateY(var(--chart-shift));
+}
+
+/* 막대 pill 클리핑 */
+.admin-dashboard .method-kpi-card #chart-method-bar .apexcharts-svg {
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+/* 범례 */
+.admin-dashboard .method-kpi-card .method-legend {
+  margin-top: var(--legend-gap);
+  transform: translateY(var(--legend-shift));
+  display: grid;
+  gap: 12px;
+}
+
+.admin-dashboard .method-kpi-card .method-legend__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-dashboard .method-kpi-card .method-legend__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-dashboard .method-kpi-card .method-legend .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.admin-dashboard .method-kpi-card .method-legend .name {
+  color: #475569;
+  font-size: 13px;
+}
+
+.admin-dashboard .method-kpi-card .method-legend .pct {
+  color: #64748b;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+/* =========================
+   5) Badge (전월 대비)
+   ========================= */
+.admin-dashboard .badge-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.admin-dashboard .badge-up {
+  color: #0a8f55;
+  background: rgba(0, 200, 120, 0.12);
+}
+.admin-dashboard .badge-down {
+  color: #d61f69;
+  background: rgba(255, 77, 140, 0.12);
+}
+.admin-dashboard .badge-neutral {
+  color: #475569;
+  background: rgba(148, 163, 184, 0.18);
+}
+
+/* =========================
+   6) 카드1(이번달 충전 금액) - 기존 정렬 유지(안정 버전)
+   ========================= */
+.admin-dashboard .cash-kpi-card {
+  overflow: visible !important;
+
+  --chart: 260px;
+  --colGap: 28px;
+
+  --leftPadTop: 18px;
+  --metaLift: -40px;
+  --metaGap: 6px;
+
+  --chartNudgeY: -8px;
+}
+
+.admin-dashboard .cash-kpi-card.card,
+.admin-dashboard .cash-kpi-card .card-body {
+  overflow: visible !important;
+}
+
+.admin-dashboard .cash-summary {
+  position: relative;
+  min-height: 0;
+}
+
+.admin-dashboard .cash-kpi-card .cash-summary__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--chart);
+  grid-template-rows: auto;
+  column-gap: var(--colGap);
+  align-items: stretch;
+}
+
+.admin-dashboard .cash-kpi-card .cash-summary__text {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding-top: var(--leftPadTop);
+}
+
+.admin-dashboard .cash-kpi-card .cash-summary__titleRow,
+.admin-dashboard .cash-kpi-card .cash-summary__titleRow * {
+  user-select: none;
+}
+
+.admin-dashboard .cash-kpi-card .cash-summary__titleLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-dashboard .cash-kpi-card .kpi-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: #f1f5ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0;
+}
+
+.admin-dashboard .cash-kpi-card .kpi-icon .ti {
+  font-size: 18px;
+  line-height: 1;
+  color: #1e88ff;
+}
+
+.admin-dashboard .cash-kpi-card .cash-summary__title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.2px;
+}
+
+.admin-dashboard .cash-kpi-card .cash-summary__amount {
+  margin-top: 18px;
+  font-size: clamp(42px, 4.0vw, 58px);
+  line-height: 1.02;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-dashboard .cash-kpi-card .cash-summary__badge {
+  margin-top: auto;
+  transform: translateY(-8px);
+  width: max-content;
+}
+
+.admin-dashboard .cash-kpi-card .cash-summary__sub {
+  margin: 2px 0 0 0;
+  padding-left: 4px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.admin-dashboard .cash-kpi-card .radial-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.admin-dashboard .cash-kpi-card #chart-mom-radial {
+  width: var(--chart);
+  height: var(--chart);
+  min-height: var(--chart);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.admin-dashboard .cash-kpi-card #chart-mom-radial .apexcharts-canvas {
+  margin: 0 auto !important;
+  transform: translateY(var(--chartNudgeY));
+  transform-origin: top center;
+}
+
+.admin-dashboard .cash-kpi-card .radial-meta {
+  width: var(--chart);
+  margin-top: var(--metaLift);
+  display: grid;
+  gap: var(--metaGap);
+}
+
+.admin-dashboard .cash-kpi-card .radial-meta__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-dashboard .cash-kpi-card .radial-meta__label {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.admin-dashboard .cash-kpi-card .radial-meta__value {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* =========================
+   7) Tooltip / Charts 톤 통일 + Tooltip 잘림 방지
+   ========================= */
+.admin-dashboard .apexcharts-text,
+.admin-dashboard .apexcharts-tooltip,
+.admin-dashboard .apexcharts-tooltip * {
+  font-family: inherit !important;
+}
+
+.admin-dashboard .apexcharts-tooltip {
+  z-index: 9999 !important;
+}
+
+.admin-dashboard .dash-tooltip {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.admin-dashboard .dash-tooltip .tt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.admin-dashboard .dash-tooltip .label {
+  opacity: 0.75;
+}
+
+.admin-dashboard .dash-tooltip .value {
+  font-weight: 700;
+}
+
+/* =========================
+   8) 월별 충전 금액 카드: 라벨/annotations 잘림 방지
+   ========================= */
+.admin-dashboard .monthly-kpi-card,
+.admin-dashboard .monthly-kpi-card.card,
+.admin-dashboard .monthly-kpi-card .card-body,
+.admin-dashboard .monthly-kpi-card #chart-monthly-area,
+.admin-dashboard .monthly-kpi-card #chart-monthly-area .apexcharts-canvas,
+.admin-dashboard .monthly-kpi-card #chart-monthly-area .apexcharts-svg {
+  overflow: visible !important;
+}
+
+/* 월별 차트: HTML 오버레이 라벨 */
+.admin-dashboard .monthly-kpi-card #chart-monthly-area {
+  position: relative;
+}
+
+.admin-dashboard .monthly-kpi-card .monthly-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+  overflow: visible;
+}
+
+.admin-dashboard .monthly-kpi-card .monthly-badge {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+  transform: translate(-50%, -135%);
+}
+
+.admin-dashboard .monthly-kpi-card .monthly-badge--max {
+  background: #1e88ff;
+  color: #fff;
+}
+
+.admin-dashboard .monthly-kpi-card .monthly-badge--min {
+  background: #64748b;
+  color: #fff;
+}
+
+/* =========================
+   9) Sidebar Logo Cut Fix (추가 병합)
+   ========================= */
+.admin-dashboard .left-sidebar .brand-logo {
+  min-height: 88px;
+  padding-top: 16px;
+  padding-bottom: 12px;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+}
+
+.admin-dashboard .left-sidebar .brand-logo a {
+  display: flex;
+  align-items: center;
+}
+
+.admin-dashboard .left-sidebar .brand-logo img {
+  max-height: 44px;
+  width: auto;
+  display: block;
+  margin-top: 2px;
+}
+
+/* =========================
+   10) Floating Actions (우상단 아이콘 2개 고정) (추가 병합)
+   ========================= */
+.admin-dashboard .admin-float-actions {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  gap: 10px;
+  z-index: 9999;
+}
+
+.admin-dashboard .admin-float-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+/* 공통 이미지 */
+.admin-dashboard .admin-profile-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-dashboard .admin-logout-img {
+  width: 36px;
+  height: 36px;
+  max-width: 36px;
+  max-height: 36px;
+  object-fit: contain;
+  display: block;
+  transform-origin: center;
+}
+
+/* 플로팅 영역에서만 로그아웃 아이콘 크기 튜닝 */
+.admin-dashboard .admin-float-actions .admin-logout-img {
+  transform: scale(1);
+}
+
+/* =========================
+   11) 신고 게시글 테이블 (공통)
+   ========================= */
+.admin-dashboard .admin-report-table th {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.admin-dashboard .admin-report-link {
+  color: #0f172a;
+  font-weight: 700;
+}
+.admin-dashboard .admin-report-link:hover {
+  text-decoration: underline;
+}

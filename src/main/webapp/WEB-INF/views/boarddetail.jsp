@@ -1,6 +1,10 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
+<<<<<<< HEAD
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+=======
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
 
@@ -8,6 +12,12 @@
 <c:set var="sessionMemberId" value="${sessionScope.memberId}" />
 <c:set var="sessionMemberRole" value="${sessionScope.memberRole}" />
 
+<<<<<<< HEAD
+=======
+<%-- 삭제된 게시글 체크 --%>
+<c:set var="isDeleted" value="${boardData.boardStatus eq '내용삭제'}" />
+
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -272,6 +282,7 @@
 	align-items: center;
 }
 
+<<<<<<< HEAD
 /* Auth Bar (로그인 안했을 때) */
 .auth-bar {
 	padding: 10px 0;
@@ -303,6 +314,8 @@
 	text-decoration: underline;
 }
 
+=======
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 /* 댓글 헤더 */
 .bd-replies-head {
 	display: flex;
@@ -612,6 +625,63 @@
 	display: block;
 	margin: 12px 0;
 }
+<<<<<<< HEAD
+=======
+/* 신고 모달 중앙 정렬 */
+#reportModal .modal-dialog {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	margin: 0;
+	max-width: 500px;
+	width: 90%;
+}
+
+#reportModal.modal {
+	display: none;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	background-color: rgba(0, 0, 0, 0.7);
+	z-index: 9999;
+}
+
+#reportModal.modal.show {
+	display: flex !important;
+	align-items: center;
+	justify-content: center;
+}
+
+/* 모달 애니메이션 제거 */
+#reportModal .modal-dialog {
+	transition: none !important;
+}
+
+/* 모달 내용 스크롤 */
+#reportModal .modal-body {
+	max-height: 400px;
+	overflow-y: auto;
+}
+
+/* ============================================
+   삭제된 게시글 - 버튼 비활성화 스타일
+============================================ */
+button:disabled, textarea:disabled {
+	opacity: 0.5 !important;
+	cursor: not-allowed !important;
+	background: #555 !important;
+	pointer-events: none;
+}
+
+button:disabled:hover, textarea:disabled:hover {
+	background: #555 !important;
+	transform: none !important;
+}
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 </style>
 </head>
 
@@ -619,6 +689,7 @@
 
 	<jsp:include page="/WEB-INF/common/header.jsp" />
 
+<<<<<<< HEAD
 	<%-- Auth Bar (로그인 안 했을 때만) --%>
 	<c:if test="${not isLogin}">
 		<section class="auth-bar">
@@ -632,6 +703,8 @@
 		</section>
 	</c:if>
 
+=======
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	<section class="product spad bd-detail-wrap">
 		<div class="container">
 
@@ -667,7 +740,20 @@
 							<td>
 								<div class="bd-title-row">
 									<div class="bd-title">
+<<<<<<< HEAD
 										<c:out value="${boardData.boardTitle}" />
+=======
+										<c:choose>
+											<c:when test="${isDeleted}">
+												<span style="color: #e53637; font-style: italic;"> <i
+													class="fa fa-ban"></i> [삭제됨] 신고 요청으로 삭제된 게시글입니다
+												</span>
+											</c:when>
+											<c:otherwise>
+												<c:out value="${boardData.boardTitle}" />
+											</c:otherwise>
+										</c:choose>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 									</div>
 
 									<div class="bd-title-meta">
@@ -690,7 +776,30 @@
 							<td>
 								<div class="bd-content-box">
 									<div class="bd-content">
+<<<<<<< HEAD
 										<c:out value="${boardData.boardContent}" escapeXml="false" />
+=======
+										<c:choose>
+											<c:when test="${isDeleted}">
+												<div
+													style="background: rgba(229, 54, 55, 0.1); border: 2px solid #e53637; padding: 60px 40px; border-radius: 12px; text-align: center; margin: 20px 0;">
+													<i class="fa fa-exclamation-triangle"
+														style="font-size: 64px; color: #e53637; margin-bottom: 24px; display: block;"></i>
+													<p
+														style="color: #e53637; font-size: 20px; margin: 0 0 12px 0; font-weight: bold;">
+														⚠️ 신고 요청으로 삭제된 게시글입니다</p>
+													<p
+														style="color: #aaa; font-size: 15px; margin: 0; line-height: 1.6;">
+														이 게시글은 커뮤니티 가이드 위반으로 인해 내용이 삭제되었습니다.<br> 자세한 사항은
+														관리자에게 문의해주세요.
+													</p>
+												</div>
+											</c:when>
+											<c:otherwise>
+												<c:out value="${boardData.boardContent}" escapeXml="false" />
+											</c:otherwise>
+										</c:choose>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 									</div>
 								</div>
 							</td>
@@ -710,15 +819,39 @@
 												<c:param name="boardId" value="${boardData.boardId}" />
 											</c:url>
 
+<<<<<<< HEAD
 											<a href="${boardEditUrl}" class="btn-sm2 btn-primary2"><i
 												class="fa fa-edit"></i> 수정</a>
 
+=======
+											<!-- 수정 버튼 -->
+											<a href="${boardEditUrl}" class="btn-sm2 btn-primary2"
+												<c:if test="${isDeleted}">
+               onclick="event.preventDefault(); alert('삭제된 게시글은 수정할 수 없습니다.'); return false;"
+               style="opacity:0.5; cursor:not-allowed; pointer-events:none;"
+           </c:if>>
+												<i class="fa fa-edit"></i> 수정
+											</a>
+
+											<!-- 삭제 버튼 -->
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 											<form action="boardDelete" method="post"
 												style="display: inline;">
 												<input type="hidden" name="boardId"
 													value="${boardData.boardId}">
 												<button type="submit" class="btn-sm2 btn-danger2"
+<<<<<<< HEAD
 													onclick="return confirm('정말 삭제하시겠습니까?');">
+=======
+													<c:if test="${isDeleted}">
+                        disabled 
+                        onclick="event.preventDefault(); alert('이미 삭제된 게시글입니다.'); return false;"
+                        style="opacity:0.5; cursor:not-allowed;"
+                    </c:if>
+													<c:if test="${!isDeleted}">
+                        onclick="return confirm('정말 삭제하시겠습니까?');"
+                    </c:if>>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 													<i class="fa fa-trash"></i> 삭제
 												</button>
 											</form>
@@ -730,7 +863,12 @@
 										<button type="button" class="btn-sm2" id="btnLikeToggle"
 											data-liked="${likedByMe ? 1 : 0}"
 											<%-- 숫자(0/1)로 넣어둠 --%>
+<<<<<<< HEAD
 											data-board-id="${boardData.boardId}">
+=======
+											data-board-id="${boardData.boardId}"
+											<c:if test="${isDeleted}">disabled title="삭제된 게시글입니다"</c:if>>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 											<i class="fa fa-heart"></i> <span id="likeLabel"> <c:choose>
 													<c:when test="${likedByMe}">좋아요 취소</c:when>
 													<c:otherwise>좋아요</c:otherwise>
@@ -741,9 +879,26 @@
 										</button>
 
 										<button type="button" class="btn-sm2 btn-ghost2"
+<<<<<<< HEAD
 											id="btnLikeUsers" data-board-id="${boardData.boardId}">
 											<i class="fa fa-users"></i> 좋아요 누른 사람
 										</button>
+=======
+											id="btnLikeUsers" data-board-id="${boardData.boardId}"
+											<c:if test="${isDeleted}">disabled title="삭제된 게시글입니다"</c:if>>
+											<i class="fa fa-users"></i> 좋아요 누른 사람
+										</button>
+
+										<%-- 신고 버튼 (로그인 시에만 표시) --%>
+										<c:if test="${isLogin}">
+											<button type="button" class="btn-sm2 btn-danger2"
+												id="btnReport" data-board-id="${boardData.boardId}"
+												<c:if test="${isDeleted}">disabled title="삭제된 게시글입니다"</c:if>>
+												<i class="fa fa-flag"></i> 신고
+											</button>
+										</c:if>
+
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 									</div>
 
 								</div>
@@ -780,12 +935,25 @@
 							<form id="replyForm" action="${ctx}/replyWrite" method="post"
 								style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start;">
 								<input type="hidden" name="boardId" value="${boardData.boardId}">
+<<<<<<< HEAD
 								<textarea name="replyContent" id="replyContent" rows="3"
 									placeholder="댓글을 입력하세요" class="bd-textarea"></textarea>
 								<button type="submit" class="btn-sm2 btn-primary2"
 									style="height: 44px;">
 									<i class="fa fa-comment"></i> 작성 완료
 								</button>
+=======
+								<!-- ✅ 수정 (textarea는 활성화, 버튼만 비활성화) -->
+								<textarea name="replyContent" id="replyContent" rows="3"
+									placeholder="댓글을 입력하세요" class="bd-textarea"></textarea>
+
+								<button type="submit" class="btn-sm2 btn-primary2"
+									style="height: 44px;"
+									<c:if test="${isDeleted}">disabled title="삭제된 게시글에는 댓글을 작성할 수 없습니다."</c:if>>
+									<i class="fa fa-comment"></i> 작성 완료
+								</button>
+
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 							</form>
 						</c:otherwise>
 					</c:choose>
@@ -854,7 +1022,11 @@
 	</section>
 
 	<%-- 좋아요 사용자 모달 --%>
+<<<<<<< HEAD
 	<div class="modal fade" id="likeUsersModal" tabindex="-1" role="dialog"
+=======
+	<div class="modal" id="likeUsersModal" tabindex="-1" role="dialog"
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 		aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered" role="document">
 			<div class="modal-content">
@@ -876,6 +1048,57 @@
 		</div>
 	</div>
 
+<<<<<<< HEAD
+=======
+	<%-- 신고 모달 --%>
+	<div class="modal fade" id="reportModal" tabindex="-1" role="dialog">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content"
+				style="background: rgba(30, 30, 40, 0.98); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2);">
+				<div class="modal-header">
+					<h5 class="modal-title">게시글 신고</h5>
+					<button type="button" class="close" data-dismiss="modal"
+						aria-label="Close" style="color: #fff;">
+						<span aria-hidden="true" style="color: #fff;">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<p class="meta">신고 사유를 선택해주세요:</p>
+					<div style="margin-top: 16px;">
+						<label
+							style="display: block; margin-bottom: 10px; cursor: pointer;">
+							<input type="radio" name="reasonCode" value="SPAM"
+							style="margin-right: 8px;"> <span>스팸/광고</span>
+						</label> <label
+							style="display: block; margin-bottom: 10px; cursor: pointer;">
+							<input type="radio" name="reasonCode" value="ABUSE"
+							style="margin-right: 8px;"> <span>욕설/비방</span>
+						</label> <label
+							style="display: block; margin-bottom: 10px; cursor: pointer;">
+							<input type="radio" name="reasonCode" value="OBSCENE"
+							style="margin-right: 8px;"> <span>음란물</span>
+						</label> <label
+							style="display: block; margin-bottom: 10px; cursor: pointer;">
+							<input type="radio" name="reasonCode" value="ILLEGAL"
+							style="margin-right: 8px;"> <span>불법 정보</span>
+						</label> <label
+							style="display: block; margin-bottom: 10px; cursor: pointer;">
+							<input type="radio" name="reasonCode" value="ETC"
+							style="margin-right: 8px;"> <span>기타</span>
+						</label>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn-sm2 btn-ghost2"
+						data-dismiss="modal">취소</button>
+					<button type="button" class="btn-sm2 btn-danger2"
+						id="btnSubmitReport">신고하기</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 	<%@ include file="/WEB-INF/common/footer.jsp"%>
 
 	<!-- JS -->
@@ -912,7 +1135,11 @@
 
   // 좋아요 토글 (서블릿: /BoardLikeToggle)
   // 응답: { result:"OK", isLiked:0/1, likeCnt:n }
+<<<<<<< HEAD
   $("#btnLikeToggle").on("click", function () {
+=======
+$("#btnLikeToggle").off("click").on("click", function () {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
     if (!isLogin) {
       alert("로그인 후 이용 가능합니다.");
       return;
@@ -961,7 +1188,11 @@
   });
 
   // 좋아요 누른 사람 보기
+<<<<<<< HEAD
   $("#btnLikeUsers").on("click", function () {
+=======
+$("#btnLikeUsers").off("click").on("click", function () {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
     $("#likeUsersBody").html('<div class="meta">불러오는 중...</div>');
     $("#likeUsersModal").modal("show");
 
@@ -996,7 +1227,11 @@
   });
 
   // 댓글 작성 (ReplyWriteAction redirect → text로 받음)
+<<<<<<< HEAD
   $("#replyForm").on("submit", function (e) {
+=======
+ $("#replyForm").off("submit").on("submit", function (e) {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
     e.preventDefault();
 
     const content = $("#replyContent").val().trim();
@@ -1021,7 +1256,11 @@
   });
 
   // 댓글 정렬
+<<<<<<< HEAD
   $("#replySort").on("change", function () {
+=======
+$("#replySort").off("change").on("change", function () {
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
     loadReplies(this.value);
   });
 
@@ -1168,6 +1407,70 @@
       .toggleClass("liked", !!liked)
       .attr("data-liked", liked ? "1" : "0");
   }
+<<<<<<< HEAD
+=======
+  
+
+// =========================================================
+  // 신고 기능
+  // =========================================================
+  
+  // 신고 버튼 클릭
+  $("#btnReport").off("click").on("click", function() {
+    if (!isLogin) {
+      alert("로그인 후 이용 가능합니다.");
+      return;
+    }
+    
+    // 라디오 선택 초기화
+    $('input[name="reasonCode"]').prop('checked', false);
+    
+    // 모달 표시
+    $("#reportModal").modal("show");
+  });
+
+  // 신고 제출 (수정: #replySort → #btnSubmitReport)
+  $("#btnSubmitReport").off("click").on("click", function() {
+    const reasonCode = $('input[name="reasonCode"]:checked').val();
+    
+    if (!reasonCode) {
+      alert("신고 사유를 선택해주세요.");
+      return;
+    }
+    
+    if (!confirm("이 게시글을 신고하시겠습니까?")) {
+      return;
+    }
+    
+    $.ajax({
+      url: ctx + "/report/board",
+      type: "POST",
+      data: {
+        boardId: boardId,
+        reasonCode: reasonCode
+      },
+      dataType: "json",
+      success: function(res) {
+        if (res.ok) {
+          alert(res.ok);
+          $("#reportModal").modal("hide");
+        } else if (res.fail) {
+          alert(res.fail);
+        } else {
+          alert("신고 처리 중 오류가 발생했습니다.");
+        }
+      },
+      error: function(xhr) {
+        if (xhr.status === 401) {
+          alert("로그인 후 이용 가능합니다.");
+          location.href = ctx + "/loginPage";
+          return;
+        }
+        alert("서버 통신 오류가 발생했습니다.");
+      }
+    });
+  });
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
   </script>
 
 </body>

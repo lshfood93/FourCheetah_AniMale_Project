@@ -28,6 +28,14 @@ public class MainPageController {
     private NewsService newsService;   // 너가 가진 서비스/DAO 구조에 맞게 연결
     @Autowired
     private AnimeService animeService; // 너가 가진 서비스/DAO 구조에 맞게 연결
+<<<<<<< HEAD
+=======
+    
+    @GetMapping("/chatAi")
+    public String aiChatPage() {
+        return "/chatAi"; // /WEB-INF/views/ai/chat.jsp
+    }
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
     @GetMapping({"/", "/mainPage"})
     public String mainPage(
@@ -47,7 +55,11 @@ public class MainPageController {
             memberDTO.setCondition("MEMBER_AUTOLOGIN"); // 아래 2)에서 DAO에 추가할 컨디션
             memberDTO.setMemberName(autoLoginMemberName);
 
+<<<<<<< HEAD
             MemberDTO memberData = memberService.getMember(memberDTO);
+=======
+            MemberDTO memberData = memberService.selectOne(memberDTO);
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
             if (memberData != null) {
                 // 자동 로그인 성공 → 세션 저장
@@ -77,7 +89,11 @@ public class MainPageController {
         // 2) 메인 애니 최신 12개
         AnimeDTO animeDTO = new AnimeDTO();
         animeDTO.setCondition("MAIN_ANIMELIST");
+<<<<<<< HEAD
         List<AnimeDTO> mainAnimeList = animeService.getAnimeList(animeDTO);
+=======
+        List<AnimeDTO> mainAnimeList = animeService.selectAll(animeDTO);
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
         model.addAttribute("mainBannerNewsList", mainBannerNewsList);
         model.addAttribute("mainAnimeList", mainAnimeList);

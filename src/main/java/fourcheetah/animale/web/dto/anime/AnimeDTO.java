@@ -1,7 +1,14 @@
 package fourcheetah.animale.web.dto.anime;
 
+<<<<<<< HEAD
 import org.springframework.web.multipart.MultipartFile;
 
+=======
+import org.apache.ibatis.type.Alias;
+import org.springframework.web.multipart.MultipartFile;
+
+@Alias("animeDTO")
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 public class AnimeDTO {
 
     private int animeId;

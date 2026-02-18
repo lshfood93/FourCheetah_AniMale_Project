@@ -1,6 +1,11 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<<<<<<< HEAD
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+=======
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 
 <!DOCTYPE html>
 <html lang="ko">
@@ -114,7 +119,11 @@
   margin-top: 18px;
   display:flex;
   gap:10px;
+<<<<<<< HEAD
   flex-wrap: wrap; /* 모바일에서 줄바꿈 */
+=======
+  flex-wrap: wrap;
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 }
 
 .meta-chip{
@@ -134,7 +143,11 @@
   opacity:.9;
 }
 
+<<<<<<< HEAD
 /* 시놉시스: 본문도 유리 박스에 넣어서 통일 */
+=======
+/* 시놉시스: 기존처럼(줄바꿈 강제 표시 X) */
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
 .anime-synopsis{
   margin-top: 22px;
   padding: 18px 18px;
@@ -249,7 +262,37 @@
 
         <div class="col-lg-4">
           <div class="anime-thumb">
+<<<<<<< HEAD
             <img src="${pageContext.request.contextPath}${animeData.animeThumbnailUrl}" alt="${animeData.animeTitle}">
+=======
+
+            <%-- 썸네일 URL 정규화 (표시는 안정화, 디자인은 동일) --%>
+            <c:set var="thumbRaw" value="${animeData.animeThumbnailUrl}" />
+            <c:choose>
+              <c:when test="${empty thumbRaw}">
+                <c:set var="thumbSrc" value="${cp}/img/anime/details-pic.jpg" />
+              </c:when>
+
+              <c:when test="${fn:startsWith(thumbRaw, 'http://') or fn:startsWith(thumbRaw, 'https://')}">
+                <c:set var="thumbSrc" value="${thumbRaw}" />
+              </c:when>
+
+              <c:when test="${fn:startsWith(thumbRaw, cp)}">
+                <c:set var="thumbSrc" value="${thumbRaw}" />
+              </c:when>
+
+              <c:when test="${fn:startsWith(thumbRaw, '/')}">
+                <c:set var="thumbSrc" value="${cp}${thumbRaw}" />
+              </c:when>
+
+              <c:otherwise>
+                <c:set var="thumbSrc" value="${cp}/${thumbRaw}" />
+              </c:otherwise>
+            </c:choose>
+
+            <img src="${thumbSrc}" alt="${animeData.animeTitle}">
+
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
           </div>
         </div>
 
@@ -270,6 +313,7 @@
             <div class="action-wrap">
 
               <c:if test="${sessionScope.memberRole eq 'ADMIN'}">
+<<<<<<< HEAD
                 <a href="${cp}/animeEditPage?animeId=${animeData.animeId}" class="ad-btn ad-btn--primary">                
  				 <i class="fa fa-pencil"></i> 수정
 				</a>
@@ -283,6 +327,22 @@
       			   <i class="fa fa-trash"></i> 삭제
   				  </button>
   				</form>
+=======
+                <a href="${cp}/animeEditPage?animeId=${animeData.animeId}"
+                   class="ad-btn ad-btn--primary">
+                  <i class="fa fa-pencil"></i> 수정
+                </a>
+
+                <%-- POST 삭제는 유지, 화면은 기존처럼 a 버튼으로 --%>
+                <form action="${cp}/animeDelete" method="post" style="display:inline;">
+                  <input type="hidden" name="animeId" value="${animeData.animeId}">
+                  <a href="#"
+                     class="ad-btn ad-btn--danger"
+                     onclick="if(confirm('정말 삭제하시겠습니까?')){ this.closest('form').submit(); } return false;">
+                    <i class="fa fa-trash"></i> 삭제
+                  </a>
+                </form>
+>>>>>>> 7ed5837effdde5111f23de87ce812c016b022871
               </c:if>
 
               <a href="${cp}/animeList" class="ad-btn ad-btn--ghost">
