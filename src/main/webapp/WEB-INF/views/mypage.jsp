@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
 
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
 
@@ -9,10 +10,27 @@
 	<c:redirect url="${ctx}/login" />
 </c:if>
 
-<c:set var="profileSrc"
-	value="${not empty memberData.memberProfileImage
-		? ctx.concat(memberData.memberProfileImage)
-		: ctx.concat('/img/profile-default.jpg')}" />
+<%-- =========================================================
+   프로필 이미지 경로 보정
+   ---------------------------------------------------------
+   DB에 두 가지 형태가 혼재함:
+   - 구버전: 'mX_abc123.png'         (파일명만)
+   - 신버전: '/uploads/profile/...'  (경로 포함)
+   -> startsWith('/')로 판단해서 경로 보정
+   ========================================================= --%>
+<c:choose>
+	<c:when test="${empty memberData.memberProfileImage}">
+		<c:set var="profileSrc" value="${ctx}/img/profile-default.jpg" />
+	</c:when>
+	<c:when test="${fn:startsWith(memberData.memberProfileImage, '/')}">
+		<%-- 신버전: 이미 /uploads/profile/... 형태 --%>
+		<c:set var="profileSrc" value="${ctx}${memberData.memberProfileImage}" />
+	</c:when>
+	<c:otherwise>
+		<%-- 구버전: 파일명만 있음 -> 경로 붙여줌 --%>
+		<c:set var="profileSrc" value="${ctx}/uploads/profile/${memberData.memberProfileImage}" />
+	</c:otherwise>
+</c:choose>
 
 <c:set var="cashSafe" value="${empty memberData.memberCash ? 0 : memberData.memberCash}" />
 <fmt:formatNumber value="${cashSafe}" type="number" var="cashFmt" />
