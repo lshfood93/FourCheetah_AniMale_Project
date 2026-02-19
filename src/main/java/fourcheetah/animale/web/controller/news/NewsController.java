@@ -21,6 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import fourcheetah.animale.web.dto.news.NewsDTO;
 import fourcheetah.animale.web.service.news.NewsService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
 /**
@@ -248,6 +249,7 @@ public class NewsController {
             NewsDTO dto,
             @RequestParam("thumbFile") MultipartFile thumbFile,
             HttpSession session,
+            HttpServletRequest request,
             Model model,
             RedirectAttributes ra
     ) {
@@ -309,7 +311,7 @@ public class NewsController {
 
         // 4) 파일 업로드 + DB 저장
         try {
-            String thumbnailUrl = saveFile(thumbFile, "/upload/newsThumb/");
+            String thumbnailUrl = saveFile(thumbFile, "/upload/newsThumb/", request);
             String newsImageUrl = extractFirstImgSrc(newsContent);
 
             NewsDTO insertDTO = new NewsDTO();
@@ -423,6 +425,7 @@ public class NewsController {
             @RequestParam(value = "thumbFile", required = false) MultipartFile thumbFile,
             @RequestParam(value = "newsImageFile", required = false) MultipartFile newsImageFile,
             HttpSession session,
+            HttpServletRequest request,
             Model model,
             RedirectAttributes ra
     ) {
@@ -487,13 +490,13 @@ public class NewsController {
             // 썸네일: 새 파일이 있으면 업로드, 없으면 기존 URL 유지
             String thumbnailUrl = existingThumbUrl;
             if (thumbFile != null && !thumbFile.isEmpty()) {
-                thumbnailUrl = saveFile(thumbFile, "/upload/newsThumb/");
+                thumbnailUrl = saveFile(thumbFile, "/upload/newsThumb/", request);
             }
 
             // 이미지: 새 파일이 있으면 업로드, 없으면 기존 URL 유지
             String newsImageUrl = existingImageUrl;
             if (newsImageFile != null && !newsImageFile.isEmpty()) {
-                newsImageUrl = saveFile(newsImageFile, "/upload/newsImage/");
+                newsImageUrl = saveFile(newsImageFile, "/upload/newsImage/", request);
             }
 
             // 이미지 URL이 없으면 content에서 추출
@@ -594,7 +597,7 @@ public class NewsController {
      * @param webDir 웹 경로 (예: /upload/newsThumb/)
      * @return 저장된 파일의 웹 경로
      */
-    private String saveFile(MultipartFile file, String webDir) throws Exception {
+    private String saveFile(MultipartFile file, String webDir, HttpServletRequest request) throws Exception {
         // 확장자 추출
         String originalFilename = file.getOriginalFilename();
         String extension = "";
@@ -618,7 +621,7 @@ public class NewsController {
             Files.copy(inputStream, savedPath, StandardCopyOption.REPLACE_EXISTING);
         }
 
-        return webDir + savedName;
+        return request.getContextPath() + webDir + savedName;
     }
 
     /**
