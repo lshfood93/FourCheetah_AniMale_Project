@@ -153,16 +153,7 @@ $(function () {
 
     if (!color) return;
 
-    // 4) 레인보우 처리(필요 시)
-    if (color === 'RAINBOW') {
-      $preview.addClass('is-rainbow');
-
-      // ✅ 입력칸에도 레인보우를 주고 싶으면 아래 CSS 클래스 사용(아래 CSS도 같이 추가)
-      $nickInput.addClass('is-rainbow');
-      return;
-    }
-
-    // 5) 일반 단색 처리
+    // 4) 일반 단색 처리
     $preview.css('color', color);
     $nickInput.css('color', color); // ✅
   }
