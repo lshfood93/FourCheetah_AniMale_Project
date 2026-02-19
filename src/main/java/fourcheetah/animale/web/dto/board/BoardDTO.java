@@ -29,6 +29,8 @@ public class BoardDTO {
 
 	private int likeCnt; // (좋아요 개수(LIKE_CNT)
 	private int isLiked; //내가 눌렀는지(0,1 IS_LIKED)
+	private int isReported; // 내가 신고했는지(0,1 IS_REPORTED)
+	private int isEdited; // 수정되었는지(0,1 IS_EDITED)
 	private String likeMemberNickname; // 좋아요 누른 사람 닉네임 목록용
 
 	public int getBoardId() {
@@ -128,6 +130,18 @@ public class BoardDTO {
 	public void setIsLiked(int isLiked) {
 		this.isLiked = isLiked;
 	}
+	public int getIsReported() {
+		return isReported;
+	}
+	public void setIsReported(int isReported) {
+		this.isReported = isReported;
+	}
+	public int getIsEdited() {
+		return isEdited;
+	}
+	public void setIsEdited(int isEdited) {
+		this.isEdited = isEdited;
+	}
 	public String getWriterRole() {
 		return writerRole;
 	}
@@ -146,7 +160,8 @@ public class BoardDTO {
 				+ boardContent + ", boardViews=" + boardViews + ", boardCategory=" + boardCategory + ", boardStatus=" + boardStatus
 				+ ", contentDeletedAt=" + contentDeletedAt + ", boardUpdatedAt=" + boardUpdatedAt + ", boardCreatedAt=" + boardCreatedAt
 				+ ", condition=" + condition + ", keyword=" + keyword + ", type=" + type + ", writerNickname=" + writerNickname + ", writerRole=" + writerRole
-				+ ", likeCnt=" + likeCnt + ", isLiked=" + isLiked + ", likeMemberNickname=" + likeMemberNickname + "]";
+				+ ", likeCnt=" + likeCnt + ", isLiked=" + isLiked + ", isReported=" + isReported + ", isEdited=" + isEdited 
+				+ ", likeMemberNickname=" + likeMemberNickname + "]";
 	}
 
 }
