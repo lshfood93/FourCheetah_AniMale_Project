@@ -1,8 +1,24 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
+
 
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
+<c:set var="profileImgUrl" value="" />
+<c:if test="${not empty memberData.memberProfileImage}">
+  <c:choose>
+    <c:when test="${fn:startsWith(memberData.memberProfileImage,'http')}">
+      <c:set var="profileImgUrl" value="${memberData.memberProfileImage}" />
+    </c:when>
+    <c:when test="${fn:startsWith(memberData.memberProfileImage,'/')}">
+      <c:set var="profileImgUrl" value="${ctx}${memberData.memberProfileImage}" />
+    </c:when>
+    <c:otherwise>
+      <c:set var="profileImgUrl" value="${ctx}/uploads/profile/${memberData.memberProfileImage}" />
+    </c:otherwise>
+  </c:choose>
+</c:if>
 
 <!-- 실제 컨트롤러 매핑에 맞게 수정 -->
 <c:set var="urlNewsManage" value="${ctx}/newsList"/>
@@ -127,6 +143,14 @@
   background-size: 220% 100%;
   animation: skeletonShimmer 1.15s ease-in-out infinite;
 }
+.profile-img-wrap.rainbow-ring.is-loading{
+  background:
+    linear-gradient(#0b0f24, #0b0f24) padding-box,
+    linear-gradient(90deg,
+      #ff3b30, #ff9500, #ffcc00, #34c759, #00c7be, #007aff, #5856d6, #ff2d55
+    ) border-box !important;
+}
+
 .profile-img-wrap.is-loading img{ opacity: 0; }
 
 .profile-loader{
@@ -477,6 +501,39 @@ body.mypage-editing .mypage-right-card{
   color: rgba(255,255,255,0.90);
   line-height: 52px;
 }
+
+/* 프로필 이미지 감싸는 박스 */
+.profile-img-wrap{
+  position: relative;
+  border-radius: 24px;          /* 지금 둥근 정도에 맞춰 조절 */
+  overflow: hidden;              /* 이미지 모서리 같이 둥글게 */
+}
+
+/* 기본 테두리(평소) */
+.profile-img-wrap{
+  border: 2px solid rgba(255,255,255,0.08);
+}
+
+/* ✅ 프로필 전용 레인보우 테두리 (배경 덮기 X) */
+.profile-img-wrap.rainbow-ring{
+  border: 3px solid transparent;
+  background:
+    linear-gradient(#0b0f24, #0b0f24) padding-box,
+    linear-gradient(90deg,
+      #ff3b30, #ff9500, #ffcc00, #34c759, #00c7be, #007aff, #5856d6, #ff2d55
+    ) border-box;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 0 18px rgba(255, 77, 141, 0.22);
+}
+
+
+/* 이미지가 테두리 위를 덮지 않게(그냥 안전장치) */
+.profile-img-wrap img.profile-img{
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 </style>
 </head>
 
@@ -507,12 +564,12 @@ body.mypage-editing .mypage-right-card{
             <div class="profile-img-wrap is-loading" id="profileWrap">
               <c:choose>
                 <c:when test="${not empty memberData.memberProfileImage}">
-                  <img id="profilePreview" alt="프로필 이미지"
-                       data-real-src="${ctx}${memberData.memberProfileImage}"
-                       data-initial-src="${ctx}${memberData.memberProfileImage}"
-                       data-default-src="${ctx}/img/profile-default.jpg"
-                       src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
-                </c:when>
+									<img id="profilePreview" alt="프로필 이미지"
+										data-real-src="${profileImgUrl}"
+										data-initial-src="${profileImgUrl}"
+										data-default-src="${ctx}/img/profile-default.jpg"
+										src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
+								</c:when>
                 <c:otherwise>
                   <img id="profilePreview" alt="프로필 이미지"
                        data-initial-src="${ctx}/img/profile-default.jpg"
@@ -611,10 +668,13 @@ body.mypage-editing .mypage-right-card{
                      name="temporaryProfileImageToken" value="" />
 
               <!-- 컨트롤러 붙이면 이 두 값(DB/세션에서 내려주기) -->
-              <input type="hidden" id="adminNickDecoStyle" name="adminNickDecoStyle" value="NONE" />
-              <input type="hidden" id="adminProfileDecoStyle" name="adminProfileDecoStyle" value="NONE" />
+							<input type="hidden" id="adminNickDecoStyle"
+								name="adminNickDecoStyle"
+								value="${memberData.memberNicknameColor eq 'RAINBOW' ? 'RAINBOW' : 'NONE'}" /> <input type="hidden" id="adminProfileDecoStyle"
+								name="adminProfileDecoStyle"
+								value="${memberData.memberProfileColor eq 'RAINBOW' ? 'RAINBOW' : 'NONE'}" />
 
-              <div class="split-pill">
+							<div class="split-pill">
                 <div class="split-label">
                   <span class="split-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="8" r="4"></circle></svg>
@@ -758,278 +818,368 @@ body.mypage-editing .mypage-right-card{
   </script>
 
   <script>
-  $(function() {
+$(function() {
 
-    const URL_PROFILE_UPLOAD = "${ctx}/member/profile/upload";
-    const URL_NICK_CHECK = "${ctx}/member/nickname/check";
+  const URL_PROFILE_UPLOAD = "${ctx}/member/profile/upload";
+  const URL_NICK_CHECK     = "${ctx}/MemberNickNameCheck";
+  const URL_ADMIN_DECO     = "${ctx}/admin/apply-decoration";
 
-    const NICK_REGEX = /^[A-Za-z0-9가-힣]{2,12}$/;
+  const NICK_REGEX = /^[A-Za-z0-9가-힣]{2,12}$/;
 
-    let editMode = false;
-    let nicknameChecked = false;
-    let profileChanged = false;
+  let editMode = false;
+  let nicknameChecked = false;
+  let profileChanged = false;
 
-    const originalNickname = $("#nicknameInput").val().trim();
-    const originalProfileSrc = $("#profilePreview").data("initialSrc");
+  const originalNickname   = $("#nicknameInput").val().trim();
+  const originalProfileSrc = $("#profilePreview").data("initialSrc");
 
-    function addCacheBust(url) {
-      if (!url) return url;
-      const sep = url.indexOf("?") >= 0 ? "&" : "?";
-      return url + sep + "v=" + Date.now();
+  // ✅ 레인보우(관리자 꾸미기) "원래 상태" 저장
+  let originalAdminNickDeco = ($("#adminNickDecoStyle").val() || "NONE").trim();     // NONE|RAINBOW
+  let originalAdminProfDeco = ($("#adminProfileDecoStyle").val() || "NONE").trim(); // NONE|RAINBOW
+
+  function addCacheBust(url) {
+    if (!url) return url;
+    const sep = url.indexOf("?") >= 0 ? "&" : "?";
+    return url + sep + "v=" + Date.now();
+  }
+
+  /* =========================
+     ✅ 레인보우 렌더 함수 (재사용)
+     ========================= */
+  function renderAdminDeco() {
+    const nickOn = (($("#adminNickDecoStyle").val() || "NONE").trim() === "RAINBOW");
+    const profOn = (($("#adminProfileDecoStyle").val() || "NONE").trim() === "RAINBOW");
+
+    $("#nicknameText").toggleClass("rainbow-text", nickOn);
+    $("#nicknamePill").toggleClass("rainbow-border", nickOn);
+    $("#btnNickDeco").toggleClass("is-on", nickOn);
+
+    $("#profileWrap").toggleClass("rainbow-ring", profOn);
+
+    $("#btnProfileDeco").toggleClass("is-on", profOn);
+  }
+
+  /* =========================
+     ✅ 저장 버튼 활성화 로직 (닉/프로필/레인보우 모두 반영)
+     ========================= */
+  function updateSaveButton() {
+    const newNickname = $("#nicknameInput").val().trim();
+    const token = $("#temporaryProfileImageToken").val().trim();
+
+    const nickChanged = editMode && (newNickname !== originalNickname);
+    const profileOk   = editMode && profileChanged && token.length > 0;
+
+    const nickDecoNow = ($("#adminNickDecoStyle").val() || "NONE").trim();
+    const profDecoNow = ($("#adminProfileDecoStyle").val() || "NONE").trim();
+    const decoChanged = editMode && ((nickDecoNow !== originalAdminNickDeco) || (profDecoNow !== originalAdminProfDeco));
+
+    let canSave = true;
+
+    // ✅ nick/profile/deco 중 하나라도 바뀌어야 저장 가능
+    if (!nickChanged && !profileOk && !decoChanged) canSave = false;
+
+    // 닉네임이 실제로 바뀐 경우만 중복확인 강제
+    if (nickChanged) {
+      if (!NICK_REGEX.test(newNickname)) canSave = false;
+      if (!nicknameChecked) canSave = false;
     }
 
-    function updateSaveButton() {
-      const newNickname = $("#nicknameInput").val().trim();
-      const token = $("#temporaryProfileImageToken").val().trim();
+    if (editMode && profileChanged && token.length === 0) canSave = false;
 
-      const nickChanged = editMode && (newNickname !== originalNickname);
-      const profileOk = editMode && profileChanged && token.length > 0;
+    if (editMode && canSave) $("#saveBtn").removeClass("disabled-btn");
+    else $("#saveBtn").addClass("disabled-btn");
+  }
 
-      let canSave = true;
+  /* =========================
+     ✅ 수정모드 진입
+     ========================= */
+  $("#editBtn").on("click", function() {
+    editMode = true;
+    $("body").addClass("mypage-editing");
 
-      if (!nickChanged && !profileOk) canSave = false;
+    $("#viewActions").hide();
+    $("#editActions").show();
 
-      if (nickChanged) {
-        if (!NICK_REGEX.test(newNickname)) canSave = false;
-        if (!nicknameChecked) canSave = false;
-      }
+    $("#nicknameInput").prop("readonly", false);
+    $("#nickCheckBtn").removeClass("disabled-btn");
+    $("#profileBtnLabel").removeClass("disabled-btn");
 
-      if (editMode && profileChanged && token.length === 0) canSave = false;
+    nicknameChecked = false;
+    profileChanged = false;
+    $("#nicknameMsg").text("");
 
-      if (editMode && canSave) $("#saveBtn").removeClass("disabled-btn");
-      else $("#saveBtn").addClass("disabled-btn");
-    }
+    $("#temporaryProfileImageToken").val("");
+    $("#profileInput").val("");
 
-    $("#editBtn").on("click", function() {
-      editMode = true;
-      $("body").addClass("mypage-editing");
+    updateSaveButton();
+  });
 
-      $("#viewActions").hide();
-      $("#editActions").show();
+  /* =========================
+     ✅ 취소 -> 모든 변경 원복(레인보우 포함)
+     ========================= */
+  $("#cancelBtn").on("click", function() {
+    exitEditMode(true);
+  });
 
-      /* 원래 로직 그대로 */
-      $("#nicknameInput").prop("readonly", false);
-      $("#nickCheckBtn").removeClass("disabled-btn");
-      $("#profileBtnLabel").removeClass("disabled-btn");
+  function exitEditMode(resetValues) {
+    editMode = false;
+    $("body").removeClass("mypage-editing");
 
-      nicknameChecked = false;
-      profileChanged = false;
-      $("#nicknameMsg").text("");
+    if (resetValues) {
+      // 닉네임 원복
+      $("#nicknameInput").val(originalNickname);
+      $("#nicknameText").text(originalNickname);
+
+      // 프로필 이미지 원복
+      const base = (originalProfileSrc || "").split("?")[0];
+      $("#profileWrap").addClass("is-loading");
+      $("#profilePreview").attr("src", addCacheBust(base));
+      setTimeout(function() { $("#profileWrap").removeClass("is-loading"); }, 150);
 
       $("#temporaryProfileImageToken").val("");
       $("#profileInput").val("");
 
-      updateSaveButton();
-    });
-
-    $("#cancelBtn").on("click", function() {
-      exitEditMode(true);
-    });
-
-    function exitEditMode(resetValues) {
-      editMode = false;
-      $("body").removeClass("mypage-editing");
-
-      if (resetValues) {
-        $("#nicknameInput").val(originalNickname);
-        $("#nicknameText").text(originalNickname);
-
-        const base = (originalProfileSrc || "").split("?")[0];
-        $("#profileWrap").addClass("is-loading");
-        $("#profilePreview").attr("src", addCacheBust(base));
-        setTimeout(function() { $("#profileWrap").removeClass("is-loading"); }, 150);
-
-        $("#temporaryProfileImageToken").val("");
-        $("#profileInput").val("");
-      }
-
-      $("#nicknameInput").prop("readonly", true);
-      $("#nickCheckBtn").addClass("disabled-btn").text("중복 확인");
-      $("#profileBtnLabel").addClass("disabled-btn");
-
-      $("#editActions").hide();
-      $("#viewActions").show();
-
-      $("#nicknameMsg").text("");
-
-      nicknameChecked = false;
-      profileChanged = false;
-
-      updateSaveButton();
+      // ✅✅ 레인보우 원복 (필수)
+      $("#adminNickDecoStyle").val(originalAdminNickDeco);
+      $("#adminProfileDecoStyle").val(originalAdminProfDeco);
+      renderAdminDeco();
     }
 
-    $("#nicknameInput").on("input", function() {
-      if (!editMode) return;
+    $("#nicknameInput").prop("readonly", true);
+    $("#nickCheckBtn").addClass("disabled-btn").text("중복 확인");
+    $("#profileBtnLabel").addClass("disabled-btn");
 
-      const val = $("#nicknameInput").val().trim();
-      $("#nicknameText").text(val);
+    $("#editActions").hide();
+    $("#viewActions").show();
 
-      if (val.length > 0 && !NICK_REGEX.test(val)) {
-        $("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
-          .text("닉네임은 2~12자, 한글/영문/숫자만 사용할 수 있습니다.");
-      } else {
-        $("#nicknameMsg").text("");
-      }
+    $("#nicknameMsg").text("");
 
+    nicknameChecked = false;
+    profileChanged = false;
+
+    updateSaveButton();
+  }
+
+  /* =========================
+     닉네임 입력/중복확인
+     ========================= */
+  $("#nicknameInput").on("input", function() {
+    if (!editMode) return;
+
+    const val = $("#nicknameInput").val().trim();
+    $("#nicknameText").text(val);
+
+    if (val.length > 0 && !NICK_REGEX.test(val)) {
+      $("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
+        .text("닉네임은 2~12자, 한글/영문/숫자만 사용할 수 있습니다.");
+    } else {
+      $("#nicknameMsg").text("");
+    }
+
+    nicknameChecked = false;
+    $("#nickCheckBtn").text("중복 확인");
+    updateSaveButton();
+  });
+
+  $("#nickCheckBtn").on("click", function() {
+    if (!editMode) return;
+
+    const nickname = $("#nicknameInput").val().trim();
+
+    if (!NICK_REGEX.test(nickname)) {
+      $("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
+        .text("닉네임은 2~12자, 한글/영문/숫자만 사용할 수 있습니다.");
       nicknameChecked = false;
-      $("#nickCheckBtn").text("중복 확인");
       updateSaveButton();
-    });
+      return;
+    }
 
-    $("#nickCheckBtn").on("click", function() {
-      if (!editMode) return;
+    if (nickname === originalNickname) {
+      $("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
+        .text("현재 닉네임과 동일합니다.");
+      nicknameChecked = false;
+      updateSaveButton();
+      return;
+    }
 
-      const nickname = $("#nicknameInput").val().trim();
-
-      if (!NICK_REGEX.test(nickname)) {
-        $("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
-          .text("닉네임은 2~12자, 한글/영문/숫자만 사용할 수 있습니다.");
-        nicknameChecked = false;
-        updateSaveButton();
-        return;
-      }
-
-      if (nickname === originalNickname) {
-        $("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
-          .text("현재 닉네임과 동일합니다.");
-        nicknameChecked = false;
-        updateSaveButton();
-        return;
-      }
-
-      $.ajax({
-        url: URL_NICK_CHECK,
-        type: "GET",
-        dataType: "json",
-        data: { memberNickname: nickname },
-        success: function(res) {
-          if (!res || res.success !== true) {
-            $("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
-              .text((res && res.message) ? res.message : "중복확인에 실패했습니다.");
-            nicknameChecked = false;
-            $("#nickCheckBtn").text("중복 확인");
-            updateSaveButton();
-            return;
-          }
-
-          if (res.available === true) {
-            $("#nicknameMsg").removeClass("msg-error").addClass("msg-ok")
-              .text("사용 가능한 닉네임입니다.");
-            nicknameChecked = true;
-            $("#nickCheckBtn").text("확인 완료");
-          } else {
-            $("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
-              .text("이미 사용 중인 닉네임입니다.");
-            nicknameChecked = false;
-            $("#nickCheckBtn").text("중복 확인");
-          }
-          updateSaveButton();
-        },
-        error: function() {
+    $.ajax({
+      url: URL_NICK_CHECK,
+      type: "GET",
+      dataType: "json",
+      data: { memberNickname: nickname },
+      success: function(res) {
+        if (!res || res.success !== true) {
           $("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
-            .text("중복확인 서버 호출에 실패했습니다.");
+            .text((res && res.message) ? res.message : "중복확인에 실패했습니다.");
           nicknameChecked = false;
           $("#nickCheckBtn").text("중복 확인");
           updateSaveButton();
+          return;
         }
-      });
+
+        if (res.available === true) {
+          $("#nicknameMsg").removeClass("msg-error").addClass("msg-ok")
+            .text("사용 가능한 닉네임입니다.");
+          nicknameChecked = true;
+          $("#nickCheckBtn").text("확인 완료");
+        } else {
+          $("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
+            .text("이미 사용 중인 닉네임입니다.");
+          nicknameChecked = false;
+          $("#nickCheckBtn").text("중복 확인");
+        }
+        updateSaveButton();
+      },
+      error: function() {
+        $("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
+          .text("중복확인 서버 호출에 실패했습니다.");
+        nicknameChecked = false;
+        $("#nickCheckBtn").text("중복 확인");
+        updateSaveButton();
+      }
+    });
+  });
+
+  /* =========================
+     프로필 업로드
+     ========================= */
+  $("#profileInput").on("change", function() {
+    if (!editMode) return;
+
+    const file = this.files[0];
+    if (!file) return;
+
+    if (!file.type || !file.type.startsWith("image/")) {
+      alert("이미지 파일만 선택할 수 있습니다.");
+      $(this).val("");
+      return;
+    }
+
+    $("#profileWrap").addClass("is-loading");
+
+    const formData = new FormData();
+    formData.append("profileImageFile", file);
+
+    $.ajax({
+      url: URL_PROFILE_UPLOAD,
+      type: "POST",
+      data: formData,
+      processData: false,
+      contentType: false,
+      dataType: "json",
+      success: function(res) {
+        if (!res || res.result !== "SUCCESS") {
+          alert((res && res.errorMessage) ? res.errorMessage : "업로드에 실패했습니다.");
+          $("#profileInput").val("");
+          $("#profileWrap").removeClass("is-loading");
+          return;
+        }
+
+        $("#profilePreview").attr("src", addCacheBust(res.temporaryProfileImageUrl));
+        $("#profileWrap").removeClass("is-loading");
+
+        $("#temporaryProfileImageToken").val(res.temporaryProfileImageToken);
+
+        profileChanged = true;
+        updateSaveButton();
+      },
+      error: function(xhr) {
+        alert("프로필 업로드 실패(" + xhr.status + "). 다시 시도해주세요.");
+        $("#profileInput").val("");
+        $("#profileWrap").removeClass("is-loading");
+      }
+    });
+  });
+
+  /* =========================
+     ✅ 관리자 무료 꾸미기: 클릭 시 즉시 UI 반영 + 저장버튼 활성화
+     ========================= */
+  (function(){
+    function ensureEditMode(){
+      if (editMode) return;
+      $("#editBtn").trigger("click");
+    }
+
+    $("#btnNickDeco").on("click", function(){
+      ensureEditMode();
+      const now = ($("#adminNickDecoStyle").val() || "NONE").trim();
+      $("#adminNickDecoStyle").val(now === "RAINBOW" ? "NONE" : "RAINBOW");
+      renderAdminDeco();
+      updateSaveButton();
     });
 
-    $("#profileInput").on("change", function() {
-      if (!editMode) return;
+    $("#btnProfileDeco").on("click", function(){
+      ensureEditMode();
+      const now = ($("#adminProfileDecoStyle").val() || "NONE").trim();
+      $("#adminProfileDecoStyle").val(now === "RAINBOW" ? "NONE" : "RAINBOW");
+      renderAdminDeco();
+      updateSaveButton();
+    });
 
-      const file = this.files[0];
-      if (!file) return;
+    // 최초 로드시 hidden 값 기준 렌더
+    renderAdminDeco();
+  })();
 
-      if (!file.type || !file.type.startsWith("image/")) {
-        alert("이미지 파일만 선택할 수 있습니다.");
-        $(this).val("");
-        return;
-      }
+  /* =========================
+     ✅ 수정 완료: 레인보우 변경 있으면 먼저 서버에 고정 저장 후 submit
+     ========================= */
+  $("#saveBtn").on("click", function() {
+    if ($(this).hasClass("disabled-btn")) return;
+    if (!confirm("수정을 완료할까요?")) return;
 
-      $("#profileWrap").addClass("is-loading");
+    $("#saveBtn").addClass("disabled-btn");
 
-      const formData = new FormData();
-      formData.append("profileImageFile", file);
+    const nickDecoNow = ($("#adminNickDecoStyle").val() || "NONE").trim(); // NONE|RAINBOW
+    const profDecoNow = ($("#adminProfileDecoStyle").val() || "NONE").trim();
+
+    const decoChanged =
+      (nickDecoNow !== originalAdminNickDeco) ||
+      (profDecoNow !== originalAdminProfDeco);
+
+    // ✅ 레인보우 변경이 있으면 먼저 서버 저장
+    if (decoChanged) {
+      const payload = {
+        nicknameRainbow: (nickDecoNow === "RAINBOW") ? "ON" : "OFF",
+        borderRainbow:   (profDecoNow === "RAINBOW") ? "ON" : "OFF"
+      };
 
       $.ajax({
-        url: URL_PROFILE_UPLOAD,
+        url: URL_ADMIN_DECO,
         type: "POST",
-        data: formData,
-        processData: false,
-        contentType: false,
         dataType: "json",
-        success: function(res) {
-          if (!res || res.result !== "SUCCESS") {
-            alert((res && res.errorMessage) ? res.errorMessage : "업로드에 실패했습니다.");
-            $("#profileInput").val("");
-            $("#profileWrap").removeClass("is-loading");
+        data: payload,
+        success: function(res){
+          if (!res || res.code !== "SUCCESS") {
+            alert((res && res.message) ? res.message : "꾸미기 저장에 실패했습니다.");
+            $("#saveBtn").removeClass("disabled-btn");
             return;
           }
 
-          $("#profilePreview").attr("src", addCacheBust(res.temporaryProfileImageUrl));
-          $("#profileWrap").removeClass("is-loading");
+          // ✅ 성공하면 "원본값"을 현재로 갱신 (이제 이 상태가 기본)
+          originalAdminNickDeco = nickDecoNow;
+          originalAdminProfDeco = profDecoNow;
 
-          $("#temporaryProfileImageToken").val(res.temporaryProfileImageToken);
-
-          profileChanged = true;
-          updateSaveButton();
+          // ✅ 이후 닉네임/프로필 변경도 함께 저장해야 하니 form submit
+          $("#mypageForm").submit();
         },
-        error: function(xhr) {
-          alert("프로필 업로드 실패(" + xhr.status + "). 다시 시도해주세요.");
-          $("#profileInput").val("");
-          $("#profileWrap").removeClass("is-loading");
+        error: function(){
+          alert("꾸미기 저장 서버 호출에 실패했습니다.");
+          $("#saveBtn").removeClass("disabled-btn");
         }
       });
-    });
 
-    $("#saveBtn").on("click", function() {
-      if ($(this).hasClass("disabled-btn")) return;
-      if (!confirm("수정을 완료할까요?")) return;
+      return;
+    }
 
-      $("#saveBtn").addClass("disabled-btn");
-      $("#mypageForm").submit();
-    });
-
-    /* ADMIN 무료 꾸미기(레인보우) */
-    (function(){
-      const $btnNick = $("#btnNickDeco");
-      const $btnProf = $("#btnProfileDeco");
-
-      const $nickText = $("#nicknameText");
-      const $nickPill = $("#nicknamePill");
-      const $profile  = $("#profileWrap");
-
-      const $hNick = $("#adminNickDecoStyle");    // NONE|RAINBOW
-      const $hProf = $("#adminProfileDecoStyle"); // NONE|RAINBOW
-
-      function render(){
-        const nickOn = ($hNick.val() === "RAINBOW");
-        const profOn = ($hProf.val() === "RAINBOW");
-
-        $nickText.toggleClass("rainbow-text", nickOn);
-        $nickPill.toggleClass("rainbow-border", nickOn);
-        $btnNick.toggleClass("is-on", nickOn);
-
-        $profile.toggleClass("rainbow-border", profOn);
-        $btnProf.toggleClass("is-on", profOn);
-      }
-
-      $btnNick.on("click", function(){
-        $hNick.val(($hNick.val() === "RAINBOW") ? "NONE" : "RAINBOW");
-        render();
-      });
-
-      $btnProf.on("click", function(){
-        $hProf.val(($hProf.val() === "RAINBOW") ? "NONE" : "RAINBOW");
-        render();
-      });
-
-      render();
-    })();
-
-    updateSaveButton();
+    // ✅ deco 변경 없으면 기존대로 submit
+    $("#mypageForm").submit();
   });
-  </script>
+
+  // 초기 상태에서 저장 버튼 세팅
+  updateSaveButton();
+
+});
+</script>
+  
 </body>
 </html>
