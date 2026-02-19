@@ -136,24 +136,42 @@ $(function () {
      Preview Apply
   ========================= */
   function applyNicknamePreview() {
-    const color = getCurrentNickColor();
+    const color = (getCurrentNickColor() || '').toString().trim();
     const nick = ($('#nicknameInput').val() || '').trim() || originalNickname;
 
     const $preview = $('#nickDecorPreview');
+
+    const $nickInput = $('#nicknameInput'); // ✅ 실제 닉네임 표시(입력칸)도 같이 적용
+
+    // 1) 텍스트 동기화
+
     $preview.text(nick);
-    $preview.removeClass('is-rainbow');
-    $preview.css('color', '');
 
     if (!color) return;
 
+    // 2) 초기화(미리보기)
+    $preview.removeClass('is-rainbow').css('color', '');
+
+    // 3) 초기화(실제 닉네임 입력칸)
+    $nickInput.removeClass('is-rainbow').css('color', ''); // ✅
+
+    if (!color) return;
+
+    // 4) 레인보우 처리(필요 시)
     if (color === 'RAINBOW') {
       $preview.addClass('is-rainbow');
+
+      // ✅ 입력칸에도 레인보우를 주고 싶으면 아래 CSS 클래스 사용(아래 CSS도 같이 추가)
+      $nickInput.addClass('is-rainbow');
       return;
     }
 
-    $preview.css('color', color);
-  }
 
+    // 5) 일반 단색 처리
+    $preview.css('color', color);
+    $nickInput.css('color', color); // ✅
+  }
+  
   function applyBorderPreview() {
     const color = getCurrentBorderColor();
     const $wrap = $('#profileWrap');

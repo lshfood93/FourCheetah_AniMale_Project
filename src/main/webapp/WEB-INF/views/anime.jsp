@@ -1,13 +1,7 @@
 <!-- =========================================================
   AniMale Anime List (비동기 + 필터 + 검색 + 정렬 + 페이징)
   - JSP 안에 JS(inline script) 포함 버전 (통합본)
-
-  ✅ 이번 반영(기능은 동일, 안정성/호환성 보강)
-  1) ✅ ctx 경로 통일: <%=request.getContextPath()%> 혼용 제거
-  2) ✅ ES5 호환 문법으로 정리(const/let/arrow/startsWith 제거)
-  3) ✅ 서버 paging.year / paging.quarter 값이 '2024년' / '1분기'처럼 내려와도 정상 동기화
-  4) ✅ 썸네일 없는 데이터로 인해 카드가 0개가 되는 케이스도 Empty UI 처리
-  5) ✅ 카드 렌더 시 escapeHtml 적용(XSS 방어)
+  - ✅ 이번 최종본: 경로/정적리소스 관점 안정화 + (XSS 방어용) escapeHtml 추가
 ========================================================= -->
 
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
@@ -20,10 +14,10 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>AniMale | 애니리스트</title>
+<title>AniMale | 애니</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- ✅ 변경: 파비콘 경로 ctx로 통일 -->
+<!-- 파비콘: 컨텍스트 경로 기준 -->
 <link rel="icon" type="image/png" href="${ctx}/favicon.png">
 <link rel="stylesheet" href="${ctx}/css/elegant-icons.css">
 
@@ -39,7 +33,7 @@
 </head>
 
 <body>
-  <!-- ✅ 공용 헤더 포함 -->
+  <!-- 공용 헤더 포함 -->
   <jsp:include page="/WEB-INF/common/header.jsp" />
 
   <section class="product-page spad anime-list-page">
@@ -66,34 +60,37 @@
                  ========================================================= -->
               <div class="anime-search-wrapper">
                 <div class="anime-search-box">
+                  <!-- 검색 조건(서버로 condition 전달) -->
                   <select id="animeSearchType">
                     <option value="ANIME_SEARCH_TITLE">제목</option>
                     <option value="ANIME_SEARCH_STORY">줄거리</option>
                   </select>
 
+                  <!-- 키워드 입력 -->
                   <input type="text" id="animeSearchInput" placeholder="검색어를 입력하세요">
 
-                  <button type="button" id="animeSearchBtn">
-                    <i class="fa fa-search"></i>
-                  </button>
+                  <!-- 검색 실행 버튼 -->
+                  <button type="button" id="animeSearchBtn"><i class="fa fa-search"></i></button>
                 </div>
 
+                <!-- 전체보기: 상태 초기화 + 1페이지 재조회 -->
                 <button type="button" id="animeResetBtn" class="anime-reset-btn">전체보기</button>
 
+                <!-- 관리자일 때만 '애니 추가' 노출 -->
                 <c:if test="${fn:toUpperCase(sessionScope.memberRole) eq 'ADMIN'}">
                   <a class="anime-admin-btn" href="${ctx}/animeWritePage">애니 추가</a>
                 </c:if>
               </div>
 
               <!-- =========================================================
-                   2줄: 연도/분기 + 정렬
+                   2줄: 연도/분기 + 정렬 (같은 라인)
                  ========================================================= -->
               <div class="anime-sub-controls">
 
                 <div class="product__page__filter filter-box">
                   <p>연도/분기</p>
 
-                  <!-- Year -->
+                  <!-- 커스텀 드롭다운: Year -->
                   <div class="am-dd am-dd--year" id="ddYear" data-value="ALL">
                     <button type="button" class="am-dd__btn" aria-expanded="false">
                       <span class="am-dd__text" id="yearText">전체 연도</span>
@@ -107,7 +104,7 @@
                     </ul>
                   </div>
 
-                  <!-- Quarter -->
+                  <!-- 커스텀 드롭다운: Quarter -->
                   <div class="am-dd am-dd--quarter" id="ddQuarter" data-value="ALL">
                     <button type="button" class="am-dd__btn" aria-expanded="false">
                       <span class="am-dd__text" id="quarterText">전체 분기</span>
@@ -121,13 +118,17 @@
                     </ul>
                   </div>
 
+                  <!-- Apply 버튼: uiYear/uiQuarter → filterYear/filterQuarter로 확정 -->
                   <button type="button" id="filterApplyBtn" class="anime-filter-apply">필터 적용</button>
+
+                  <!-- 현재 적용 중인 필터 상태 표시 -->
                   <span id="filterStatus" class="filter-status"></span>
                 </div>
 
                 <div class="product__page__filter sort-box">
                   <p>정렬</p>
 
+                  <!-- 커스텀 드롭다운: Sort -->
                   <div class="am-dd am-dd--sort" id="ddSort" data-value="RECENT">
                     <button type="button" class="am-dd__btn" aria-expanded="false">
                       <span class="am-dd__text">최신 등록순</span>
@@ -148,12 +149,15 @@
         </div><!-- /.row -->
       </div><!-- /.product__page__title -->
 
+      <!-- 카드 리스트 렌더 영역 -->
       <div class="row" id="animeContainer"></div>
 
+      <!-- 검색 결과 없음 UI -->
       <div class="search-result-wrapper" id="searchEmpty" style="display:none;">
         <div class="search-empty">검색 결과가 없습니다.</div>
       </div>
 
+      <!-- 페이지네이션 영역 -->
       <div class="row">
         <div class="col-lg-12">
           <div class="pagination-wrapper">
@@ -167,77 +171,26 @@
 
   <%@ include file="/WEB-INF/common/footer.jsp"%>
 
-  <!-- ✅ 변경: js 경로 ctx로 통일 -->
+  <!-- 라이브러리 로드(순서 중요: jquery → bootstrap → main) -->
   <script src="${ctx}/js/jquery-3.3.1.min.js"></script>
   <script src="${ctx}/js/bootstrap.min.js"></script>
   <script src="${ctx}/js/main.js"></script>
 
-  <!-- =========================================================
-       Anime List Inline JS (통합)
-       - 상태 변수:
-         1) currentSort                 : 정렬(선택 즉시 반영)
-         2) uiYear/uiQuarter             : 드롭다운에서 선택한 'UI 값'(Apply 전)
-         3) filterYear/filterQuarter     : 서버로 보내는 '확정 값'(Apply 후)
-         4) condition/keyword            : 검색 조건/키워드
-       - 메인 흐름:
-         loadAnimeList(page) → fetch → renderAnimeList + renderPaging + syncFilterUI
-  ========================================================= -->
   <script>
-  // ✅ 변경: ctx를 그대로 JS에 주입(스크립틀릿 제거)
-  var contextPath = '${ctx}';
+  // JSP 컨텍스트 경로(JS에서 공통으로 사용)
+  const contextPath = '${ctx}';
 
   // =========================================================
-  // 1) 전역 상태 변수(페이지 전체에서 유지되는 상태)
+  // 1) 전역 상태 변수
   // =========================================================
-  var currentSort = 'RECENT';
+  let currentSort = 'RECENT';      // 정렬(선택 즉시 반영)
+  let uiYear = 'ALL';              // UI 선택값(Apply 전)
+  let uiQuarter = 'ALL';           // UI 선택값(Apply 전)
+  let filterYear = null;           // 서버 전달 필터(Apply 후 확정)
+  let filterQuarter = null;        // 서버 전달 필터(Apply 후 확정)
+  let condition = 'ANIME_LIST_RECENT'; // 검색 조건
+  let keyword = null;              // 검색어(없으면 null)
 
-  var uiYear = 'ALL';
-  var uiQuarter = 'ALL';
-
-  var filterYear = null;
-  var filterQuarter = null;
-
-  var condition = 'ANIME_LIST_RECENT';
-  var keyword = null;
-
-  // =========================================================
-  // 공통 유틸(ES5)
-  // =========================================================
-
-  // ✅ 변경: XSS 방어(서버에서 escape를 해도, 프론트에서도 한 번 더 안전장치)
-  function escapeHtml(v){
-    var s = (v === null || v === undefined) ? '' : String(v);
-    return s
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
-  // ✅ 변경: 서버가 '2024년', '1분기'처럼 내려줘도 숫자만 뽑아서 통일
-  function extractNumber(v){
-    if(v === null || v === undefined) return null;
-    var s = String(v);
-    var only = s.replace(/[^0-9]/g, '');
-    if(!only) return null;
-    return parseInt(only, 10);
-  }
-
-  // ✅ 변경: querystring 생성(URLSearchParams 미사용)
-  function buildQuery(obj){
-    var parts = [];
-    for(var k in obj){
-      if(!obj.hasOwnProperty(k)) continue;
-      if(obj[k] === null || obj[k] === undefined) continue;
-      parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(String(obj[k])));
-    }
-    return parts.join('&');
-  }
-
-  // =========================================================
-  // 2) DOM Ready: 이벤트 바인딩 + 최초 로딩
-  // =========================================================
   $(function () {
 
     // =========================================================
@@ -267,7 +220,7 @@
       e.preventDefault();
       e.stopPropagation();
 
-      var $dd = $(this).closest('.am-dd');
+      const $dd = $(this).closest('.am-dd');
       if ($dd.hasClass('is-open')) closeAllDropdowns();
       else openDropdown($dd);
     });
@@ -276,10 +229,10 @@
       e.preventDefault();
       e.stopPropagation();
 
-      var $li = $(this);
-      var $dd = $li.closest('.am-dd');
-      var value = String($li.data('value'));
-      var label = $li.text();
+      const $li = $(this);
+      const $dd = $li.closest('.am-dd');
+      const value = String($li.data('value'));
+      const label = $li.text();
 
       setDropdown($dd, value, label);
       closeAllDropdowns();
@@ -299,7 +252,7 @@
     });
 
     // =========================================================
-    // (B) 필터 적용 버튼(연도/분기)
+    // (B) 필터 적용(연도/분기)
     // =========================================================
     $('#filterApplyBtn').on('click', function () {
       filterYear = (uiYear !== 'ALL') ? parseInt(uiYear, 10) : null;
@@ -308,11 +261,11 @@
     });
 
     // =========================================================
-    // (C) 검색 버튼 / 엔터 처리
+    // (C) 검색(버튼/엔터)
     // =========================================================
     $('#animeSearchBtn').on('click', function () {
-      var value = $.trim($('#animeSearchInput').val());
-      var searchType = $('#animeSearchType').val();
+      const value = $('#animeSearchInput').val().trim();
+      const searchType = $('#animeSearchType').val();
 
       if (value === '') {
         keyword = null;
@@ -324,9 +277,8 @@
       loadAnimeList(1);
     });
 
-    // ✅ 변경: e.key 대신 keyCode(ES5/호환)
     $('#animeSearchInput').on('keydown', function (e) {
-      if (e.keyCode === 13) {
+      if (e.key === 'Enter') {
         e.preventDefault();
         $('#animeSearchBtn').click();
       }
@@ -354,101 +306,84 @@
       setDropdown($('#ddQuarter'), 'ALL', '전체 분기');
 
       $('#filterStatus').text('');
-
       loadAnimeList(1);
     });
 
     // =========================================================
-    // (E) 페이지네이션 이벤트 위임
+    // (E) 페이지네이션(위임)
     // =========================================================
     $('#pagingArea').on('click', 'a.page-link', function (e) {
       e.preventDefault();
-
-      var page = parseInt($(this).data('page'), 10);
+      const page = parseInt($(this).data('page'), 10);
       if (!page || page < 1) return;
-
       loadAnimeList(page);
     });
 
-    // =========================================================
-    // (F) 최초 로딩
-    // =========================================================
+    // 최초 로딩
     loadAnimeList(1);
 
     // =========================================================
-    // (G) API 호출 함수
+    // (F) 서버 호출
     // =========================================================
     function loadAnimeList(page) {
-      var queryObj = {
-        page: page,
-        condition: condition,
-        sort: currentSort
-      };
+      const params = new URLSearchParams();
 
-      if (keyword != null && keyword !== '') queryObj.keyword = keyword;
-      if (filterYear != null) queryObj.year = filterYear;
-      if (filterQuarter != null) queryObj.quarter = filterQuarter;
+      params.set('page', String(page));
+      params.set('condition', condition);
+      params.set('sort', currentSort);
 
-      var url = contextPath + '/api/anime?' + buildQuery(queryObj);
+      if (keyword != null && keyword !== '') params.set('keyword', keyword);
+      if (filterYear != null) params.set('year', String(filterYear));
+      if (filterQuarter != null) params.set('quarter', String(filterQuarter));
+
+      const url = contextPath + '/api/anime?' + params.toString();
 
       fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } })
-        .then(function (res) {
+        .then((res) => {
           if (!res.ok) throw new Error('HTTP ' + res.status);
           return res.json();
         })
-        .then(function (data) {
-          renderAnimeList(data ? data.animeList : null);
-          renderPaging(data ? data.paging : null);
-
-          // ✅ 서버 상태 기준으로 드롭다운/상태 텍스트 동기화
-          syncFilterUI(data ? data.paging : null);
+        .then((data) => {
+          renderAnimeList(data.animeList);
+          renderPaging(data.paging);
+          syncFilterUI(data.paging);
         })
-        .catch(function (err) {
-          console.log('[에러] AnimeListData:', err);
-        });
+        .catch((err) => console.log('[에러] AnimeListData:', err));
     }
 
     // =========================================================
-    // (H) 서버가 내려준 필터 상태로 UI 동기화
+    // (G) 서버 필터 상태 → UI 동기화
     // =========================================================
     function syncFilterUI(paging) {
       if (!paging) return;
 
-      // ✅ 변경: '2024년' 같이 내려와도 숫자만 추출해서 동기화
-      var y = extractNumber(paging.year);
-      var q = extractNumber(paging.quarter);
-
-      // year
-      if (y != null) {
-        uiYear = String(y);
-        filterYear = y;
-        setDropdown($('#ddYear'), uiYear, y + '년');
+      if (paging.year != null) {
+        uiYear = String(paging.year);
+        filterYear = parseInt(paging.year, 10);
+        setDropdown($('#ddYear'), uiYear, paging.year + '년');
       } else {
         uiYear = 'ALL';
         filterYear = null;
         setDropdown($('#ddYear'), 'ALL', '전체 연도');
       }
 
-      // quarter
-      if (q != null) {
-        uiQuarter = String(q);
-        filterQuarter = q;
-        setDropdown($('#ddQuarter'), uiQuarter, q + '분기');
+      if (paging.quarter != null) {
+        uiQuarter = String(paging.quarter);
+        filterQuarter = parseInt(paging.quarter, 10);
+        setDropdown($('#ddQuarter'), uiQuarter, paging.quarter + '분기');
       } else {
         uiQuarter = 'ALL';
         filterQuarter = null;
         setDropdown($('#ddQuarter'), 'ALL', '전체 분기');
       }
 
-      // 상태 텍스트(예: '2024년 · 2분기 적용중')
-      var $status = $('#filterStatus');
+      const $status = $('#filterStatus');
       if ($status.length === 0) return;
 
       $status.text('');
-
       if (filterYear == null && filterQuarter == null) return;
 
-      var parts = [];
+      const parts = [];
       if (filterYear != null) parts.push(filterYear + '년');
       if (filterQuarter != null) parts.push(filterQuarter + '분기');
       $status.text(parts.join(' · ') + ' 적용중');
@@ -456,88 +391,84 @@
   });
 
   // =========================================================
-  // 3) 렌더 함수(전역)
+  // 2) 렌더 함수(전역)
   // =========================================================
+  function escapeHtml(str){
+    if(str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function normalizeUrl(raw){
+    if(!raw) return '';
+    raw = String(raw).trim();
+    if(!raw) return '';
+    if(raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+
+    // DB가 ctx 포함(/animale/...)이면 그대로 사용
+    if(contextPath && raw.startsWith(contextPath + '/')) return raw;
+
+    if(raw.startsWith('/')) return contextPath + raw;
+    return contextPath + '/' + raw;
+  }
+
   function renderAnimeList(list) {
-    var $container = $('#animeContainer');
+    const $container = $('#animeContainer');
     $container.empty();
 
-    // ✅ 리스트 자체가 비었으면 Empty
     if (!list || list.length === 0) {
       $('#searchEmpty').show();
       return;
     }
-
     $('#searchEmpty').hide();
 
-    var appended = 0; // ✅ 변경: 썸네일 없는 항목 skip 때문에 '카드 0개' 상황 감지용
+    list.forEach((item, idx) => {
+      if (!item.animeThumbnailUrl) return;
 
-    for (var idx = 0; idx < list.length; idx++) {
-      var item = list[idx];
-      if (!item) continue;
+      const thumbUrl = normalizeUrl(item.animeThumbnailUrl);
 
-      // ✅ 썸네일이 없으면 카드 생성 스킵
-      if (!item.animeThumbnailUrl) continue;
+      const yearText = item.animeYear ? (escapeHtml(item.animeYear) + '년') : '연도 미정';
+      const quarterText = item.animeQuarter ? escapeHtml(item.animeQuarter) : '분기 미정';
+      const titleText = escapeHtml(item.animeTitle);
 
-      var raw = String(item.animeThumbnailUrl);
+      const delay = Math.min(idx * 35, 350);
 
-      // ✅ 변경: startsWith 제거(ES5)
-      var thumbUrl;
-      if (/^https?:\/\//i.test(raw)) thumbUrl = raw;
-      else if (raw.charAt(0) === '/') thumbUrl = contextPath + raw;
-      else thumbUrl = contextPath + '/' + raw;
-
-      var yearText = item.animeYear ? (String(item.animeYear) + '년') : '연도 미정';
-      var quarterText = item.animeQuarter ? String(item.animeQuarter) : '분기 미정';
-
-      var delay = Math.min(idx * 35, 350);
-
-      // ✅ 변경: 출력값 escape 처리(보안/깨짐 방지)
-      var titleSafe = escapeHtml(item.animeTitle);
-      var yearSafe = escapeHtml(yearText);
-      var quarterSafe = escapeHtml(quarterText);
-
-      var html =
+      const html =
         '<div class="col-lg-3 col-md-4 col-sm-6 anime-card" style="animation-delay:' + delay + 'ms">' +
           '<a href="' + contextPath + '/animeDetail?animeId=' + encodeURIComponent(item.animeId) + '" class="anime-link">' +
             '<div class="product__item">' +
-              '<div class="product__item__pic set-bg" data-setbg="' + escapeHtml(thumbUrl) + '"></div>' +
+              '<div class="product__item__pic set-bg" data-setbg="' + thumbUrl + '"></div>' +
               '<div class="product__item__text">' +
                 '<ul class="anime-meta">' +
-                  '<li>' + yearSafe + '</li>' +
-                  '<li class="badge-q">' + quarterSafe + '</li>' +
+                  '<li>' + yearText + '</li>' +
+                  '<li class="badge-q">' + quarterText + '</li>' +
                 '</ul>' +
-                '<h5 class="anime-title">' + titleSafe + '</h5>' +
+                '<h5 class="anime-title">' + titleText + '</h5>' +
               '</div>' +
             '</div>' +
           '</a>' +
         '</div>';
 
       $container.append(html);
-      appended++;
-    }
+    });
 
-    // ✅ 변경: list는 있는데(서버 응답) 썸네일 없는 데이터만 있어서 카드가 0개인 경우
-    if (appended === 0) {
-      $('#searchEmpty').show();
-      return;
-    }
-
-    // ✅ 변경: 전체 .set-bg 말고, 이번에 그린 카드 내부만 처리(불필요한 사이드이펙트 줄임)
-    $container.find('.set-bg').each(function () {
-      var bg = $(this).data('setbg');
+    $('.set-bg').each(function () {
+      const bg = $(this).data('setbg');
       if (bg) $(this).css('background-image', "url('" + bg + "')");
     });
   }
 
   function renderPaging(p) {
-    var $paging = $('#pagingArea');
+    const $paging = $('#pagingArea');
     $paging.empty();
 
     if (!p) return;
     if (p.totalPage <= 1) return;
 
-    // 이전 블록
     if (p.hasPrev) {
       $paging.append(
         '<li class="arrow">' +
@@ -546,9 +477,8 @@
       );
     }
 
-    // 페이지 번호
-    for (var i = p.startPage; i <= p.endPage; i++) {
-      var active = (i === p.page) ? 'active' : '';
+    for (let i = p.startPage; i <= p.endPage; i++) {
+      const active = (i === p.page) ? 'active' : '';
       $paging.append(
         '<li class="' + active + '">' +
           '<a href="#" class="page-link" data-page="' + i + '">' + i + '</a>' +
@@ -556,7 +486,6 @@
       );
     }
 
-    // 다음 블록
     if (p.hasNext) {
       $paging.append(
         '<li class="arrow">' +
