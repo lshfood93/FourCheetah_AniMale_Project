@@ -140,10 +140,14 @@ $(function () {
     const nick = ($('#nicknameInput').val() || '').trim() || originalNickname;
 
     const $preview = $('#nickDecorPreview');
+
     const $nickInput = $('#nicknameInput'); // ✅ 실제 닉네임 표시(입력칸)도 같이 적용
 
     // 1) 텍스트 동기화
+
     $preview.text(nick);
+
+    if (!color) return;
 
     // 2) 초기화(미리보기)
     $preview.removeClass('is-rainbow').css('color', '');
@@ -161,6 +165,7 @@ $(function () {
       $nickInput.addClass('is-rainbow');
       return;
     }
+
 
     // 5) 일반 단색 처리
     $preview.css('color', color);

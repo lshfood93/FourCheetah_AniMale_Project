@@ -97,7 +97,13 @@
    - 없으면 updatedAt != createdAt 으로 추론(폴백)
    ========================================================= --%>
 <c:set var="boardIsEdited"
-       value="${boardData.isEdited == 1 or (not empty updatedAt and updatedAt ne createdAt)}" />
+       value="${boardData.isEdited == 1 or boardData.isEdited == true or boardData.isEdited == '1'
+               or (not empty updatedAt and updatedAt ne createdAt)}" />
+
+<%-- ✅ CHANGED: 좋아요 초기값은 '값이 존재하냐(not empty)'로 판단하면 0도 true 되는 문제가 있어
+   -> true/1/'1'만 true로 처리 --%>
+<c:set var="initLikedFlag" value="${isLiked}" />
+<c:set var="initLikeCount" value="${likeCount}" />
 
 <!doctype html>
 <html lang="ko">
@@ -116,8 +122,7 @@
   <link rel="stylesheet" href="${ctx}/css/slicknav.min.css" type="text/css" />
   <link rel="stylesheet" href="${ctx}/css/style.css" />
 
-  <%-- 페이지 전용 CSS (boarddetail.css) --%>
-  <link rel="stylesheet" href="${ctx}/css/boarddetail.css" />
+ <link rel="stylesheet" href="${ctx}/css/boarddetail.css" />
 </head>
 
 <body class="board-detail-page">
