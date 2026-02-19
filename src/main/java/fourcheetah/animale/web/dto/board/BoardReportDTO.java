@@ -15,10 +15,9 @@ public class BoardReportDTO {
     private int boardReportId;          // 신고 ID
     private int boardId;                // 게시글 ID
     private int reporterId;             // 신고자 ID
-    private String reasonCode;          // 신고 사유 코드
-    private String reasonDetail;        // 신고 사유 상세
+    private String reasonCode;          // 신고 사유 코드 (SPAM/ABUSE/OBSCENE/ILLEGAL/ETC)
     private String status;              // 상태 (PENDING/APPROVED/REJECTED)
-    private LocalDateTime createdAt;           // 신고 일시
+    private LocalDateTime createdAt;    // 신고 일시
     private String handledAt;           // 처리 일시
     private int handledBy;              // 처리자 ID
     
@@ -89,14 +88,6 @@ public class BoardReportDTO {
     
     public void setReasonCode(String reasonCode) {
         this.reasonCode = reasonCode;
-    }
-    
-    public String getReasonDetail() {
-        return reasonDetail;
-    }
-    
-    public void setReasonDetail(String reasonDetail) {
-        this.reasonDetail = reasonDetail;
     }
     
     public String getStatus() {
