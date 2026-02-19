@@ -22,17 +22,6 @@ public class AiChatController {
 
 	@Autowired
     private AiChatService aiChatService;
-
-   
-
-    // 1) 챗봇 화면 진입(페이지)
-    @GetMapping("/chat")
-    public String chatPage(HttpSession session) {
-        // 여기서 로그인 체크 원하면 session.getAttribute("memberId")로 처리
-        return "chatAi"; // thymeleaf/jsp 경로
-    }
-
-    
     
     // 2) 열기(초기 메시지 + 세션 초기화)
     @ResponseBody

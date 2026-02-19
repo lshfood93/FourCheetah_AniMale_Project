@@ -180,7 +180,8 @@ public class BoardController {
         // 2) 게시글 상세 조회
         // ⭐⭐⭐ 로그인 사용자 ID 가져오기 (isLiked, isReported 계산용) ⭐⭐⭐
         HttpSession session = request.getSession(false);
-        Integer currentMemberId = getLoginMemberIdOrNull(session);
+        // [FIX] Integer로 받기 (null 허용)
+        Integer currentMemberId = (session != null) ? (Integer) session.getAttribute("memberId") : null;
         
         boardDTO.setBoardId(boardId);
         boardDTO.setCondition("BOARD_DETAIL");
@@ -212,7 +213,10 @@ public class BoardController {
 
             BoardLikeDTO checkRes = boardLikeService.selectOne(boardLikeDTO);
             likedByMe = (checkRes != null && checkRes.getIsLiked() > 0);
-        }model.addAttribute("isLiked", likedByMe);
+        }
+        
+        model.addAttribute("isLiked", likedByMe);
+        
 
         // 5) 댓글 목록
         replyDTO.setBoardId(boardId);
