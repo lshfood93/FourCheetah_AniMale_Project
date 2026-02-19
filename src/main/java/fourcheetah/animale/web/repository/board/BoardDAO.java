@@ -102,16 +102,49 @@ public class BoardDAO {
    // =========================================================
    // SELECT ONE
    // board_status, board_created_at, board_updated_at 추가!
-   private static final String SELECT_BOARD_DETAIL = "SELECT " + "  b.board_id, b.member_id, "
-         + "  m.member_role AS writer_role, "
-         + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' ELSE m.member_nickname END AS writer_nickname, "
-         + "  b.board_title, b.board_content, b.board_views, b.board_category, "
-         + "  b.board_status, "
-         + "  b.board_created_at, "
-         + "  b.board_updated_at, "
-         + "  IFNULL(l.like_cnt, 0) AS like_cnt " + "FROM board b " + "JOIN member m ON m.member_id = b.member_id "
-         + "LEFT JOIN (" + LIKE_COUNT_SUBQUERY + ") l ON l.board_id = b.board_id " + "WHERE b.board_id = ?";
-
+   private static final String SELECT_BOARD_DETAIL = 
+		    "SELECT " +
+		    "  b.board_id, b.member_id, " +
+		    "  m.member_role AS writer_role, " +
+		    "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' ELSE m.member_nickname END AS writer_nickname, " +
+		    "  b.board_title, b.board_content, b.board_views, b.board_category, " +
+		    "  b.board_status, " +
+		    "  b.board_created_at, " +
+		    "  b.board_updated_at, " +
+		    "  IFNULL(l.like_cnt, 0) AS like_cnt, " +
+		    
+		    // ⭐⭐⭐ 여기부터 추가 ⭐⭐⭐
+		    
+		    // isLiked 계산 (좋아요 눌렀는지)
+		    "  CASE " +
+		    "    WHEN ? IS NULL THEN 0 " +
+		    "    ELSE (SELECT COUNT(*) FROM board_like " +
+		    "          WHERE board_id = b.board_id AND member_id = ?) " +
+		    "  END AS is_liked, " +
+		    
+		    // isReported 계산 (신고했는지)
+		    "  CASE " +
+		    "    WHEN ? IS NULL THEN 0 " +
+		    "    ELSE (SELECT COUNT(*) FROM board_report " +
+		    "          WHERE board_id = b.board_id " +
+		    "          AND reporter_member_id = ? " +
+		    "          AND status = 'PENDING') " +
+		    "  END AS is_reported, " +
+		    
+		    // isEdited 계산 (수정되었는지)
+		    "  CASE " +
+		    "    WHEN b.board_updated_at IS NULL THEN 0 " +
+		    "    WHEN b.board_created_at = b.board_updated_at THEN 0 " +
+		    "    ELSE 1 " +
+		    "  END AS is_edited " +
+		    
+		    // ⭐⭐⭐ 추가 끝 ⭐⭐⭐
+		    
+		    "FROM board b " +
+		    "JOIN member m ON m.member_id = b.member_id " +
+		    "LEFT JOIN (" + LIKE_COUNT_SUBQUERY + ") l ON l.board_id = b.board_id " +
+		    "WHERE b.board_id = ?";
+   
    private static final String SELECT_BOARD_EXISTS = "SELECT board_id FROM board WHERE board_id = ?";
 
    // =========================================================
@@ -205,11 +238,17 @@ public class BoardDAO {
        try {
            if ("BOARD_DETAIL".equals(condition)) {
 
-               // CHANGED: 람다(mapBoardRowDetail) 제거 → 상세 RowMapper 사용(board_content 포함)
+               // ⭐⭐⭐ 파라미터 순서 중요! ⭐⭐⭐
+               Integer currentMemberId = boardDTO.getMemberId();  // DTO에서 가져옴
+               
                return jdbcTemplate.queryForObject(
                        SELECT_BOARD_DETAIL,
                        new BoardDetailRowMapper(),
-                       boardDTO.getBoardId()
+                       currentMemberId,           // isLiked 계산용 (? IS NULL)
+                       currentMemberId,           // isLiked 계산용 (member_id = ?)
+                       currentMemberId,           // isReported 계산용 (? IS NULL)
+                       currentMemberId,           // isReported 계산용 (reporter_member_id = ?)
+                       boardDTO.getBoardId()      // WHERE b.board_id = ?
                );
            }
 
@@ -336,18 +375,30 @@ public class BoardDAO {
       // 상세용 RowMapper (board_content + board_status + created_at + updated_at 포함)
       // =========================================================
       class BoardDetailRowMapper implements RowMapper<BoardDTO> {
-
-          // 목록 공통 필드 재사용(원하는 방식 유지)
           private final BoardListRowMapper base = new BoardListRowMapper();
 
           @Override
           public BoardDTO mapRow(ResultSet rs, int rowNum) throws SQLException {
-              BoardDTO data = base.mapRow(rs, rowNum);                    // ✅ 목록 공통 필드 세팅
-              data.setBoardContent(rs.getString("board_content"));       // ✅ 상세에서만 읽음
-              data.setBoardStatus(rs.getString("board_status"));         // ✅ 게시글 상태
-              data.setBoardCreatedAt(rs.getString("board_created_at"));  // ✅ 작성일 추가
-              data.setBoardUpdatedAt(rs.getString("board_updated_at"));  // ✅ 수정일 추가
+              BoardDTO data = base.mapRow(rs, rowNum);
+              data.setBoardContent(rs.getString("board_content"));
+              data.setBoardStatus(rs.getString("board_status"));
+              data.setBoardCreatedAt(rs.getString("board_created_at"));
+              data.setBoardUpdatedAt(rs.getString("board_updated_at"));
+              
+              // ⭐⭐⭐ 여기 추가 ⭐⭐⭐
+              data.setIsLiked(getIntOrZero(rs, "is_liked"));
+              data.setIsReported(getIntOrZero(rs, "is_reported"));
+              data.setIsEdited(getIntOrZero(rs, "is_edited"));
+              // ⭐⭐⭐ 추가 끝 ⭐⭐⭐
+              
               return data;
+          }
+          
+          // ⭐⭐⭐ 이 메서드도 추가 ⭐⭐⭐
+          private int getIntOrZero(ResultSet rs, String colName) throws SQLException {
+              Object obj = rs.getObject(colName);
+              if (obj == null) return 0;
+              return ((Number) obj).intValue();
           }
       }
 }

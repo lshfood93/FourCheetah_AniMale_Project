@@ -12,6 +12,7 @@ public class ReplyDTO {
 	private String condition;
 	private String writerNickname; // JOIN MEMBER + 탈퇴회원
 	private String writerProfileImage; // JOIN MEMBER 프로필 이미지 추가!
+	private int isEdited; // 댓글 수정 여부(0,1 IS_EDITED)
 	
 	public int getReplyId() {
 		return replyId;
@@ -67,11 +68,17 @@ public class ReplyDTO {
 	public void setWriterProfileImage(String writerProfileImage) {
 		this.writerProfileImage = writerProfileImage;
 	}
+	public int getIsEdited() {
+		return isEdited;
+	}
+	public void setIsEdited(int isEdited) {
+		this.isEdited = isEdited;
+	}
 	@Override
 	public String toString() {
 		return "ReplyDTO [replyId=" + replyId + ", boardId=" + boardId + ", memberId=" + memberId + ", replyContent="
 				+ replyContent + ", replyCreatedAt=" + replyCreatedAt + ", replyUpdatedAt=" + replyUpdatedAt
 				+ ", condition=" + condition + ", writerNickname=" + writerNickname 
-				+ ", writerProfileImage=" + writerProfileImage + "]";
+				+ ", writerProfileImage=" + writerProfileImage + ", isEdited=" + isEdited + "]";
 	}
 }
