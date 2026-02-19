@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
-<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%-- ✅ 정리: fmt는 현재 페이지에서 미사용이라 제거해도 됨(기능 영향 없음) --%>
+<%-- <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%> --%>
 
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
 
@@ -22,6 +23,10 @@
 </c:if>
 
 <c:if test="${empty memberData}">
+  <%-- NOTE:
+       - 이 페이지가 adminPage에서 forward되는 구조라면 그대로 유지 가능
+       - 만약 실제로 무한루프가 생기면 mainPage로 바꾸는게 안전
+  --%>
   <c:redirect url="${ctx}/adminPage" />
 </c:if>
 
@@ -232,7 +237,7 @@
   color: rgba(255,255,255,0.58);
   white-space: nowrap;
 }
-.split-value{ flex: 1; display:flex; align-items:center; padding: 0 18px; }
+.split-value{ flex: 1; display:flex; align-items:center; padding: 0 18px; position:relative; }
 .split-value input{
   width: 100%; height: 52px;
   border: 0; outline: 0;
@@ -283,6 +288,31 @@
 }
 
 #nicknameMsg:empty{ display:none; }
+
+/* ✅ 변경: 닉네임 span/input 동작을 editMode에 맞게 실제로 편집 가능하도록 */
+#nicknameText{
+  display:inline-block;
+  padding-left: 12px;
+  font-size: 14.5px;
+  font-weight: 620;
+  color: rgba(255,255,255,0.90);
+  line-height: 52px;
+}
+
+/* 기본(보기모드): input은 숨기고(span만 보이게) */
+.nickname-input{
+  position:absolute;
+  inset:0;
+  opacity:0;
+  pointer-events:none;
+}
+
+/* 편집모드(body에 mypage-editing 붙으면): input을 보이게 + span 숨김 */
+body.mypage-editing #nicknameText{ display:none; }
+body.mypage-editing .nickname-input{
+  opacity:1;
+  pointer-events:auto;
+}
 
 /* 좌측 메뉴 */
 .side-menu{
@@ -468,24 +498,15 @@ body.mypage-editing .mypage-right-card{
   background: rgba(255,255,255,0.05);
   border-color: rgba(255,255,255,0.18);
 }
-
-/* ✅ 닉네임 표시용 span 스타일(기본 글자 톤) */
-#nicknameText{
-  display:inline-block;
-  padding-left: 12px;
-  font-size: 14.5px;
-  font-weight: 620;
-  color: rgba(255,255,255,0.90);
-  line-height: 52px;
-}
 </style>
 </head>
 
 <body>
    <%-- ✅ 관리자 페이지에서는 사람 버튼을 대시보드로 보내기 --%>
-    <c:set var="profileHref" value="/admindashboard" />
+   <!-- ✅ 변경: ctx 포함해서 컨텍스트 경로 대응 -->
+   <c:set var="profileHref" value="${ctx}/admindashboard" />
 
-    <%@ include file="/WEB-INF/common/header.jsp" %>
+   <%@ include file="/WEB-INF/common/header.jsp" %>
 
    <c:if test="${not empty msg}">
       <div class="container" style="margin-top: 18px;">
@@ -652,7 +673,7 @@ body.mypage-editing .mypage-right-card{
                         </div>
                      </div>
 
-                     <!-- ✅ 닉네임 영역: 표시(span) + 전송용(input) 분리 -->
+                     <!-- ✅ 닉네임 영역: 보기(span) + 편집(input) 분리 -->
                      <div class="split-row">
                         <div class="split-pill" id="nicknamePill">
                            <div class="split-label">
@@ -662,14 +683,14 @@ body.mypage-editing .mypage-right-card{
                               <span class="split-text">닉네임</span>
                            </div>
 
-                           <div class="split-value" style="position:relative;">
-                              <!-- 화면 표시용 -->
+                           <div class="split-value">
+                              <!-- ✅ 보기용(평소 표시) -->
                               <span id="nicknameText">${memberData.memberNickname}</span>
 
-                              <!-- 실제 값/전송용 input(기존 로직 그대로) -->
+                              <!-- ✅ 변경: 편집모드에서 실제로 입력 가능하도록 class로 제어 -->
                               <input id="nicknameInput" name="memberNickname" type="text"
                                  value="${memberData.memberNickname}" readonly
-                                 style="position:absolute; inset:0; opacity:0; pointer-events:none;">
+                                 class="nickname-input">
                            </div>
                         </div>
 
@@ -836,7 +857,7 @@ body.mypage-editing .mypage-right-card{
 
          if (resetValues) {
             $("#nicknameInput").val(originalNickname);
-            $("#nicknameText").text(originalNickname); /* ✅ 표시 span 동기화 */
+            $("#nicknameText").text(originalNickname);
 
             const base = (originalProfileSrc || "").split("?")[0];
             $("#profileWrap").addClass("is-loading");
@@ -866,7 +887,7 @@ body.mypage-editing .mypage-right-card{
          if (!editMode) return;
 
          const val = $("#nicknameInput").val().trim();
-         $("#nicknameText").text(val); /* ✅ 표시 span 동기화 */
+         $("#nicknameText").text(val);
 
          if (val.length > 0 && !NICK_REGEX.test(val)) {
             $("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
@@ -1033,7 +1054,7 @@ body.mypage-editing .mypage-right-card{
           render();
         });
 
-        render(); // ✅ 페이지 진입 시 값에 따라 자동 적용(서버가 RAINBOW 내려주면 바로 켜짐)
+        render();
       })();
 
       updateSaveButton();

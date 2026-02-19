@@ -1,8 +1,18 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<!DOCTYPE html>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 
+<%-- ✅ ctx 공통 --%>
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
+
+<%-- ✅ CHANGED: 내부 URL은 c:url로 변수화 (컨텍스트 자동 포함) --%>
+<c:url var="loginUrl" value="/login" />
+<c:url var="findPwActionUrl" value="/member/password/find" />
+
+<c:url var="urlMemberLookup" value="/FindPasswordMemberLookup" />
+<c:url var="urlSendCode" value="/FindPasswordSendCode" />
+<c:url var="urlVerifyCode" value="/FindPasswordVerifyCode" />
+
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -36,53 +46,53 @@ a[href$="/logout"] { display:none !important; }
 
 /* 카드 래퍼 */
 .reset-wrap {
-	max-width:420px;
-	margin:0 auto;
-	background:#fff;
-	padding:40px 30px;
-	border-radius:16px;
-	position: relative; /* 로딩 오버레이 기준 */
+  max-width:420px;
+  margin:0 auto;
+  background:#fff;
+  padding:40px 30px;
+  border-radius:16px;
+  position: relative; /* 로딩 오버레이 기준 */
 }
 
 .reset-wrap input {
-	width:100%;
-	height:50px;
-	border-radius:30px;
-	padding:0 18px;
+  width:100%;
+  height:50px;
+  border-radius:30px;
+  padding:0 18px;
 }
 
 /* 한 줄 (인풋+버튼) */
 .row-inline {
-	display:flex;
-	gap:12px;
-	align-items:center;
-	margin-bottom:14px;
+  display:flex;
+  gap:12px;
+  align-items:center;
+  margin-bottom:14px;
 }
 .row-inline input { flex:1; }
 
 /* 버튼 */
 .btn-outline {
-	height:50px;
-	min-width:110px;
-	border-radius:30px;
-	background:#fff;
-	border:2px solid #e53637;
-	color:#e53637;
-	font-weight:600;
+  height:50px;
+  min-width:110px;
+  border-radius:30px;
+  background:#fff;
+  border:2px solid #e53637;
+  color:#e53637;
+  font-weight:600;
 }
 .btn-outline:disabled {
-	opacity:.4;
-	cursor:not-allowed;
+  opacity:.4;
+  cursor:not-allowed;
 }
 
 .btn-main {
-	width:100%;
-	height:52px;
-	border-radius:30px;
-	background:#e53637;
-	border:none;
-	color:#fff;
-	font-weight:600;
+  width:100%;
+  height:52px;
+  border-radius:30px;
+  background:#e53637;
+  border:none;
+  color:#fff;
+  font-weight:600;
 }
 .btn-main:disabled { background:#bdbdbd; }
 
@@ -210,7 +220,12 @@ a[href$="/logout"] { display:none !important; }
 <script>
 $(function () {
 
-  const ctx = "${ctx}";
+  /* =========================================================
+     ✅ CHANGED: ctx 문자열 결합 대신 c:url 결과를 JS에 주입
+     ========================================================= */
+  const URL_MEMBER_LOOKUP = "${urlMemberLookup}";
+  const URL_SEND_CODE = "${urlSendCode}";
+  const URL_VERIFY_CODE = "${urlVerifyCode}";
 
   let resendTimer = null;
   let resendLeft = 0;
@@ -221,7 +236,7 @@ $(function () {
 
   const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+=-]).{8,16}$/;
 
-  // 초기 UI 
+  // 초기 UI
   $("#authArea").hide();
   $("#pwArea").hide();
 
@@ -231,7 +246,7 @@ $(function () {
   $("#resendBtn").prop("disabled", true);
   $(".btn-main").prop("disabled", true);
 
-  // 헬퍼 
+  // 헬퍼
   function showMsg($el, msg, ok) {
     $el.text(msg).removeClass("error success").addClass(ok ? "success" : "error");
   }
@@ -342,7 +357,7 @@ $(function () {
     setRowState("rowMember", "loading");
 
     $.ajax({
-      url: ctx + "/FindPasswordMemberLookup",
+      url: URL_MEMBER_LOOKUP, // ✅ CHANGED
       method: "POST",
       dataType: "json",
       data: { memberName: memberName },
@@ -414,7 +429,7 @@ $(function () {
     showLoading("인증번호 발송 중...");
 
     $.ajax({
-      url: ctx + "/FindPasswordSendCode",
+      url: URL_SEND_CODE, // ✅ CHANGED
       method: "POST",
       dataType: "json",
       data: { memberName: memberName },
@@ -471,7 +486,7 @@ $(function () {
     clearMsg($("#verificationCodeMsg"));
 
     $.ajax({
-      url: ctx + "/FindPasswordSendCode",
+      url: URL_SEND_CODE, // ✅ CHANGED
       method: "POST",
       dataType: "json",
       data: { memberName: memberName },
@@ -516,7 +531,7 @@ $(function () {
     setRowState("rowCode", "loading");
 
     $.ajax({
-      url: ctx + "/FindPasswordVerifyCode",
+      url: URL_VERIFY_CODE, // ✅ CHANGED
       method: "POST",
       dataType: "json",
       data: { code: code },
@@ -604,57 +619,59 @@ $(function () {
 <%@ include file="/WEB-INF/common/header.jsp" %>
 
 <section class="login spad">
-	<div class="container">
+  <div class="container">
 
-		<h3 style="text-align:center;font-weight:700;color:#fff;margin:30px 0 24px;">
-			비밀번호 재설정
-		</h3>
+    <h3 style="text-align:center;font-weight:700;color:#fff;margin:30px 0 24px;">
+      비밀번호 재설정
+    </h3>
 
-		<div class="reset-wrap">
+    <div class="reset-wrap">
 
-			<form action="${ctx}/member/password/find" method="post">
+      <%-- ✅ CHANGED: action도 c:url로 통일 --%>
+      <form action="${findPwActionUrl}" method="post">
 
-				<div class="row-inline" id="rowMember">
-					<input type="text" id="memberName" name="memberName" placeholder="아이디">
-					<button type="button" id="memberNameCheckBtn" class="btn-outline">아이디 확인</button>
-				</div>
-				<div id="memberNameMsg" class="msg"></div>
+        <div class="row-inline" id="rowMember">
+          <input type="text" id="memberName" name="memberName" placeholder="아이디">
+          <button type="button" id="memberNameCheckBtn" class="btn-outline">아이디 확인</button>
+        </div>
+        <div id="memberNameMsg" class="msg"></div>
 
-				<div class="row-inline" id="rowEmail">
-					<input type="email" id="memberEmail" name="memberEmail" placeholder="이메일">
-					<button type="button" id="sendBtn" class="btn-outline">인증번호 발송</button>
-				</div>
-				<div id="memberEmailMsg" class="msg"></div>
+        <div class="row-inline" id="rowEmail">
+          <input type="email" id="memberEmail" name="memberEmail" placeholder="이메일">
+          <button type="button" id="sendBtn" class="btn-outline">인증번호 발송</button>
+        </div>
+        <div id="memberEmailMsg" class="msg"></div>
 
-				<div id="authArea">
-					<div class="timer" id="timer"></div>
+        <div id="authArea">
+          <div class="timer" id="timer"></div>
 
-					<div class="row-inline" id="rowCode">
-						<input type="text" id="verificationCode" placeholder="인증번호">
-						<button type="button" id="verifyBtn" class="btn-outline">인증번호 확인</button>
-					</div>
-					<div id="verificationCodeMsg" class="msg"></div>
+          <div class="row-inline" id="rowCode">
+            <input type="text" id="verificationCode" placeholder="인증번호">
+            <button type="button" id="verifyBtn" class="btn-outline">인증번호 확인</button>
+          </div>
+          <div id="verificationCodeMsg" class="msg"></div>
 
-					<div class="row-inline">
-						<button type="button" id="resendBtn" class="btn-outline">재요청</button>
-						<button type="button" id="emailEditBtn" class="btn-outline">인증 취소</button>
-					</div>
-				</div>
-
-        <div id="pwArea" style="display:none;">
-				  <input type="password" id="memberPassword" name="memberPassword" placeholder="새 비밀번호">
-				  <input type="password" id="memberPasswordConfirm" placeholder="새 비밀번호 확인">
-				  <div id="memberPasswordMsg" class="msg"></div>
-
-				  <button type="submit" class="btn-main" disabled>비밀번호 변경</button>
+          <div class="row-inline">
+            <button type="button" id="resendBtn" class="btn-outline">재요청</button>
+            <button type="button" id="emailEditBtn" class="btn-outline">인증 취소</button>
+          </div>
         </div>
 
-        <a href="${ctx}/login" class="login-back">
+        <div id="pwArea" style="display:none;">
+          <input type="password" id="memberPassword" name="memberPassword" placeholder="새 비밀번호">
+          <input type="password" id="memberPasswordConfirm" placeholder="새 비밀번호 확인">
+          <div id="memberPasswordMsg" class="msg"></div>
+
+          <button type="submit" class="btn-main" disabled>비밀번호 변경</button>
+        </div>
+
+        <%-- ✅ CHANGED: 로그인 이동도 c:url 사용 --%>
+        <a href="${loginUrl}" class="login-back">
           <span class="chev">&lt;</span>
           <span class="hint">로그인 화면으로 이동</span>
         </a>
 
-			</form>
+      </form>
 
       <!-- 메일 발송 중 로딩 오버레이 -->
       <div id="loadingOverlay" class="loading-overlay" style="display:none;">
@@ -664,8 +681,8 @@ $(function () {
         </div>
       </div>
 
-		</div>
-	</div>
+    </div>
+  </div>
 </section>
 
 <%@ include file="/WEB-INF/common/footer.jsp" %>

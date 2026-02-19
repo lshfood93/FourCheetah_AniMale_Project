@@ -1,7 +1,12 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
+<%-- ✅ 컨텍스트 경로: 정적 리소스에 공통 사용 --%>
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
+
+<%-- ✅ CHANGED: 내부 라우팅/폼 action은 c:url로 생성 (컨텍스트 중복/인코딩 방지) --%>
+<c:url var="kakaoReadyUrl" value="/payment/kakaopay/ready" />
+<c:url var="mypageUrl" value="/member/mypage" />
 
 <!DOCTYPE html>
 <html lang="ko">
@@ -81,12 +86,15 @@
             선택 금액 : <span id="selectedAmountText">0</span> 원
           </div>
 
-          <form id="chargeForm" action="${ctx}/payment/kakaopay/ready" method="post">
+          <%-- ✅ CHANGED: action을 c:url 변수로 변경 --%>
+          <form id="chargeForm" action="${kakaoReadyUrl}" method="post">
             <input type="hidden" name="selectCash" id="amountInput">
 
             <div class="charge-btn-wrap">
               <button id="payBtn" type="submit" class="btn-pay" disabled>카카오페이로 결제하기</button>
-              <button type="button" class="btn-cancel" onclick="location.href='${ctx}/member/mypage'">충전 취소</button>
+
+              <%-- ✅ CHANGED: 취소 이동도 c:url 변수 사용 --%>
+              <button type="button" class="btn-cancel" onclick="location.href='${mypageUrl}'">충전 취소</button>
             </div>
           </form>
 

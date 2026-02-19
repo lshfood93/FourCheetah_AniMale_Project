@@ -2,16 +2,18 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
 
+<c:set var="ctx" value="${pageContext.request.contextPath}" /> <%-- ✅ (추가) ctx 변수 통일 선언 --%>
+
 <c:set var="typeRaw"
 	value="${empty param.type ? requestScope.type : param.type}" />
 <c:set var="type" value="${fn:toUpperCase(typeRaw)}" />
 <c:set var="isEditPage" value="true" />
 
 <c:if test="${type eq 'NEWS'}">
-	<c:set var="activeMenu" value="news" />
+	<c:set var="activeMenu" value="NEWS" /> <%-- ✅ (수정) activeMenu 통일(news -> NEWS) --%>
 </c:if>
 <c:if test="${type eq 'BOARD'}">
-	<c:set var="activeMenu" value="board" />
+	<c:set var="activeMenu" value="COMMUNITY" /> <%-- ✅ (수정) activeMenu 통일(board -> COMMUNITY) --%>
 </c:if>
 
 <%-- ★ 핵심: PageAction이 넘긴 newsData / boardData를 post로 통일 바인딩 --%>
@@ -31,13 +33,10 @@
 <title>AniMale | 수정</title>
 
 <!-- CKEditor 5 커스텀 빌드 -->
-<script
-	src="${pageContext.request.contextPath}/js/ckeditor.js?v=20260102_6"></script>
+<script src="${ctx}/js/ckeditor.js?v=20260102_6"></script> <%-- ✅ (수정) 경로 ctx 통일 --%>
 
-<link rel="icon" type="image/png"
-	href="${pageContext.request.contextPath}/favicon.png">
-<link rel="stylesheet"
-	href="${pageContext.request.contextPath}/css/elegant-icons.css">
+<link rel="icon" type="image/png" href="${ctx}/favicon.png"> <%-- ✅ (수정) 경로 ctx 통일 --%>
+<link rel="stylesheet" href="${ctx}/css/elegant-icons.css"> <%-- ✅ (수정) 경로 ctx 통일 --%>
 
 <link
 	href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap"
@@ -46,12 +45,9 @@
 	href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700;800;900&display=swap"
 	rel="stylesheet">
 
-<link rel="stylesheet"
-	href="${pageContext.request.contextPath}/css/bootstrap.min.css">
-<link rel="stylesheet"
-	href="${pageContext.request.contextPath}/css/font-awesome.min.css">
-<link rel="stylesheet"
-	href="${pageContext.request.contextPath}/css/style.css">
+<link rel="stylesheet" href="${ctx}/css/bootstrap.min.css"> <%-- ✅ (수정) 경로 ctx 통일 --%>
+<link rel="stylesheet" href="${ctx}/css/font-awesome.min.css"> <%-- ✅ (수정) 경로 ctx 통일 --%>
+<link rel="stylesheet" href="${ctx}/css/style.css"> <%-- ✅ (수정) 경로 ctx 통일 --%>
 
 <style>
 /* 상단 검색 UI 숨김 */
@@ -302,13 +298,13 @@
 
 <body>
 	<%@ include file="/WEB-INF/common/header.jsp"%>
+
 	<c:choose>
 
 		<%-- NEWS 수정 --%>
 		<c:when test="${type eq 'NEWS'}">
 			<c:choose>
-				<c:when
-					test="${not empty sessionScope.memberId and sessionScope.memberRole eq 'ADMIN'}">
+				<c:when test="${not empty sessionScope.memberId and sessionScope.memberRole eq 'ADMIN'}">
 
 					<section class="anime-details spad">
 						<div class="container">
@@ -316,8 +312,7 @@
 
 								<div class="col-lg-3">
 									<div class="preview-box">
-										<img id="thumbPreviewImg" class="preview-img"
-											alt="thumbnail preview">
+										<img id="thumbPreviewImg" class="preview-img" alt="thumbnail preview">
 									</div>
 									<div class="preview-help">썸네일을 변경하면 즉시 반영됩니다.</div>
 								</div>
@@ -325,8 +320,9 @@
 								<div class="col-lg-9">
 									<h3 style="color: #fff;">뉴스 수정</h3>
 
-									<form class="admin-form" method="post" action="${ctx}/newsEdit"
-										 enctype="multipart/form-data">
+									<form class="admin-form" method="post"
+										action="${ctx}/newsEdit" <%-- ✅ (수정) action에서 ctx 미정의 문제 해결(상단 ctx 선언) --%>
+										enctype="multipart/form-data">
 
 										<%-- 수정 PK --%>
 										<input type="hidden" name="newsId" value="${post.newsId}">
@@ -336,24 +332,22 @@
 											value="${post.animeId}">
 
 										<%-- 새 파일 없으면 기존 유지용 --%>
-										<input type="hidden" name="existingThumbUrl"
-											id="existingThumbUrl" value="${post.newsThumbnailUrl}">
-										<input type="hidden" name="existingImageUrl"
-											id="existingImageUrl" value="${post.newsImageUrl}">
+										<input type="hidden" name="existingThumbUrl" id="existingThumbUrl"
+											value="${post.newsThumbnailUrl}">
+										<input type="hidden" name="existingImageUrl" id="existingImageUrl"
+											value="${post.newsImageUrl}">
 
 										<div class="form-group">
-											<label>제목</label> <input type="text" class="form-control"
-												name="newsTitle" value="${post.newsTitle}">
+											<label>제목</label>
+											<input type="text" class="form-control" name="newsTitle" value="${post.newsTitle}">
 										</div>
 
 										<div class="form-group">
-											<label>썸네일</label><br> <label class="thumb-btn"
-												for="thumbFile">파일 선택</label> <span class="thumb-filename"
-												id="thumbFileName"></span>
-											<button type="button" id="thumbResetBtn"
-												class="thumb-reset-btn" style="display: none;">되돌리기</button>
-											<input type="file" id="thumbFile" name="thumbFile"
-												class="thumb-file" accept="image/*">
+											<label>썸네일</label><br>
+											<label class="thumb-btn" for="thumbFile">파일 선택</label>
+											<span class="thumb-filename" id="thumbFileName"></span>
+											<button type="button" id="thumbResetBtn" class="thumb-reset-btn" style="display: none;">되돌리기</button>
+											<input type="file" id="thumbFile" name="thumbFile" class="thumb-file" accept="image/*">
 										</div>
 
 										<div class="form-group">
@@ -362,8 +356,8 @@
 										</div>
 
 										<div class="related-wrap">
-											<label style="color: #fff;">관련 애니</label> <input type="text"
-												id="animeSearchInput" class="form-control"
+											<label style="color: #fff;">관련 애니</label>
+											<input type="text" id="animeSearchInput" class="form-control"
 												placeholder="애니 제목을 입력하세요" autocomplete="off"
 												value="${post.animeTitle}">
 											<ul id="animeSearchResult" class="anime-search-result"></ul>
@@ -371,9 +365,9 @@
 
 										<div class="form-actions">
 											<button type="submit" class="btn-submit">수정 완료</button>
-											<a
-												href="${pageContext.request.contextPath}${ctx}/newsDetail?newsId=${post.newsId}"
+											<a href="${ctx}/newsDetail?newsId=${post.newsId}"
 												class="btn-cancel">취소</a>
+											<%-- ✅ (수정) ${pageContext.request.contextPath}${ctx} 중복 제거 --%>
 										</div>
 
 									</form>
@@ -412,17 +406,17 @@
 								<div class="container">
 
 									<form class="admin-form" method="post"
-										action="${pageContext.request.contextPath}${ctx}/boardEdit">
+										action="${ctx}/boardEdit">
+										<%-- ✅ (수정) ${pageContext.request.contextPath}${ctx} 중복 제거 --%>
 
 										<h3 style="color: #fff;">게시글 수정</h3>
 
 										<input type="hidden" name="boardId" value="${post.boardId}">
-										<input type="hidden" name="boardCategory"
-											value="${post.boardCategory}">
+										<input type="hidden" name="boardCategory" value="${post.boardCategory}">
 
 										<div class="form-group">
-											<label>게시글 제목</label> <input type="text" class="form-control"
-												name="boardTitle" value="${post.boardTitle}">
+											<label>게시글 제목</label>
+											<input type="text" class="form-control" name="boardTitle" value="${post.boardTitle}">
 										</div>
 
 										<div class="form-group">
@@ -432,9 +426,9 @@
 
 										<div class="form-actions">
 											<button type="submit" class="btn-submit">수정 완료</button>
-											<a
-												href="${pageContext.request.contextPath}${ctx}/boardDetail?boardId=${post.boardId}"
+											<a href="${ctx}/boardDetail?boardId=${post.boardId}"
 												class="btn-cancel">취소</a>
+											<%-- ✅ (수정) ${pageContext.request.contextPath}${ctx} 중복 제거 --%>
 										</div>
 
 									</form>
@@ -483,18 +477,17 @@
 
 	<%@ include file="/WEB-INF/common/footer.jsp"%>
 
-	<script src="${pageContext.request.contextPath}/js/jquery-3.3.1.min.js"></script>
-	<script src="${pageContext.request.contextPath}/js/bootstrap.min.js"></script>
-	<script src="${pageContext.request.contextPath}/js/player.js"></script>
-	<script
-		src="${pageContext.request.contextPath}/js/jquery.nice-select.min.js"></script>
-	<script src="${pageContext.request.contextPath}/js/mixitup.min.js"></script>
-	<script src="${pageContext.request.contextPath}/js/jquery.slicknav.js"></script>
-	<script src="${pageContext.request.contextPath}/js/owl.carousel.min.js"></script>
-	<script src="${pageContext.request.contextPath}/js/main.js"></script>
+	<script src="${ctx}/js/jquery-3.3.1.min.js"></script> <%-- ✅ (수정) 경로 ctx 통일 --%>
+	<script src="${ctx}/js/bootstrap.min.js"></script> <%-- ✅ (수정) 경로 ctx 통일 --%>
+	<script src="${ctx}/js/player.js"></script> <%-- ✅ (수정) 경로 ctx 통일 --%>
+	<script src="${ctx}/js/jquery.nice-select.min.js"></script> <%-- ✅ (수정) 경로 ctx 통일 --%>
+	<script src="${ctx}/js/mixitup.min.js"></script> <%-- ✅ (수정) 경로 ctx 통일 --%>
+	<script src="${ctx}/js/jquery.slicknav.js"></script> <%-- ✅ (수정) 경로 ctx 통일 --%>
+	<script src="${ctx}/js/owl.carousel.min.js"></script> <%-- ✅ (수정) 경로 ctx 통일 --%>
+	<script src="${ctx}/js/main.js"></script> <%-- ✅ (수정) 경로 ctx 통일 --%>
 
 	<script>
-const ctx = '${pageContext.request.contextPath}';
+const ctx = '${ctx}'; // ✅ (수정) JS에서도 ctx 통일 (pageContext 직접 사용 X)
 
 function esc(s){
   return String(s ?? '').replace(/[&<>"']/g, m => ({
@@ -502,13 +495,6 @@ function esc(s){
   }[m]));
 }
 
-/* 경로 보정 (뉴스 썸네일/본문/검색결과 공통)
-   - data: / http(s): 그대로
-   - 이미 ctx 포함이면 그대로
-   - "/upload/.." -> ctx + "/upload/.."
-   - "upload/.."  -> ctx + "/upload/.."
-   - "/ANIMale/upload/.." 같이 ctx가 경로에 포함된 형태도 방어
-*/
 function resolvePath(url){
   if (!url) return '';
   const u = String(url).trim();
@@ -517,10 +503,8 @@ function resolvePath(url){
   if (/^data:/i.test(u)) return u;
   if (/^https?:\/\//i.test(u)) return u;
 
-  // ctx 중복 방지 ("/ANIMale/..." 형태)
   if (ctx && (u === ctx || u.startsWith(ctx + '/'))) return u;
 
-  // 혹시 "ANIMale/..." 같이 ctx 슬래시가 누락된 저장값 방어
   const ctxNoSlash = ctx ? ctx.replace(/^\//,'') : '';
   if (ctxNoSlash && (u === ctxNoSlash || u.startsWith(ctxNoSlash + '/'))) return '/' + u;
 
@@ -528,24 +512,17 @@ function resolvePath(url){
   return ctx + '/' + u;
 }
 
-/* 본문 HTML의 이미지 src 보정
-   - src="upload/..." 또는 src="/upload/..." 같은 상대경로를 ctx 기준 절대경로로 치환
-   - 이미 http(s)/data/ctx 포함이면 유지
-*/
 function normalizeHtmlImageSrc(html){
   if (!html) return html;
 
-  // src="upload/..."  -> src="ctx/upload/..."
   html = html.replace(/src=(["'])(upload\/[^"']+)\1/gi, function(_, q, path){
     return 'src=' + q + (ctx + '/' + path) + q;
   });
 
-  // src="/upload/..." -> src="ctx/upload/..."
   html = html.replace(/src=(["'])(\/upload\/[^"']+)\1/gi, function(_, q, path){
     return 'src=' + q + (ctx + path) + q;
   });
 
-  // src="ANIMale/upload/..."(ctx 없이 저장된 경우) 방어
   const ctxNoSlash = ctx ? ctx.replace(/^\//,'') : '';
   if (ctxNoSlash) {
     const re = new RegExp('src=(["\'])(' + ctxNoSlash + '\\/upload\\/[^\\"\\\']+)\\1','gi');
@@ -557,9 +534,6 @@ function normalizeHtmlImageSrc(html){
   return html;
 }
 
-/* NewsAnimeSearch 응답 키 불일치 방어용 매퍼
-   - camelCase / snake_case 둘 다 지원
-*/
 function mapAnime(raw){
   const a = raw || {};
   return {
@@ -573,33 +547,26 @@ function mapAnime(raw){
 
 document.addEventListener('DOMContentLoaded', function () {
 
-  /* 1) 수정페이지 진입 시 본문 이미지 src 먼저 보정 (에디터 생성 전에 textarea 값 정리) */
   const newsTextArea = document.getElementById('editor');
-  if (newsTextArea) {
-    newsTextArea.value = normalizeHtmlImageSrc(newsTextArea.value);
-  }
-  const boardTextArea = document.getElementById('boardEditor');
-  if (boardTextArea) {
-    boardTextArea.value = normalizeHtmlImageSrc(boardTextArea.value);
-  }
+  if (newsTextArea) newsTextArea.value = normalizeHtmlImageSrc(newsTextArea.value);
 
-  /* 2) CKEditor - NEWS */
+  const boardTextArea = document.getElementById('boardEditor');
+  if (boardTextArea) boardTextArea.value = normalizeHtmlImageSrc(boardTextArea.value);
+
   const newsEditorEl = document.querySelector('#editor');
-  if (newsEditorEl) {
+  if (newsEditorEl && window.ClassicEditor) {
     ClassicEditor.create(newsEditorEl, {
       simpleUpload: { uploadUrl: ctx + '/ContentImageUpload?type=news' }
     }).catch(error => console.error('[CKEditor NEWS 초기화 실패]', error));
   }
 
-  /* 3) CKEditor - BOARD */
   const boardEditorEl = document.querySelector('#boardEditor');
-  if (boardEditorEl) {
+  if (boardEditorEl && window.ClassicEditor) {
     ClassicEditor.create(boardEditorEl, {
       simpleUpload: { uploadUrl: ctx + '/ContentImageUpload?type=board' }
     }).catch(error => console.error('[CKEditor BOARD 초기화 실패]', error));
   }
 
-  /* 4) 썸네일 미리보기 */
   const thumbInput = document.getElementById('thumbFile');
   const previewImg = document.getElementById('thumbPreviewImg');
   const fileNameEl = document.getElementById('thumbFileName');
@@ -609,20 +576,13 @@ document.addEventListener('DOMContentLoaded', function () {
   const originalThumb = (existingThumbEl && existingThumbEl.value) ? existingThumbEl.value : '';
   const originalThumbFixed = originalThumb ? resolvePath(originalThumb) : '';
 
-  // 4-1) 진입 시 기존 썸네일 표시
   if (previewImg && originalThumbFixed) {
     previewImg.src = originalThumbFixed;
     previewImg.style.display = 'block';
-    previewImg.onerror = function () {
-      // 실패 시 샘플 고정으로 바꾸지 말고 숨김 처리 (실데이터 기반 유지)
-      this.style.display = 'none';
-    };
-
-    // 기존 썸네일이 있으면 되돌리기 버튼 활성
+    previewImg.onerror = function () { this.style.display = 'none'; };
     if (resetBtn) resetBtn.style.display = 'inline-block';
   }
 
-  // 4-2) 새 파일 선택 시 즉시 미리보기 + 되돌리기 노출
   if (thumbInput && previewImg) {
     thumbInput.addEventListener('change', function () {
       const file = this.files && this.files[0];
@@ -632,19 +592,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
       const reader = new FileReader();
       reader.onload = function (e) {
-        previewImg.src = e.target.result; // dataURL
+        previewImg.src = e.target.result;
         previewImg.style.display = 'block';
-        previewImg.onerror = null;        // dataURL은 굳이 onerror 필요 없음
+        previewImg.onerror = null;
         if (resetBtn) resetBtn.style.display = 'inline-block';
       };
       reader.readAsDataURL(file);
     });
   }
 
-  // 4-3) 되돌리기: 파일 선택 취소 + 기존 썸네일로 복원
   if (resetBtn && thumbInput && previewImg) {
     resetBtn.addEventListener('click', function(){
-      // file input 초기화
       thumbInput.value = '';
       if (fileNameEl) fileNameEl.textContent = '';
 
@@ -653,14 +611,12 @@ document.addEventListener('DOMContentLoaded', function () {
         previewImg.style.display = 'block';
         previewImg.onerror = function () { this.style.display = 'none'; };
       } else {
-        // 원래 썸네일이 없던 글이면 미리보기 숨김
         previewImg.removeAttribute('src');
         previewImg.style.display = 'none';
       }
     });
   }
 
-  /* 5) 관련 애니 검색 */
   const input = document.getElementById('animeSearchInput');
   const resultBox = document.getElementById('animeSearchResult');
   const hiddenId = document.getElementById('animeIdHidden');
@@ -724,7 +680,8 @@ document.addEventListener('DOMContentLoaded', function () {
     input.addEventListener('input', function () {
       const keyword = this.value.trim();
 
-      // 사용자가 타이핑을 시작하면 선택된 animeId는 무효 처리
+      // ✅ (유지) 수정 페이지에서도 검색 입력 시 재선택을 유도하기 위해 animeId 초기화
+      // (원래 코드 의도 유지)
       if (hiddenId) hiddenId.value = '';
 
       clearTimeout(timer);
@@ -748,7 +705,6 @@ document.addEventListener('DOMContentLoaded', function () {
               return;
             }
 
-            // 키 불일치 방어 매핑
             currentList = list.map(mapAnime).filter(a => String(a.animeId).trim() !== '');
 
             if (currentList.length === 0) {
@@ -772,7 +728,6 @@ document.addEventListener('DOMContentLoaded', function () {
                   '</div>' +
                 '</div>';
 
-              // blur로 닫히기 전에 선택되게 mousedown 사용
               li.addEventListener('mousedown', function(ev){
                 ev.preventDefault();
                 selectAnime(anime);
@@ -791,7 +746,6 @@ document.addEventListener('DOMContentLoaded', function () {
       }, 250);
     });
 
-    // 키보드 조작
     input.addEventListener('keydown', function(e) {
       if (resultBox.style.display !== 'block') return;
 
@@ -816,7 +770,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
       if (e.key === 'Enter') {
-        if (max < 0) return; // hint만 있거나 비었으면 무시
+        if (max < 0) return;
         e.preventDefault();
         const pick = (activeIndex >= 0) ? activeIndex : 0;
         const anime = currentList[pick];
