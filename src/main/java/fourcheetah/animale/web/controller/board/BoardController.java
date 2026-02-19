@@ -184,7 +184,7 @@ public class BoardController {
         
         boardDTO.setBoardId(boardId);
         boardDTO.setCondition("BOARD_DETAIL");
-        boardDTO.setMemberId(currentMemberId);  // 
+        boardDTO.setMemberId(currentMemberId != null ? currentMemberId : 0);
 
         BoardDTO boardData = boardService.selectOne(boardDTO);
         if (boardData == null) {
@@ -212,7 +212,7 @@ public class BoardController {
 
             BoardLikeDTO checkRes = boardLikeService.selectOne(boardLikeDTO);
             likedByMe = (checkRes != null && checkRes.getIsLiked() > 0);
-        }model.addAttribute("isLiked", likedByMe);
+        }model.addAttribute("likedByMe", likedByMe);  // 키 이름 통일
 
         // 5) 댓글 목록
         replyDTO.setBoardId(boardId);
