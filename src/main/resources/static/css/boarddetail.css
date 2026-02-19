@@ -1,0 +1,794 @@
+/* =========================================================
+   AniMale - boarddetail.css (FINAL + Legacy Compat)
+   scope: body.board-detail-page
+   - FINAL: current boardDetail.jsp 구조 기준
+   - LEGACY COMPAT: 중프 구조(.bd-table/.bd-content-box/.btn-sm2 등)도 같이 유지
+========================================================= */
+
+/* =========================
+   0) Page Scope / Variables
+========================= */
+.board-detail-page{
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-weak: rgba(255, 255, 255, 0.10);
+  --glass-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+
+  --text-main: rgba(255, 255, 255, 0.92);
+  --text-sub: rgba(255, 255, 255, 0.75);
+
+  --btn-bg: rgba(255, 255, 255, 0.08);
+  --btn-border: rgba(255, 255, 255, 0.16);
+  --btn-bg-hover: rgba(255, 255, 255, 0.12);
+  --btn-border-hover: rgba(255, 255, 255, 0.26);
+
+  --accent-bg: linear-gradient(135deg, rgba(120, 190, 255, 0.45), rgba(255, 255, 255, 0.08));
+  --accent-border: rgba(120, 190, 255, 0.35);
+
+  --danger-bg: linear-gradient(135deg, rgba(255, 70, 95, 0.55), rgba(0, 0, 0, 0.18));
+  --danger-border: rgba(255, 90, 120, 0.55);
+
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --radius-pill: 999px;
+
+  --gap-1: 10px;
+  --gap-2: 14px;
+  --pad-card: 28px;
+}
+
+/* 헤더 아이콘(검색) 숨김이 필요하면 */
+.board-detail-page .header__right__icons .icon_search{ display:none !important; }
+
+/* spad(템플릿) 위에 헤더 겹침 방지 */
+.product.spad.board-detail-wrap{ padding-top:120px; }
+
+/* (중프 클래스명 호환) */
+.product.spad.bd-detail-wrap{ padding-top:120px; }
+
+/* =========================
+   1) Post Card (Glass)
+========================= */
+.board-detail-page .bd-card{
+  position: relative;
+  border-radius: var(--radius-lg);
+  padding: var(--pad-card);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-weak);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  overflow: hidden; /* 기본은 클립 */
+}
+
+/* 대각 광택 */
+.board-detail-page .bd-card::before{
+  content:'';
+  position:absolute;
+  top:-55%;
+  left:-35%;
+  width:70%;
+  height:110%;
+  transform:rotate(18deg);
+  background: radial-gradient(circle at 28% 28%,
+    rgba(255,255,255,0.22),
+    rgba(255,255,255,0.00) 62%);
+  pointer-events:none;
+  opacity:0.50;
+  filter:blur(4px);
+  z-index:0;
+}
+
+/* 외곽 라인 그라데이션 */
+.board-detail-page .bd-card::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius: var(--radius-lg);
+  padding:1px;
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.35),
+    rgba(255,255,255,0.08),
+    rgba(120,190,255,0.18),
+    rgba(255,255,255,0.10));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask-composite:exclude;
+  pointer-events:none;
+  opacity:0.85;
+  z-index:0;
+}
+
+.board-detail-page .bd-card > *{ position:relative; z-index:1; }
+
+/* =========================
+   2) Header / Meta (FINAL 구조)
+========================= */
+.board-detail-page .bd-head{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-bottom:14px;
+}
+
+.board-detail-page .bd-title{
+  margin:0;
+  font-weight:900;
+  font-size:22px;
+  line-height:1.35;
+  letter-spacing:-0.02em;
+  color:#fff;
+}
+
+.board-detail-page .bd-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
+
+.board-detail-page .meta-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 14px;
+  border-radius: var(--radius-pill);
+  font-size:13px;
+  font-weight:800;
+  background: rgba(255,255,255,0.10);
+  border:1px solid rgba(255,255,255,0.10);
+  color:#fff;
+  white-space:nowrap;
+}
+.board-detail-page .meta-chip i{ opacity:0.9; }
+
+/* =========================
+   3) Body / Content (CKEditor)
+========================= */
+.board-detail-page .bd-body{ margin-top:10px; }
+
+.board-detail-page .bd-content{
+  width:100%;
+  border-radius: var(--radius-md);
+  padding:18px;
+  min-height:260px;
+  background: rgba(0,0,0,0.20);
+  border:1px solid rgba(255,255,255,0.10);
+  color: var(--text-main);
+  line-height:1.9;
+
+  /* CKEditor HTML 렌더 안정화 */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+
+  overflow:hidden;
+}
+
+/* 문단/리스트 기본 간격 */
+.board-detail-page .bd-content p{ margin:0 0 12px; }
+.board-detail-page .bd-content ul,
+.board-detail-page .bd-content ol{ margin:0 0 12px 20px; }
+
+/* 코드/프리 태그만 가로 스크롤 */
+.board-detail-page .bd-content pre{
+  white-space: pre;
+  overflow:auto;
+  padding:12px 14px;
+  border-radius:12px;
+  background: rgba(0,0,0,0.28);
+  border:1px solid rgba(255,255,255,0.10);
+}
+.board-detail-page .bd-content code{
+  background: rgba(0,0,0,0.22);
+  padding:2px 6px;
+  border-radius:8px;
+}
+
+/* 표는 모바일에서 가로 스크롤 */
+.board-detail-page .bd-content table{
+  width:100%;
+  border-collapse:collapse;
+  display:block;
+  overflow-x:auto;
+}
+.board-detail-page .bd-content th,
+.board-detail-page .bd-content td{
+  border:1px solid rgba(255,255,255,0.10);
+  padding:10px 12px;
+}
+
+/* 본문 내 미디어 반응형 */
+.board-detail-page .bd-content img,
+.board-detail-page .bd-content video{
+  max-width:100% !important;
+  height:auto !important;
+  display:block;
+  margin:12px auto;
+  border-radius:0 !important;
+}
+.board-detail-page .bd-content figure,
+.board-detail-page .bd-content .image{
+  max-width:100% !important;
+  margin:12px 0;
+}
+.board-detail-page .bd-content figure img{
+  max-width:100% !important;
+  height:auto !important;
+}
+.board-detail-page .bd-content iframe{
+  width:100% !important;
+  max-width:100% !important;
+  aspect-ratio:16/9;
+  height:auto !important;
+  border:0;
+  display:block;
+  margin:12px 0;
+}
+
+/* =========================
+   4) Buttons / Actions (FINAL 구조)
+========================= */
+.board-detail-page .bd-actions{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: var(--gap-1);
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+.board-detail-page .bd-actions .left,
+.board-detail-page .bd-actions .right{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.board-detail-page .bd-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px 16px;
+  border-radius: var(--radius-pill);
+  font-size:14px;
+  font-weight:800;
+  letter-spacing:-0.01em;
+  text-decoration:none !important;
+  user-select:none;
+
+  border:1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color:#fff !important;
+
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease, opacity .18s ease;
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  cursor:pointer;
+}
+
+.board-detail-page .bd-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 12px 28px rgba(0,0,0,0.35);
+  border-color: var(--btn-border-hover);
+  background: var(--btn-bg-hover);
+}
+.board-detail-page .bd-btn:active{
+  transform:translateY(0);
+  box-shadow:none;
+}
+.board-detail-page .bd-btn:focus-visible{
+  outline:none;
+  box-shadow:0 0 0 3px rgba(140,200,255,0.35);
+}
+
+.board-detail-page .bd-btn.accent{
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+
+/* 신고(danger) 강화 */
+.board-detail-page .bd-btn.danger{
+  color: rgba(255,255,255,0.95) !important;
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  box-shadow:0 14px 34px rgba(255,70,95,0.18);
+}
+.board-detail-page .bd-btn.danger:hover{
+  border-color: rgba(255,90,120,0.85);
+  background: linear-gradient(135deg, rgba(255,70,95,0.72), rgba(255,255,255,0.08));
+  box-shadow:0 18px 46px rgba(255,70,95,0.28);
+}
+.board-detail-page .bd-btn.danger:active{
+  transform:translateY(0);
+  box-shadow:0 10px 26px rgba(255,70,95,0.18);
+}
+.board-detail-page .bd-btn.danger:focus-visible{
+  outline:none;
+  box-shadow:
+    0 0 0 3px rgba(255,90,120,0.35),
+    0 18px 46px rgba(255,70,95,0.22);
+}
+
+/* disabled 공통 */
+.board-detail-page .bd-btn:disabled,
+.board-detail-page .bd-btn[disabled]{
+  opacity:0.6;
+  cursor:not-allowed;
+  transform:none !important;
+  box-shadow:none !important;
+}
+.board-detail-page .bd-btn:disabled:hover,
+.board-detail-page .bd-btn[disabled]:hover{
+  background: var(--btn-bg);
+  border-color: var(--btn-border);
+}
+/* danger는 disabled hover에서도 danger 유지 */
+.board-detail-page .bd-btn.danger:disabled:hover,
+.board-detail-page .bd-btn.danger[disabled]:hover{
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+}
+
+/* =========================
+   5) Like UI
+========================= */
+.board-detail-page .like-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding:9px 14px;
+  border-radius: var(--radius-pill);
+  background: rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.88);
+  font-size:13px;
+  font-weight:900;
+}
+.board-detail-page .like-pill .like-count{
+  font-weight:900;
+  color:#fff;
+}
+.board-detail-page .like-pill.is-liked{
+  background: linear-gradient(135deg, rgba(255,90,120,0.45), rgba(255,255,255,0.08));
+  border-color: rgba(255,90,120,0.55);
+  box-shadow:0 14px 34px rgba(255,75,75,0.18);
+}
+
+/* =========================
+   6) Reply Card (FINAL 구조)
+========================= */
+.board-detail-page .reply-card{
+  margin-top:18px;
+  border-radius: var(--radius-lg);
+  padding: var(--pad-card);
+  background: var(--glass-bg);
+  border:1px solid var(--glass-border-weak);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  overflow: visible; /* 드롭다운 대비 */
+  position:relative;
+}
+
+/* 댓글 카드에서는 광택 꺼도 됨 */
+.board-detail-page .reply-card::before,
+.board-detail-page .reply-card::after{ display:none; }
+
+.board-detail-page .reply-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+  position:relative;
+  z-index:50;
+}
+.board-detail-page .reply-head h4{
+  margin:0;
+  color:#fff;
+  font-weight:900;
+  letter-spacing:-0.02em;
+}
+.board-detail-page .reply-count{
+  color: var(--text-sub);
+  font-size:13px;
+  font-weight:800;
+}
+
+/* 댓글 로그인 유도 */
+.board-detail-page .reply-login-hint{
+  padding:12px 14px;
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:14px;
+  background: rgba(0,0,0,0.18);
+  color: rgba(255,255,255,0.85);
+  margin-bottom:12px;
+}
+.board-detail-page .reply-login-hint a{
+  color:#fff;
+  text-decoration:underline;
+}
+
+/* Reply Form */
+.board-detail-page .reply-form{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  width:100%;
+}
+.board-detail-page .reply-form textarea{
+  flex:1;
+  min-width:260px;
+  border-radius:14px;
+  padding:12px 14px;
+  border:1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.22);
+  color:#fff;
+  outline:none;
+  resize:vertical;
+  min-height:74px;
+}
+.board-detail-page .reply-form textarea::placeholder{
+  color: rgba(255,255,255,0.60);
+}
+.board-detail-page .reply-form .bd-btn.accent{
+  height:44px;
+  padding:10px 18px;
+}
+
+/* Reply List / Item */
+.board-detail-page .reply-list{ margin-top:14px; }
+.board-detail-page .reply-empty{
+  color: rgba(255,255,255,0.75);
+  font-size:13px;
+  margin-top:10px;
+}
+
+.board-detail-page .reply-item{
+  background: rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.14);
+  border-radius: var(--radius-md);
+  padding:14px 16px;
+  margin-bottom:10px;
+  box-shadow:0 10px 28px rgba(0,0,0,0.22);
+}
+
+.board-detail-page .reply-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+
+.board-detail-page .reply-avatar{
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  object-fit:cover;
+  display:block;
+  border:1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.18);
+}
+
+.board-detail-page .reply-writer{
+  font-weight:900;
+  color: rgba(255,255,255,0.92);
+  line-height:1.2;
+  margin-top:2px;
+}
+
+.board-detail-page .reply-times{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  font-size:12px;
+  color: rgba(255,255,255,0.70);
+  margin-top:4px;
+}
+.board-detail-page .reply-times .t-updated{ color: rgba(255,255,255,0.85); }
+
+.board-detail-page .reply-actions{
+  flex:0 0 auto;
+  white-space:nowrap;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+.board-detail-page .reply-actions button{
+  border:0;
+  background:transparent;
+  color: rgba(255,255,255,0.88);
+  font-size:12px;
+  font-weight:900;
+  padding:0;
+  cursor:pointer;
+}
+.board-detail-page .reply-actions button:hover{ text-decoration:underline; }
+.board-detail-page .reply-actions button:focus-visible{
+  outline:none;
+  box-shadow:0 0 0 3px rgba(140,200,255,0.30);
+  border-radius:8px;
+  padding:2px 6px;
+}
+
+.board-detail-page .reply-content{
+  margin-top:10px;
+  color: rgba(255,255,255,0.95);
+  line-height:1.8;
+  font-size:14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* =========================
+   7) nice-select (replySort)
+========================= */
+.board-detail-page .nice-select{
+  background: rgba(255,255,255,0.08) !important;
+  border:1px solid rgba(255,255,255,0.16) !important;
+  color:#fff !important;
+  border-radius: var(--radius-pill) !important;
+  height:42px !important;
+  line-height:40px !important;
+  padding-left:16px !important;
+  padding-right:36px !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  position:relative;
+  z-index:60;
+}
+.board-detail-page .nice-select:after{
+  border-bottom:2px solid rgba(255,255,255,0.65) !important;
+  border-right:2px solid rgba(255,255,255,0.65) !important;
+  right:14px !important;
+}
+.board-detail-page .nice-select.open{ z-index:9999 !important; }
+.board-detail-page .nice-select.open .list{ z-index:9999 !important; }
+.board-detail-page .nice-select .list{
+  background: rgba(10,10,35,0.92) !important;
+  border:1px solid rgba(255,255,255,0.14) !important;
+  border-radius:14px !important;
+  overflow:hidden;
+}
+.board-detail-page .nice-select .option{ color: rgba(255,255,255,0.92) !important; }
+.board-detail-page .nice-select .option:hover,
+.board-detail-page .nice-select .option.focus,
+.board-detail-page .nice-select .option.selected{
+  background: rgba(255,255,255,0.08) !important;
+}
+
+/* nice-select 미적용 폴백(select) */
+.board-detail-page #replySort{
+  background: rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.16);
+  color:#fff;
+  border-radius: var(--radius-pill);
+  height:42px;
+  padding:0 14px;
+  outline:none;
+}
+
+/* =========================
+   8) Modal (Report)
+========================= */
+.board-detail-page .modal-content{
+  background: rgba(20,20,45,0.92);
+  color:#fff;
+  border:1px solid rgba(255,255,255,0.14);
+  border-radius:16px;
+}
+.board-detail-page .modal-header,
+.board-detail-page .modal-footer{
+  border-color: rgba(255,255,255,0.10);
+}
+.board-detail-page .modal-title{ font-weight:900; }
+
+.board-detail-page #reportReason,
+.board-detail-page #reportContent{
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.22);
+  color:#fff;
+  padding:10px 12px;
+  outline:none;
+}
+.board-detail-page #reportContent::placeholder{
+  color: rgba(255,255,255,0.60);
+}
+
+/* =========================
+   9) Responsive
+========================= */
+@media (max-width:768px){
+  .board-detail-page .bd-card,
+  .board-detail-page .reply-card{
+    padding:20px;
+  }
+  .board-detail-page .bd-title{ font-size:20px; }
+  .board-detail-page .reply-head{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .board-detail-page .reply-form{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .board-detail-page .reply-form textarea{
+    min-width:0;
+    width:100%;
+  }
+  .board-detail-page .reply-form .bd-btn.accent{ width:100%; }
+}
+
+/* =========================================================
+   LEGACY COMPAT (중프 구조 유지용)
+   - 현재 JSP에 없으면 적용 안 됨
+========================================================= */
+
+/* 중프 상단바/칩 */
+.board-detail-page .bd-topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+}
+.board-detail-page .bd-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 14px;
+  border-radius: var(--radius-pill);
+  font-size:13px;
+  font-weight:800;
+  background: rgba(255,255,255,0.10);
+  border:1px solid rgba(255,255,255,0.10);
+  color:#fff;
+}
+
+/* 중프 버튼(.btn-sm2) → bd-btn 토큰으로 동일 스타일 */
+.board-detail-page .btn-sm2{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:10px 16px;
+  border-radius: var(--radius-pill);
+  font-size:14px;
+  font-weight:800;
+  letter-spacing:-0.01em;
+  text-decoration:none !important;
+  user-select:none;
+  border:1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color:#fff !important;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease, opacity .18s ease;
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  cursor:pointer;
+}
+.board-detail-page .btn-sm2:hover{
+  transform:translateY(-1px);
+  box-shadow:0 12px 28px rgba(0,0,0,0.35);
+  border-color: var(--btn-border-hover);
+  background: var(--btn-bg-hover);
+}
+.board-detail-page .btn-sm2:active{ transform:translateY(0); box-shadow:none; }
+.board-detail-page .btn-sm2:focus-visible{
+  outline:none;
+  box-shadow:0 0 0 3px rgba(140,200,255,0.35);
+}
+.board-detail-page .btn-sm2.btn-primary2{
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+.board-detail-page .btn-sm2.btn-danger2{
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+}
+.board-detail-page .btn-sm2.btn-ghost2{
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.14);
+  opacity: .95;
+}
+
+/* 중프 테이블/콘텐츠 박스 */
+.board-detail-page .bd-table{
+  width:100%;
+  margin:0;
+  border:0;
+  color:#fff;
+  table-layout: fixed;
+}
+.board-detail-page .bd-table th,
+.board-detail-page .bd-table td{
+  border-top:1px solid rgba(255,255,255,0.10) !important;
+  border-bottom:0 !important;
+  border-left:0 !important;
+  border-right:0 !important;
+  padding:16px 12px;
+  vertical-align:top;
+}
+.board-detail-page .bd-table tr:first-child th,
+.board-detail-page .bd-table tr:first-child td{ border-top:0 !important; }
+.board-detail-page .bd-table th{
+  width:90px;
+  color: rgba(255,255,255,0.75);
+  font-weight:800;
+  letter-spacing:-0.02em;
+}
+
+.board-detail-page .bd-content-box{
+  width:100%;
+  border-radius: var(--radius-md);
+  padding:18px;
+  min-height:260px;
+  background: rgba(0,0,0,0.20);
+  border:1px solid rgba(255,255,255,0.10);
+  overflow:hidden;
+}
+.board-detail-page .bd-content-box .bd-content{
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* 중프 댓글 헤더/작성 폼 */
+.board-detail-page .bd-replies-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:16px;
+  position:relative;
+  z-index:50;
+}
+.board-detail-page .bd-replies-title{
+  margin:0;
+  color:#fff;
+  font-weight:900;
+  letter-spacing:-0.02em;
+}
+.board-detail-page .bd-textarea{
+  flex:1;
+  min-width:260px;
+  border-radius:14px;
+  padding:12px 14px;
+  border:1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.22);
+  color:#fff;
+  outline:none;
+}
+.board-detail-page .bd-textarea::placeholder{ color: rgba(255,255,255,0.60); }
+
+/* 중프 인라인 수정 input */
+.board-detail-page .reply-item input.reply-inline-input{
+  background: rgba(0,0,0,0.22) !important;
+  color:#fff !important;
+  border:1px solid rgba(255,255,255,0.15) !important;
+  border-radius: var(--radius-pill);
+  padding:10px 14px;
+  height:44px;
+  outline:none;
+  box-sizing:border-box;
+}
+.board-detail-page .reply-item input.reply-inline-input::placeholder{
+  color: rgba(255,255,255,0.65);
+}
+
+/* 중프 반응형 */
+@media (max-width:768px){
+  .board-detail-page .bd-replies-head{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .board-detail-page #replyForm{ width:100%; }
+  .board-detail-page #replyForm button{ width:100%; }
+}
