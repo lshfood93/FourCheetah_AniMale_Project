@@ -447,7 +447,7 @@ public class MemberController {
 
         // 변경된 값만 세팅, 나머지는 null -> COALESCE로 기존값 유지
         up.setMemberNickname(nickChanged ? newNick : null);
-        up.setMemberProfileImage(imgChanged ? token : null);
+        up.setMemberProfileImage(imgChanged ? "/uploads/profile/" + token : null);
         up.setMemberProfileColor(profileColorChanged ? reqProfileColor : null);
         up.setMemberNicknameColor(nicknameColorChanged ? reqNicknameColor : null);
 
