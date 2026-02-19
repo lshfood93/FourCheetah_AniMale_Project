@@ -1,6 +1,8 @@
 package fourcheetah.animale.web.config;
 
 import com.google.genai.Client;
+import com.google.genai.types.HttpOptions;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,14 +10,19 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class GenAiClientConfig {
 
-    @Value("${google.genai.api-key:}")
+	@Value("${google.genai.apikey:}")
     private String apiKey;
 
-    @Bean
+    @Value("${ai.chat.timeoutMs:30000}")
+    private int timeoutMs;
+
+    @Bean(destroyMethod = "close") // ✅ [ADDED] Client는 close 가능(리소스 정리) :contentReference[oaicite:2]{index=2}
     public Client genAiClient() {
-        if (apiKey != null && !apiKey.isBlank()) {
-            return Client.builder().apiKey(apiKey).build();
-        }
-        return new Client(); // 환경변수(GOOGLE_API_KEY / GEMINI_API_KEY) 기반
+        return Client.builder()
+                .apiKey(apiKey)
+                .httpOptions(HttpOptions.builder()
+                        .timeout(timeoutMs) // ✅ [ADDED] SDK 기본 timeout (ms) :contentReference[oaicite:3]{index=3}
+                        .build())
+                .build();
     }
 }
