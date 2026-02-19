@@ -1,7 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
 
@@ -126,8 +126,8 @@
   align-items:center;
   gap:8px;
   font-size:14px;
-  font-weight: 500;       
-  letter-spacing: .2px; 
+  font-weight: 500;
+  letter-spacing: .2px;
   color: rgba(255,255,255,.75);
 }
 .news-crumb a{
@@ -286,7 +286,7 @@
 }
 
 #newsContent.news-prose{
-  padding: 0 10px;  
+  padding: 0 10px;
   max-width: 920px;
   margin: 0 auto;
 
@@ -313,8 +313,6 @@
 #newsContent.news-prose *{
   text-shadow: none !important;
 }
-
-
 
 @media (max-width: 991px){
   #newsContent.news-prose{
@@ -603,17 +601,22 @@
 			<div class="row d-flex justify-content-center">
 				<div class="col-lg-10">
 
-					<%-- 목록 복귀 URL (검색/페이지 유지) --%>
-					<c:set var="backUrl" value="${ctx}/newslist" />
-					<c:if test="${not empty page or not empty condition or not empty keyword}">
-						<c:set var="backUrl" value="${ctx}/newsList?page=${page}" />
-						<c:if test="${not empty condition}">
-							<c:set var="backUrl" value="${backUrl}&condition=${condition}" />
+					<%-- ✅ (FIX) backUrl: param / requestScope 둘 다 대응 + c:url로 안전하게 URL 인코딩/컨텍스트 처리 --%>
+					<c:set var="pageVal" value="${not empty param.page ? param.page : requestScope.page}" /> <%-- ✅ --%>
+					<c:set var="conditionVal" value="${not empty param.condition ? param.condition : requestScope.condition}" /> <%-- ✅ --%>
+					<c:set var="keywordVal" value="${not empty param.keyword ? param.keyword : requestScope.keyword}" /> <%-- ✅ --%>
+
+					<c:url var="backUrl" value="/newsList"> <%-- ✅ (FIX) newslist 오타 제거 + newsList로 통일 --%>
+						<c:if test="${not empty pageVal}">
+							<c:param name="page" value="${pageVal}" />
 						</c:if>
-						<c:if test="${not empty keyword}">
-							<c:set var="backUrl" value="${backUrl}&keyword=${fn:escapeXml(keyword)}" />
+						<c:if test="${not empty conditionVal}">
+							<c:param name="condition" value="${conditionVal}" />
 						</c:if>
-					</c:if>
+						<c:if test="${not empty keywordVal}">
+							<c:param name="keyword" value="${keywordVal}" />
+						</c:if>
+					</c:url>
 
 					<%-- 썸네일 URL 보정 (커버는 무조건 썸네일) --%>
 					<c:set var="thumbRaw" value="${newsData.newsThumbnailUrl}" />
@@ -719,6 +722,11 @@
 													<c:when test="${fn:startsWith(aThumbRaw,'http')}">
 														<c:set var="aThumbSrc" value="${aThumbRaw}" />
 													</c:when>
+
+													<c:when test="${fn:startsWith(aThumbRaw, ctx)}"> <%-- ✅ (FIX) ctx 포함 저장값 방어 추가 --%>
+														<c:set var="aThumbSrc" value="${aThumbRaw}" />
+													</c:when>
+
 													<c:when test="${fn:startsWith(aThumbRaw,'/')}">
 														<c:set var="aThumbSrc" value="${ctx}${aThumbRaw}" />
 													</c:when>
@@ -791,13 +799,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let headerOffset = setStickyTopVar();
 
-  // 1) 본문 img src 경로 보정
+  // ✅ (FIX) 본문 img src 경로 보정: "/upload", "upload", "ANIMale/upload"(ctx 누락 저장)까지 방어
+  const ctxNoSlash = ctx ? ctx.replace(/^\//,'') : ""; // ✅
   box.querySelectorAll("img").forEach(img => {
     const raw = (img.getAttribute("src") || "").trim();
     if (!raw) return;
 
     if (/^https?:\/\//i.test(raw)) return;
+    if (/^data:/i.test(raw)) return; // ✅ (보강) dataURL도 그대로 유지
     if (raw.startsWith(ctx + "/")) return;
+
+    // ✅ (보강) "ANIMale/upload/..." 같이 ctx의 슬래시가 빠진 저장값 방어
+    if (ctxNoSlash && (raw === ctxNoSlash || raw.startsWith(ctxNoSlash + "/"))) {
+      img.setAttribute("src", "/" + raw);
+      return;
+    }
 
     if (raw.startsWith("/upload/")) {
       img.setAttribute("src", ctx + raw);

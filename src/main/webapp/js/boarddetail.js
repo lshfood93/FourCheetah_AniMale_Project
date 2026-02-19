@@ -442,7 +442,13 @@
       for (var i = 0; i < list.length; i++) {
         html += renderReplyItem(list[i]);
       }
-      $replyEmpty.insertAdjacentHTML('beforebegin', html);
+
+      // ✅ replyEmpty가 없으면 replyList 끝에라도 붙이도록 폴백
+      if ($replyEmpty && $replyEmpty.insertAdjacentHTML) {
+        $replyEmpty.insertAdjacentHTML('beforebegin', html);
+      } else {
+        $replyList.insertAdjacentHTML('beforeend', html);
+      }
     });
   }
 

@@ -1,7 +1,12 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
+<%-- ✅ 컨텍스트 경로: 정적 리소스에 공통 사용 --%>
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
+
+<%-- ✅ CHANGED: 내부 이동 URL은 c:url로 변수화 (컨텍스트 중복/인코딩 방지) --%>
+<c:url var="mypageUrl" value="/member/mypage" />
+<c:url var="cashChargeUrl" value="/cash/charge" />
 
 <!DOCTYPE html>
 <html lang="ko">
@@ -10,8 +15,7 @@
 <title>AniMale | 결제 결과</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="icon" type="image/png"
-    href="${ctx}/favicon.png">
+<link rel="icon" type="image/png" href="${ctx}/favicon.png">
 
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -33,18 +37,23 @@
 
 .result-desc { font-size: 14px; color: #b7b7b7; margin-bottom: 30px; }
 
-.result-info {
+.result-info{
   background: rgba(255,255,255,0.05);
   border-radius: 16px;
   padding: 24px;
   text-align: left;
   margin-bottom: 30px;
 }
-.result-info dl { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
+.result-info dl{
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
 .result-info dt { color: #b7b7b7; }
 .result-info dd { color: #ffffff; font-weight: 600; }
 
-.btn-main {
+.btn-main{
   width: 100%;
   height: 52px;
   border-radius: 30px;
@@ -66,7 +75,7 @@
 
     <div class="login-box-clean result-box">
 
-      <%-- 실패 메시지: errorMessage 없으면 message 사용 --%>
+      <%-- ✅ 실패 메시지: errorMessage 없으면 message 사용 --%>
       <c:set var="failMsg" value="${not empty errorMessage ? errorMessage : message}" />
 
       <c:choose>
@@ -83,7 +92,7 @@
           <div class="result-info">
             <dl>
               <dt>결제 금액</dt>
-              <dd>${totalAmount} 원</dd>
+              <dd><c:out value="${totalAmount}" /> 원</dd>
             </dl>
             <dl>
               <dt>결제 수단</dt>
@@ -91,16 +100,16 @@
             </dl>
             <dl>
               <dt>결제 승인 시각</dt>
-              <dd>${approvedAt}</dd>
+              <dd><c:out value="${approvedAt}" /></dd>
             </dl>
             <dl>
               <dt>보유 캐시</dt>
-              <dd>${totalCash} 원</dd>
+              <dd><c:out value="${totalCash}" /> 원</dd>
             </dl>
           </div>
 
-          <a href="${ctx}/member/mypage" class="btn btn-main">마이페이지로</a>
-
+          <%-- ✅ CHANGED: 내부 링크는 c:url 변수 사용 --%>
+          <a href="${mypageUrl}" class="btn btn-main">마이페이지로</a>
 
         </c:when>
 
@@ -119,13 +128,12 @@
           <div class="result-info">
             <dl>
               <dt>실패 사유</dt>
-              <dd>${failMsg}</dd>
+              <dd><c:out value="${failMsg}" /></dd>
             </dl>
           </div>
 
-          <a href="${ctx}/cash/charge" class="btn btn-main">
-            다시 결제하기
-          </a>
+          <%-- ✅ CHANGED: 다시 결제하기 링크도 c:url 변수 사용 --%>
+          <a href="${cashChargeUrl}" class="btn btn-main">다시 결제하기</a>
 
         </c:otherwise>
 

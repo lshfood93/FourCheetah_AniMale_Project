@@ -2,6 +2,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<c:set var="ctx" value="${pageContext.request.contextPath}" /> <%-- ✅ CHANGED: ctx 선언을 최상단으로 이동(전역 사용 안정화) --%>
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -9,7 +11,6 @@
 <title>AniMale | 뉴스</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<c:set var="ctx" value="${pageContext.request.contextPath}" />
 <link rel="icon" type="image/png" href="${ctx}/favicon.png">
 
 <!-- 템플릿 CSS -->
@@ -288,10 +289,6 @@
 
 /* =========================================================
    검색 길이 흔들림 FIX (뉴스 페이지만)
-   핵심:
-   1) 데스크탑에서 우측 컬럼(col-lg-4)을 조금 넓혀서 공간 확보
-   2) 검색박스는 목표 폭(max)까지는 고정적으로 보이게
-   3) 버튼이 생기면 검색박스만 '적당히' 수축(너무 짧아지지 않게 min)
 ========================================================= */
 
 /* 타이틀 row 세로 정렬은 가운데 */
@@ -300,7 +297,6 @@
 }
 
 @media (min-width: 992px){
-  /* (중요) 뉴스만 부트스트랩 컬럼 비율 재조정: 검색 영역 폭 확보 */
   .news-page .product__page__title > .row > .col-lg-8{
     flex: 0 0 55%;
     max-width: 55%;
@@ -318,7 +314,6 @@
     flex-wrap: nowrap;
   }
 
-  /* 검색박스: 평소엔 --news-search-max 정도로 유지, 버튼 생기면 --news-search-min까지 수축 */
   .news-page .news-search-box{
     flex: 0 1 var(--news-search-max);
     width: var(--news-search-max);
@@ -326,7 +321,6 @@
     min-width: var(--news-search-min);
   }
 
-  /* 공용에서 input min-width 때문에 수축이 막히는 경우가 있어 뉴스만 해제 */
   .news-page .news-search-box input[type='text']{
     min-width: 0;
   }
@@ -341,7 +335,6 @@
   text-decoration: none !important;
 }
 
-/* 모바일은 공용 CSS 흐름 유지: 자연스럽게 줄바꿈 허용 */
 @media (max-width: 991px){
   .news-page .news-search-row{
     justify-content: flex-start;
@@ -354,7 +347,6 @@
     min-width: 0;
   }
 }
-
 </style>
 </head>
 
@@ -365,11 +357,9 @@
 <c:set var="isSearch" value="${not empty keyword}" />
 <c:set var="nlen" value="${empty newsList ? 0 : newsList.size()}" />
 
-<!-- ✅ 애니리스트처럼 product-page + spad 구조로 상단 여백 확보 -->
 <section class="product-page spad news-page">
   <div class="container">
 
-    <!-- 제목 + 우측 검색/버튼 (애니리스트 구조 따라감) -->
     <div class="product__page__title">
       <div class="row align-items-end">
         <div class="col-lg-8">
@@ -410,7 +400,6 @@
       </div>
     </div><!-- /.product__page__title -->
 
-    <!-- 카드 리스트 -->
     <div class="news-card-area">
 
       <c:choose>
@@ -451,7 +440,8 @@
                           </c:otherwise>
                         </c:choose>
 
-                        <c:url var="detailUrl" value="${ctx}/newsDetail">
+                        <%-- ✅ CHANGED: c:url은 ctx를 붙이지 말고 "/매핑"만 넣기(컨텍스트 중복 방지) --%>
+                        <c:url var="detailUrl" value="/newsDetail">
                           <c:param name="newsId" value="${news.newsId}" />
                           <c:param name="page" value="${page}" />
                           <c:param name="condition" value="${condition}" />
@@ -490,7 +480,8 @@
                           </c:otherwise>
                         </c:choose>
 
-                        <c:url var="detailUrl" value="${ctx}/newsDetail">
+                        <%-- ✅ CHANGED: 동일 사유로 value="/newsDetail" 사용 --%>
+                        <c:url var="detailUrl" value="/newsDetail">
                           <c:param name="newsId" value="${news.newsId}" />
                           <c:param name="page" value="${page}" />
                           <c:param name="condition" value="${condition}" />
@@ -536,7 +527,8 @@
                               <c:otherwise><c:set var="thumb" value="${ctx}/${thumb}" /></c:otherwise>
                             </c:choose>
 
-                            <c:url var="detailUrl" value="${ctx}/newsDetail">
+                            <%-- ✅ CHANGED --%>
+                            <c:url var="detailUrl" value="/newsDetail">
                               <c:param name="newsId" value="${news.newsId}" />
                               <c:param name="page" value="${page}" />
                               <c:param name="condition" value="${condition}" />
@@ -566,7 +558,8 @@
                               <c:otherwise><c:set var="thumb" value="${ctx}/${thumb}" /></c:otherwise>
                             </c:choose>
 
-                            <c:url var="detailUrl" value="${ctx}/newsDetail">
+                            <%-- ✅ CHANGED --%>
+                            <c:url var="detailUrl" value="/newsDetail">
                               <c:param name="newsId" value="${news.newsId}" />
                               <c:param name="page" value="${page}" />
                               <c:param name="condition" value="${condition}" />
@@ -596,7 +589,8 @@
                               <c:otherwise><c:set var="thumb" value="${ctx}/${thumb}" /></c:otherwise>
                             </c:choose>
 
-                            <c:url var="detailUrl" value="${ctx}/newsDetail">
+                            <%-- ✅ CHANGED --%>
+                            <c:url var="detailUrl" value="/newsDetail">
                               <c:param name="newsId" value="${news.newsId}" />
                               <c:param name="page" value="${page}" />
                               <c:param name="condition" value="${condition}" />
@@ -632,7 +626,8 @@
                               <c:otherwise><c:set var="thumb" value="${ctx}/${thumb}" /></c:otherwise>
                             </c:choose>
 
-                            <c:url var="detailUrl" value="${ctx}/newsDetail">
+                            <%-- ✅ CHANGED --%>
+                            <c:url var="detailUrl" value="/newsDetail">
                               <c:param name="newsId" value="${news.newsId}" />
                               <c:param name="page" value="${page}" />
                               <c:param name="condition" value="${condition}" />
@@ -662,7 +657,8 @@
                               <c:otherwise><c:set var="thumb" value="${ctx}/${thumb}" /></c:otherwise>
                             </c:choose>
 
-                            <c:url var="detailUrl" value="${ctx}/newsDetail">
+                            <%-- ✅ CHANGED --%>
+                            <c:url var="detailUrl" value="/newsDetail">
                               <c:param name="newsId" value="${news.newsId}" />
                               <c:param name="page" value="${page}" />
                               <c:param name="condition" value="${condition}" />
@@ -692,7 +688,8 @@
                               <c:otherwise><c:set var="thumb" value="${ctx}/${thumb}" /></c:otherwise>
                             </c:choose>
 
-                            <c:url var="detailUrl" value="${ctx}/newsDetail">
+                            <%-- ✅ CHANGED --%>
+                            <c:url var="detailUrl" value="/newsDetail">
                               <c:param name="newsId" value="${news.newsId}" />
                               <c:param name="page" value="${page}" />
                               <c:param name="condition" value="${condition}" />
@@ -725,7 +722,8 @@
               <div class="product__pagination">
 
                 <c:if test="${hasPrev}">
-                  <c:url var="prevUrl" value="${ctx}/newsList">
+                  <%-- ✅ CHANGED: value="/newsList" --%>
+                  <c:url var="prevUrl" value="/newsList">
                     <c:param name="page" value="${startPage - 1}" />
                     <c:param name="condition" value="${condition}" />
                     <c:if test="${not empty keyword}">
@@ -736,7 +734,8 @@
                 </c:if>
 
                 <c:forEach var="p" begin="${startPage}" end="${endPage}">
-                  <c:url var="pageUrl" value="${ctx}/newsList">
+                  <%-- ✅ CHANGED: value="/newsList" --%>
+                  <c:url var="pageUrl" value="/newsList">
                     <c:param name="page" value="${p}" />
                     <c:param name="condition" value="${condition}" />
                     <c:if test="${not empty keyword}">
@@ -747,7 +746,8 @@
                 </c:forEach>
 
                 <c:if test="${hasNext}">
-                  <c:url var="nextUrl" value="${ctx}/newsList">
+                  <%-- ✅ CHANGED: value="/newsList" --%>
+                  <c:url var="nextUrl" value="/newsList">
                     <c:param name="page" value="${endPage + 1}" />
                     <c:param name="condition" value="${condition}" />
                     <c:if test="${not empty keyword}">
@@ -771,7 +771,6 @@
 
 <%@ include file="/WEB-INF/common/footer.jsp" %>
 
-<!-- set-bg 동작 필수 -->
 <script src="${ctx}/js/jquery-3.3.1.min.js"></script>
 <script src="${ctx}/js/bootstrap.min.js"></script>
 <script src="${ctx}/js/player.js"></script>
