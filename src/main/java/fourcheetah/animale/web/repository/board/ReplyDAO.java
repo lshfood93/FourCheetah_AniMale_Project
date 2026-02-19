@@ -33,7 +33,7 @@ public class ReplyDAO {
 			+ "  m.member_nickname_color AS writer_nickname_color, " + "  r.reply_content, " + "  r.reply_created_at, " // ⬅️
 																														// 작성일
 																														// 추가
-			+ "  r.reply_updated_at " // ⬅️ 수정일 추가
+			+ "  r.reply_updated_at, " // ⬅️ 수정일 추가
 			+ // ⭐⭐⭐ isEdited 추가 ⭐⭐⭐
 			"  CASE " + "    WHEN r.reply_updated_at IS NULL THEN 0 "
 			+ "    WHEN r.reply_created_at = r.reply_updated_at THEN 0 " + "    ELSE 1 " + "  END AS is_edited "
@@ -47,7 +47,7 @@ public class ReplyDAO {
 			+ "       ELSE m.member_nickname END AS writer_nickname, "
 			+ "  m.member_profile_image AS writer_profile_image, " // ⬅️ 프로필 이미지 추가
 			+ "  r.reply_content, " + "  r.reply_created_at, " // ⬅️ 작성일 추가
-			+ "  r.reply_updated_at " // ⬅️ 수정일 추가
+			+ "  r.reply_updated_at, " // ⬅️ 수정일 추가
 			+ "  m.member_profile_color  AS writer_profile_color, "
 			// ⭐⭐⭐ isEdited 추가 ⭐⭐⭐
 			+ "  CASE " + "    WHEN r.reply_updated_at IS NULL THEN 0 "

@@ -302,10 +302,6 @@ public class MemberController {
         return "mypage";
     }
 
-    @GetMapping("/member/mypage")
-    public String legacyMyPage() {
-        return "redirect:/myPage";
-    }
 
     // ==================== 프로필 변경 ====================
 

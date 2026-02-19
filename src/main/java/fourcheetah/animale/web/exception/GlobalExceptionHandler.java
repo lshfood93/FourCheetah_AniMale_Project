@@ -45,7 +45,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleAny(Exception e, HttpServletRequest req) {
     	
     	  // 핵심: 어떤 URL에서 어떤 예외가 났는지 + 스택트레이스
-        log.error("[AI-CHAT] Unhandled error: {} {}", req.getMethod(), req.getRequestURI(), e);
+    	log.error("[UNHANDLED] {} {}", req.getMethod(), req.getRequestURI(), e);
         Map<String, Object> body = new HashMap<>();
         body.put("code", "INTERNAL_ERROR");
         body.put("message", "서버 오류가 발생했습니다.");
