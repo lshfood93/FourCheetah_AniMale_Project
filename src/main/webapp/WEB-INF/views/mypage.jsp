@@ -199,7 +199,53 @@
               <input type="hidden" id="nicknameColorInput" name="memberNicknameColor" value="${nickColorInit}">
               <input type="hidden" id="borderColorInput" name="memberProfileColor" value="${borderColorInit}">
 
-              <!-- (아이디/이메일/닉네임/꾸미기/캐시/비용/버튼 영역은 네 코드 그대로) -->
+
+<!-- 아이디 -->
+<div class="form-group">
+    <label>아이디</label>
+    <input type="text" value="${memberData.memberName}" readonly>
+</div>
+
+<!-- 이메일 -->
+<div class="form-group">
+    <label>이메일</label>
+    <input type="email" value="${memberData.memberEmail}" readonly>
+</div>
+
+<!-- 닉네임 -->
+<div class="form-group">
+    <label>닉네임</label>
+    <input type="text" name="memberNickname" value="${memberData.memberNickname}">
+    <button type="button" id="nickCheckBtn">중복확인</button>
+</div>
+
+<!-- 캐시 -->
+<div class="form-group">
+    <label>보유 캐시</label>
+    <input type="text" value="${cashFmt}원" readonly>
+</div>
+
+<!-- 닉네임 색상 선택 -->
+<div class="decoration-section">
+    <!-- 색상 팔레트 -->
+</div>
+
+<!-- 프로필 테두리 색상 선택 -->
+<div class="decoration-section">
+    <!-- 색상 팔레트 -->
+</div>
+
+<!-- 비용 표시 -->
+<div class="cost-summary">
+    <p>총 비용: <span id="totalCost">0</span>원</p>
+</div>
+
+<!-- 버튼 -->
+<div class="button-group">
+    <button type="button" id="editBtn">수정</button>
+    <button type="submit" id="saveBtn">저장</button>
+    <button type="button" id="cancelBtn">취소</button>
+</div>
             </form>
           </div>
         </div>
