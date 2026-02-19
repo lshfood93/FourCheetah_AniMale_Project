@@ -1,19 +1,9 @@
-/* =========================================================
-   mypage.css (Commented)
-   - 마이페이지 전용 UI
-   - 로더/모달/꾸미기/좌우 카드 레이아웃 통일
-   ========================================================= */
-
-/* =========================================================
-   1) Page Title / Spacing
-   ========================================================= */
+/* MyPage */
 .mypage-title { margin-top: 24px; text-align: center; }
 .mypage-title__h1 { font-weight: 800; margin: 0; }
 .mypage-spad { padding-top: 60px; padding-bottom: 80px; }
 
-/* =========================================================
-   2) Card Base (좌/우 공통)
-   ========================================================= */
+/* 마이페이지 카드 (좌/우 공통 베이스) */
 .login-box-clean {
   background: rgba(255, 255, 255, 0.02);
   border-radius: 18px;
@@ -21,10 +11,7 @@
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
 }
 
-/* =========================================================
-   3) Buttons
-   - disabled-btn: pointer-events 차단으로 실제 클릭 불가
-   ========================================================= */
+/* Buttons */
 .mypage-btn {
   display: block;
   width: 100%;
@@ -43,8 +30,6 @@
 }
 .mypage-btn:hover { background: rgba(255, 255, 255, 0.12); transform: translateY(-1px); }
 .mypage-btn:active { transform: translateY(0); }
-
-/* 은은한 글로우 sweep 효과 */
 .mypage-btn::after {
   content: '';
   position: absolute;
@@ -60,21 +45,14 @@
 }
 .mypage-btn:hover::after { left: 120%; }
 
-/* 강조 버튼(캐시충전/수정완료) */
 .primary-red {
   background: linear-gradient(135deg, #ff4c4c 0%, #e53637 55%, #c92c2d 100%) !important;
   color: #fff !important;
 }
 .primary-red:hover { filter: brightness(1.04); }
-
-/* ✅ disabled 시: 시각 + 클릭 차단 */
 .disabled-btn { opacity: 0.45; pointer-events: none; }
 
-/* =========================================================
-   4) Profile Image + Loader
-   - is-loading이면 img opacity=0 + skeleton + loader 표시
-   - has-border/border-rainbow: 꾸미기 미리보기용
-   ========================================================= */
+/* Profile Image (Loader) */
 .profile-img-wrap {
   --profile-border-color: transparent;
   width: 256px;
@@ -95,15 +73,13 @@
   transition: opacity .2s ease;
 }
 
-/* ✅ 테두리(단색) */
+/* ✅ 테두리 꾸미기 미리보기 */
 .profile-img-wrap.has-border {
   box-shadow:
     0 0 0 3px rgba(255,255,255,0.06),
     0 0 0 6px var(--profile-border-color),
     0 10px 28px rgba(0, 0, 0, 0.22);
 }
-
-/* ✅ 테두리(무지개) - glow용 pseudo */
 .profile-img-wrap.border-rainbow::before {
   content: '';
   position: absolute;
@@ -126,7 +102,6 @@
   opacity: 0.55;
 }
 
-/* 로딩 상태 스켈레톤 */
 .profile-img-wrap.is-loading {
   background: linear-gradient(110deg, rgba(255, 255, 255, .03) 20%,
     rgba(255, 255, 255, .07) 40%, rgba(255, 255, 255, .03) 60%), #0b0c2a;
@@ -135,7 +110,6 @@
 }
 .profile-img-wrap.is-loading img { opacity: 0; }
 
-/* 로더 오버레이 */
 .profile-loader {
   position: absolute;
   inset: 0;
@@ -189,7 +163,7 @@
   }
 }
 
-/* 프로필 사진 변경 버튼(라벨 형태) */
+/* 프로필 버튼 */
 .mypage-btn.profile-btn {
   width: 256px !important;
   height: auto !important;
@@ -206,9 +180,7 @@
 }
 .mypage-btn.profile-btn .btn-text { font-size: 16px; font-weight: inherit; line-height: 1.2; }
 
-/* =========================================================
-   5) 메시지/비용 안내
-   ========================================================= */
+/* 안내문구 */
 .msg-area { margin-top: 10px; font-size: 13px; line-height: 1.35; }
 .msg-ok { color: #25d366; font-weight: 800; }
 .msg-error { color: #ff4c4c; font-weight: 800; }
@@ -218,11 +190,6 @@
 .cost-hint__text { display: inline-block; line-height: 1.35; }
 .cost-hint__text b { line-height: 1; }
 
-/* =========================================================
-   6) Split Pill UI (필드 라인)
-   - left label + right input 구조
-   - body.mypage-editing 에서 editable pill 강조
-   ========================================================= */
 :root {
   --accent: 229, 54, 55;
   --hud-bg: rgba(255, 255, 255, 0.030);
@@ -266,11 +233,436 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
-/* ... (이하 스타일은 네 코드 그대로 유지) ... */
+.split-label .split-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(var(--accent), 0.22);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.split-label svg {
+  width: 16px;
+  height: 16px;
+  stroke: rgba(var(--accent), 0.90);
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.split-label .split-text {
+  font-size: 12px;
+  font-weight: 700;
+  padding-left: 4px;
+  letter-spacing: 0.45px;
+  color: rgba(255, 255, 255, 0.58);
+  white-space: nowrap;
+}
 
-/* =========================================================
-   7) Cost Box / Modal / Side Menu / Decoration UI
-   - 네 코드 구조 그대로(주석만 추가)
-   ========================================================= */
+.split-value {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  position: relative;
+  z-index: 1;
+}
+.split-value input {
+  width: 100%;
+  height: 52px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding-left: 12px;
+  font-size: 14.5px;
+  font-weight: 620;
+  letter-spacing: -0.25px;
+  color: rgba(255, 255, 255, 0.90);
+}
+.split-value input[readonly] { color: rgba(255, 255, 255, 0.86); }
+#cashDisplay { font-variant-numeric: tabular-nums; letter-spacing: -0.15px; }
 
-/* (이 아래 구간은 이미 구성 명확해서, 필요 시 더 쪼개서 주석 넣어도 됨) */
+body.mypage-editing .split-pill--editable {
+  border-color: rgba(var(--accent), 0.22);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 0 3px rgba(var(--accent), 0.08);
+}
+
+.split-row {
+  display: grid;
+  grid-template-columns: 1fr 128px;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.split-row .split-pill { margin-bottom: 0; }
+
+.nick-check-btn {
+  height: 52px;
+  border-radius: 16px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  background: linear-gradient(135deg, rgba(255, 76, 76, 0.18) 0%,
+    rgba(229, 54, 55, 0.10) 55%, rgba(201, 44, 45, 0.08) 100%);
+  border: 1px solid rgba(var(--accent), 0.28);
+  color: rgba(255, 255, 255, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: .18s ease;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.nick-check-btn:hover { filter: brightness(1.05); border-color: rgba(var(--accent), 0.36); }
+.nick-check-btn.disabled-btn { opacity: .45; pointer-events: none; }
+
+#nicknameMsg { margin: 6px 0 6px !important; }
+#nicknameMsg:empty { display: none; margin: 0 !important; }
+
+.cost-box {
+  margin-top: 18px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 18px;
+}
+.cost-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 14.5px;
+  line-height: 1.2;
+}
+.cost-row:last-child { border-bottom: none; }
+.cost-row .label { color: rgba(255, 255, 255, 0.78); font-weight: 600; }
+.cost-row .value { color: #fff; font-size: 14.5px; font-weight: 800; }
+#cashWarn { word-break: keep-all; }
+
+.edit-actions { margin-top: 20px; display: flex; gap: 12px; }
+.edit-actions .mypage-btn { width: 100%; }
+
+/* Modal */
+.modal-backdrop-custom {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(0.3px);
+  -webkit-backdrop-filter: blur(0.3px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 20000;
+  padding: 14px;
+  box-sizing: border-box;
+}
+.modal-box {
+  width: min(560px, 96vw);
+  background: rgba(15, 20, 60, 0.98);
+  border-radius: 18px;
+  box-shadow: 0 16px 60px rgba(0, 0, 0, 0.55);
+  padding: 32px 34px 24px;
+  box-sizing: border-box;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-title {
+  font-size: 21px;
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 6px;
+  line-height: 1.25;
+  word-break: keep-all;
+}
+.modal-desc {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.78);
+  margin-bottom: 14px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+.modal-cost {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  box-sizing: border-box;
+}
+.modal-cost .row {
+  margin: 0 !important;
+  padding: 10px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.modal-cost .row .l {
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 650;
+  font-size: 14px;
+  min-width: 0;
+  flex: 1;
+}
+.modal-cost .row .r {
+  color: #fff;
+  font-weight: 850;
+  font-size: 14.5px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 5px 10px;
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.modal-actions { display: flex; gap: 10px; }
+.modal-btn {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 14px;
+  font-weight: 900;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.10);
+  transition: .2s;
+}
+.modal-btn:hover { background: rgba(255, 255, 255, 0.16); }
+.modal-btn.yes {
+  background: linear-gradient(135deg, #ff4c4c 0%, #e53637 55%, #c92c2d 100%) !important;
+}
+
+/* LEFT MENU */
+.side-menu {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.side-menu .menu-item { width: 100%; }
+.side-menu .menu-link, .side-menu .menu-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-weight: 600;
+  transition: 0.18s ease;
+}
+.side-menu .menu-link i, .side-menu .menu-btn i { width: 18px; text-align: center; opacity: 0.9; }
+.side-menu .menu-link:hover, .side-menu .menu-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.10);
+  transform: translateY(-1px);
+}
+.side-menu .menu-link.is-active {
+  background: rgba(229, 54, 55, 0.10);
+  border-color: rgba(229, 54, 55, 0.22);
+  color: #fff;
+}
+.side-menu .menu-btn.danger {
+  color: #ff6b6b;
+  background: rgba(229, 54, 55, 0.06);
+  border-color: rgba(229, 54, 55, 0.18);
+}
+.side-menu .menu-btn.danger:hover {
+  background: rgba(229, 54, 55, 0.10);
+  border-color: rgba(229, 54, 55, 0.26);
+}
+
+/* Layout fix */
+.mypage-col-left { padding-right: 28px !important; }
+.mypage-col-right { padding-left: 28px !important; }
+
+.mypage-side-card { position: relative; z-index: 2; overflow: visible; }
+.mypage-right-card {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .35);
+}
+body.mypage-editing .mypage-right-card {
+  border-color: rgba(229, 54, 55, .18);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .45);
+}
+.mypage-side-card.text-center { display: flex; flex-direction: column; align-items: center; }
+
+/* 모바일 */
+@media (max-width: 991.98px) {
+  .mypage-col-left { padding-right: 0 !important; margin-bottom: 18px; }
+  .mypage-col-right { padding-left: 0 !important; }
+  .split-row { grid-template-columns: 1fr; }
+  .nick-check-btn { width: 100%; }
+  .split-label { width: 128px; }
+  .split-value { padding: 0 14px; }
+  .split-value input { padding-left: 10px; }
+  .modal-actions { flex-direction: column; }
+  .profile-img-wrap { width: 100%; max-width: 256px; height: auto; aspect-ratio: 1/1; }
+}
+
+/* "닉네임 변경 시 300원..." 문구 정렬 */
+#nickCostMsg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  margin: 8px 0 14px;
+  line-height: 1;
+}
+#nickCostMsg b { line-height: 1; }
+
+/* =========================
+   Decoration UI (NEW)
+========================= */
+.decorate-wrap {
+  margin-top: 18px;
+  margin-bottom: 10px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.decorate-headline {
+  font-size: 14px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.92);
+  margin-bottom: 10px;
+  letter-spacing: -0.2px;
+}
+.decorate-card {
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.decorate-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.decorate-name {
+  font-size: 13px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.90);
+}
+.decorate-price {
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.78);
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.decorate-body { display: flex; flex-direction: column; gap: 10px; }
+
+.decorate-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.color-chip {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: var(--chip, rgba(255,255,255,0.06));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+  position: relative;
+  cursor: pointer;
+}
+.color-chip:disabled { cursor: not-allowed; opacity: 0.45; }
+.color-chip.chip-none {
+  width: auto;
+  padding: 0 12px;
+  height: 34px;
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.86);
+  background: rgba(255,255,255,0.04);
+}
+.color-chip.is-selected {
+  outline: 2px solid rgba(var(--accent), 0.95);
+  outline-offset: 2px;
+}
+
+.decorate-custom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.color-picker {
+  width: 44px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.color-picker:disabled { opacity: 0.45; }
+
+.mini-btn {
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.9);
+  font-weight: 900;
+  padding: 8px 12px;
+  border-radius: 12px;
+  transition: .18s ease;
+}
+.mini-btn:hover { background: rgba(255,255,255,0.08); }
+.mini-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.decorate-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.preview-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.62);
+}
+.preview-nickname {
+  font-size: 13px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.92);
+}
+.preview-nickname.is-rainbow {
+  background: linear-gradient(90deg,
+    #ff4c4c, #ff8a00, #ffc107, #25d366, #3b82f6, #1e3a8a, #a855f7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.preview-swatch {
+  width: 34px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+.preview-swatch.is-empty {
+  background: rgba(255,255,255,0.03);
+}
