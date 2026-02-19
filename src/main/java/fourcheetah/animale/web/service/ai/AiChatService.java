@@ -2,7 +2,10 @@ package fourcheetah.animale.web.service.ai;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -19,7 +22,8 @@ public class AiChatService {
     private final QuerySpecExtractor extractor;
     private final CandidateService candidateService;
     private final RankerService rankerService;
-
+    private static final Logger log = LoggerFactory.getLogger(AiChatService.class);
+    
     @Value("${ai.chat.more.max:3}")
     private int moreMax;
 
@@ -49,31 +53,54 @@ public class AiChatService {
     }
 
     public AiChatMessageResponse chat(HttpSession session, String userMessage) {
+        String rid = UUID.randomUUID().toString().substring(0, 8); // request id
+        long t0 = System.currentTimeMillis();
+
+        log.info("[AI:{}] chat start msgLen={}", rid, userMessage == null ? 0 : userMessage.length());
+
         validateUserMessage(userMessage);
+
+        long t1 = System.currentTimeMillis();
         rateLimitService.checkAndConsume(session);
+        log.info("[AI:{}] rateLimit ms={}", rid, System.currentTimeMillis() - t1);
 
         List<ChatMessage> history = sessionService.getChatHistory(session);
         pushHistory(history, "user", userMessage);
 
+        long t2 = System.currentTimeMillis();
         QuerySpec spec = extractor.extract(userMessage);
+        log.info("[AI:{}] extract ms={}", rid, System.currentTimeMillis() - t2);
+
         sessionService.setLastSpec(session, spec);
 
+        long t3 = System.currentTimeMillis();
         Set<Integer> excludeIds = sessionService.getExcludeIds(session);
         List<RecommendedAnimeDTO> candidates = candidateService.getCandidates(spec, excludeIds);
+        log.info("[AI:{}] candidates size={} ms={}", rid,
+                candidates == null ? 0 : candidates.size(),
+                System.currentTimeMillis() - t3);
 
+        long t4 = System.currentTimeMillis();
         List<RecommendedAnimeDTO> top = rankerService.pickTopN(userMessage, trim(history), candidates);
+        log.info("[AI:{}] ranker ms={} topSize={}", rid,
+                System.currentTimeMillis() - t4,
+                top == null ? 0 : top.size());
 
         // exclude 갱신 + moreCount 초기화
-        for (RecommendedAnimeDTO a : top) excludeIds.add(a.getAnimeId());
+        if (top != null) {
+            for (RecommendedAnimeDTO a : top) excludeIds.add(a.getAnimeId());
+        }
         sessionService.setMoreCount(session, 0);
 
-        // assistant 메시지로 “요약 응답”도 히스토리에 남기고 싶다면(선택)
-        pushHistory(history, "assistant", "추천 결과 " + top.size() + "건 반환");
+        pushHistory(history, "assistant", "추천 결과 " + (top == null ? 0 : top.size()) + "건 반환");
 
         AiChatMessageResponse res = new AiChatMessageResponse();
         res.setRecommendedAnimes(top);
+
+        log.info("[AI:{}] chat end totalMs={}", rid, System.currentTimeMillis() - t0);
         return res;
     }
+
 
     public AiChatMessageResponse more(HttpSession session) {
         rateLimitService.checkAndConsume(session);

@@ -3,7 +3,7 @@ package fourcheetah.animale.web.repository.member;
 import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
-import java.util.ArrayList; 
+import java.util.ArrayList;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -125,8 +125,11 @@ public class MemberDAO {
 			+ "SET member_profile_image = ?, member_cash = member_cash - ? "
 			+ "WHERE member_id = ? AND member_cash >= ?";
 
-	private static final String UPDATE_MEMBER_INFORM = "UPDATE MEMBER "
-			+ "SET member_nickname = ?, member_profile_image = ?, member_cash = member_cash - ? "
+	private static final String UPDATE_MEMBER_INFORM = "UPDATE MEMBER " + "SET "
+			+ "  member_nickname = COALESCE(?, member_nickname), "
+			+ "  member_profile_image = COALESCE(?, member_profile_image), "
+			+ "  member_profile_color = COALESCE(?, member_profile_color), "
+			+ "  member_nickname_color = COALESCE(?, member_nickname_color), " + "  member_cash = member_cash - ? "
 			+ "WHERE member_id = ? AND member_cash >= ?";
 
 	// 관리자: 캐시 차감/조건 없이 업데이트만
@@ -136,8 +139,11 @@ public class MemberDAO {
 	private static final String ADMIN_UPDATE_PROFILE_IMAGE = "UPDATE MEMBER " + "SET member_profile_image = ? "
 			+ "WHERE member_id = ?";
 
-	private static final String ADMIN_UPDATE_MEMBER_INFORM = "UPDATE MEMBER "
-			+ "SET member_nickname = ?, member_profile_image = ? " + "WHERE member_id = ?";
+	private static final String ADMIN_UPDATE_MEMBER_INFORM = "UPDATE MEMBER " + "SET "
+			+ "  member_nickname = COALESCE(?, member_nickname), "
+			+ "  member_profile_image = COALESCE(?, member_profile_image), "
+			+ "  member_profile_color = COALESCE(?, member_profile_color), "
+			+ "  member_nickname_color = COALESCE(?, member_nickname_color) " + "WHERE member_id = ?";
 
 	private static final String UPDATE_PASSWORD = "UPDATE MEMBER " + "SET member_password = ? " + "WHERE member_id = ?";
 
@@ -151,7 +157,8 @@ public class MemberDAO {
 			+ "WHERE member_id = ?";
 
 	private static final String UPDATE_COLORS = "UPDATE MEMBER "
-			+ "SET member_profile_color = ?, member_nickname_color = ? " + "WHERE member_id = ?";
+			+ "SET member_profile_color = ?, member_nickname_color = ?, member_cash = member_cash - ? "
+			+ "WHERE member_id = ? AND member_cash >= ?";
 
 	private static final String UPDATE_NOTICE_SET = "UPDATE MEMBER " + "SET notice_pending='Y', notice_message=? "
 			+ "WHERE member_id = ?";
@@ -385,7 +392,8 @@ public class MemberDAO {
 			if ("MEMBER_INFORM_UPDATE".equals(condition)) {
 				int pay = dto.getMemberPayCash();
 				int result = jdbcTemplate.update(UPDATE_MEMBER_INFORM, dto.getMemberNickname(),
-						dto.getMemberProfileImage(), pay, dto.getMemberId(), pay);
+						dto.getMemberProfileImage(), dto.getMemberProfileColor(), dto.getMemberNicknameColor(), pay,
+						dto.getMemberId(), pay);
 				return result > 0;
 			}
 
@@ -402,8 +410,12 @@ public class MemberDAO {
 			}
 
 			if ("ADMIN_MEMBER_INFORM_UPDATE".equals(condition)) {
-				int result = jdbcTemplate.update(ADMIN_UPDATE_MEMBER_INFORM, dto.getMemberNickname(),
-						dto.getMemberProfileImage(), dto.getMemberId());
+				int result = jdbcTemplate.update( ADMIN_UPDATE_MEMBER_INFORM,
+	                    dto.getMemberNickname(),
+	                    dto.getMemberProfileImage(),
+	                    dto.getMemberProfileColor(),
+	                    dto.getMemberNicknameColor(),
+	                    dto.getMemberId());
 				return result > 0;
 			}
 
@@ -429,9 +441,14 @@ public class MemberDAO {
 			}
 
 			if ("MEMBER_COLOR_UPDATE".equals(condition)) {
-				int result = jdbcTemplate.update(UPDATE_COLORS, dto.getMemberProfileColor(),
-						dto.getMemberNicknameColor(), dto.getMemberId());
-				return result > 0;
+			    int pay = dto.getMemberPayCash();
+			    int result = jdbcTemplate.update(UPDATE_COLORS,
+			        dto.getMemberProfileColor(),
+			        dto.getMemberNicknameColor(),
+			        pay,
+			        dto.getMemberId(),
+			        pay);
+			    return result > 0;
 			}
 
 			if ("MEMBER_NOTICE_SET".equals(condition)) {
@@ -444,60 +461,61 @@ public class MemberDAO {
 				return result > 0;
 			}
 			if ("UPDATE_DECORATION".equals(condition)) {
-			    StringBuilder sql = new StringBuilder("UPDATE member SET ");
-			    List<Object> params = new ArrayList<>();
-			    
-			    boolean hasNickname = dto.getMemberNicknameColor() != null;
-			    boolean hasBorder = dto.getMemberProfileColor() != null;
-			    
-			    if (hasNickname) {
-			        sql.append("member_nickname_color = ?");
-			        params.add(dto.getMemberNicknameColor());
-			    }
-			    
-			    if (hasBorder) {
-			        if (hasNickname) sql.append(", ");
-			        sql.append("member_profile_color = ?");
-			        params.add(dto.getMemberProfileColor());
-			    }
-			    
-			    if (hasNickname || hasBorder) {
-			        sql.append(", member_cash = member_cash - ?");
-			        params.add(dto.getMemberPayCash());
-			    }
-			    
-			    sql.append(" WHERE member_id = ?");
-			    params.add(dto.getMemberId());
-			    
-			    int rows = jdbcTemplate.update(sql.toString(), params.toArray());
-			    return rows > 0;
+				StringBuilder sql = new StringBuilder("UPDATE member SET ");
+				List<Object> params = new ArrayList<>();
+
+				boolean hasNickname = dto.getMemberNicknameColor() != null;
+				boolean hasBorder = dto.getMemberProfileColor() != null;
+
+				if (hasNickname) {
+					sql.append("member_nickname_color = ?");
+					params.add(dto.getMemberNicknameColor());
+				}
+
+				if (hasBorder) {
+					if (hasNickname)
+						sql.append(", ");
+					sql.append("member_profile_color = ?");
+					params.add(dto.getMemberProfileColor());
+				}
+
+				if (hasNickname || hasBorder) {
+					sql.append(", member_cash = member_cash - ?");
+					params.add(dto.getMemberPayCash());
+				}
+
+				sql.append(" WHERE member_id = ?");
+				params.add(dto.getMemberId());
+
+				int rows = jdbcTemplate.update(sql.toString(), params.toArray());
+				return rows > 0;
 			}
 
 			if ("UPDATE_ADMIN_DECORATION".equals(condition)) {
-			    StringBuilder sql = new StringBuilder("UPDATE member SET ");
-			    List<Object> params = new ArrayList<>();
-			    
-			    boolean hasNickname = dto.getMemberNicknameColor() != null;
-			    boolean hasBorder = dto.getMemberProfileColor() != null;
-			    
-			    if (hasNickname) {
-			        sql.append("member_nickname_color = ?");
-			        params.add(dto.getMemberNicknameColor());
-			    }
-			    
-			    if (hasBorder) {
-			        if (hasNickname) sql.append(", ");
-			        sql.append("member_profile_color = ?");
-			        params.add(dto.getMemberProfileColor());
-			    }
-			    
-			    sql.append(" WHERE member_id = ?");
-			    params.add(dto.getMemberId());
-			    
-			    int rows = jdbcTemplate.update(sql.toString(), params.toArray());
-			    return rows > 0;
+				StringBuilder sql = new StringBuilder("UPDATE member SET ");
+				List<Object> params = new ArrayList<>();
+
+				boolean hasNickname = dto.getMemberNicknameColor() != null;
+				boolean hasBorder = dto.getMemberProfileColor() != null;
+
+				if (hasNickname) {
+					sql.append("member_nickname_color = ?");
+					params.add(dto.getMemberNicknameColor());
+				}
+
+				if (hasBorder) {
+					if (hasNickname)
+						sql.append(", ");
+					sql.append("member_profile_color = ?");
+					params.add(dto.getMemberProfileColor());
+				}
+
+				sql.append(" WHERE member_id = ?");
+				params.add(dto.getMemberId());
+
+				int rows = jdbcTemplate.update(sql.toString(), params.toArray());
+				return rows > 0;
 			}
-			
 
 			return false;
 
@@ -530,40 +548,32 @@ public class MemberDAO {
 	 * 활성 제재 조회 (로그인 시 사용)
 	 */
 	public MemberWarningDTO selectActiveWarning(int memberId) {
-	    System.out.println("[MemberDAO] selectActiveWarning 실행 - memberId=" + memberId);
-	    
-	    String sql = "SELECT warning_type, reason, start_at, end_at " +
-	                 "FROM member_warning " +
-	                 "WHERE member_id = ? " +
-	                 "AND start_at <= NOW() " +
-	                 "AND (end_at IS NULL OR end_at > NOW()) " +
-	                 "ORDER BY start_at DESC " +
-	                 "LIMIT 1";
-	    
-	    try {
-	        return jdbcTemplate.queryForObject(
-	            sql,
-	            (rs, rowNum) -> {
-	                MemberWarningDTO dto = new MemberWarningDTO();
-	                dto.setWarningType(rs.getString("warning_type"));
-	                dto.setReason(rs.getString("reason"));
-	                
-	                Timestamp startTime = rs.getTimestamp("start_at");
-	                dto.setStartAt(startTime == null ? null : startTime.toLocalDateTime());
-	                
-	                Timestamp endTime = rs.getTimestamp("end_at");
-	                dto.setEndAt(endTime == null ? null : endTime.toLocalDateTime());
-	                
-	                return dto;
-	            },
-	            memberId
-	        );
-	    } catch (EmptyResultDataAccessException e) {
-	        return null;
-	    } catch (Exception e) {
-	        System.out.println("[MemberDAO] 제재 조회 에러: " + e.getMessage());
-	        e.printStackTrace();
-	        return null;
-	    }
+		System.out.println("[MemberDAO] selectActiveWarning 실행 - memberId=" + memberId);
+
+		String sql = "SELECT warning_type, reason, start_at, end_at " + "FROM member_warning " + "WHERE member_id = ? "
+				+ "AND start_at <= NOW() " + "AND (end_at IS NULL OR end_at > NOW()) " + "ORDER BY start_at DESC "
+				+ "LIMIT 1";
+
+		try {
+			return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+				MemberWarningDTO dto = new MemberWarningDTO();
+				dto.setWarningType(rs.getString("warning_type"));
+				dto.setReason(rs.getString("reason"));
+
+				Timestamp startTime = rs.getTimestamp("start_at");
+				dto.setStartAt(startTime == null ? null : startTime.toLocalDateTime());
+
+				Timestamp endTime = rs.getTimestamp("end_at");
+				dto.setEndAt(endTime == null ? null : endTime.toLocalDateTime());
+
+				return dto;
+			}, memberId);
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		} catch (Exception e) {
+			System.out.println("[MemberDAO] 제재 조회 에러: " + e.getMessage());
+			e.printStackTrace();
+			return null;
+		}
 	}
 }
