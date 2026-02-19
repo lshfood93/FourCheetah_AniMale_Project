@@ -1,72 +1,44 @@
-// /js/boarddetail.js
+// ✅ FINAL: /js/boarddetail.js
 // =========================================================
-// Board Detail Page Script - 주석 강화 최종본(ES5 + fetch)
+// Board Detail Page Script (ES5 + fetch) - 동기/비동기 정책 최종본
 // ---------------------------------------------------------
-// 이 파일이 담당하는 것(기능별 책임 분리 기준)
+// [비동기(fetch + JSON)]
+// 1) 좋아요 토글: /BoardLikeToggle
+// 2) 좋아요 누른 사람: /LikeMemberList  -> ✅ 모달
+// 3) 댓글 목록 + 정렬: /ReplyListOrder  -> 화면 부분 렌더
+// 4) 신고 접수: /boardReport (fetch 유지)
 //
-// 1) 게시글 본문(CKEditor) 보정
-//    - CKEditor가 만든 img/iframe/video/src 경로가 상대경로로 들어오면
-//      ctx를 붙여서 정상 노출되게 보정한다.
-//
-// 2) 좋아요
-//    - 좋아요 토글: /BoardLikeToggle (POST)
-//    - 좋아요 누른 사람: /LikeMemberList (GET)
-//
-// 3) 댓글
-//    - 댓글 목록 정렬 조회: /ReplyListOrder (GET)
-//    - 댓글 작성/수정/삭제: /replyWrite /replyEdit /replyDelete (POST)
-//    - 댓글 렌더링 시: 프로필 이미지/닉네임/색상/데코 클래스까지 반영
-//
-// 4) 신고
-//    - 신고 모달 + 신고 접수: /boardReport (POST)
-//
-// 5) ✅ 제재회원 정책(핵심)
-//    - 댓글 작성/수정/삭제 금지
-//    - 게시글 수정/삭제 금지
-//    - UI에서 숨겨도, 혹시 버튼이 노출되는 예외를 대비해서
-//      클릭/submit을 capture 단계에서 차단한다(2중 안전장치).
+// [동기(form submit)]
+// 5) 댓글 작성: POST /replyWrite  -> ReplyController redirect/message 그대로 사용
+// 6) 댓글 수정: POST /replyEdit   -> ✅ 인라인 편집 후 hidden form submit
+// 7) 댓글 삭제: POST /replyDelete -> ✅ hidden form submit
 // =========================================================
 (function () {
   'use strict';
 
   // =========================================================
-  // JSP에서 내려온 전역 변수(필수 계약)
-  // ---------------------------------------------------------
-  // const ctx = '...';
-  // const boardId = 123;
-  // const isLogin = true/false;
-  // const sessionMemberId = '...';
-  // const sessionMemberRole = 'ADMIN' or '';
-  // const isReported = true/false;
-  // const isBanned = true/false;
+  // JSP 전역 변수(계약)
+  // const ctx, boardId, isLogin, sessionMemberId, sessionMemberRole, isReported, isBanned
   // =========================================================
 
   // =========================================================
-  // API 매핑(라우트 한 곳에서 관리)
-  // ---------------------------------------------------------
-  // 장점:
-  // - 엔드포인트 바뀌어도 여기만 수정하면 됨
-  // - 기능별로 어떤 API를 쓰는지 한눈에 보임
+  // API 매핑(비동기용만 관리)
   // =========================================================
   var API = {
-    likeToggle: ctx + '/BoardLikeToggle',     // POST {boardId} -> JSON {result, isLiked, likeCnt, msg}
-    likeMembers: ctx + '/LikeMemberList',     // GET  ?boardId= -> JSON {ok, users:[...], message}
+    likeToggle: ctx + '/BoardLikeToggle',     // POST {boardId} -> JSON {result,isLiked,likeCnt,msg}
+    likeMembers: ctx + '/LikeMemberList',     // GET  ?boardId= -> JSON {ok,users:[...],message}
     replyOrder: ctx + '/ReplyListOrder',      // GET  ?boardId=&condition= -> JSON Array
-    replyWrite: ctx + '/replyWrite',          // POST {boardId, replyContent}
-    replyEdit: ctx + '/replyEdit',            // POST {boardId, replyId, replyContent}
-    replyDelete: ctx + '/replyDelete',        // POST {boardId, replyId}
     boardReport: ctx + '/boardReport'         // POST {boardId, reportReason, reportContent}
   };
 
   // =========================================================
-  // DOM 캐시(자주 쓰는 요소는 한 번만 찾기)
+  // DOM 캐시
   // =========================================================
   var $replyList = document.getElementById('replyList');
   var $replyEmpty = document.getElementById('replyEmpty');
   var $replyCount = document.getElementById('replyCount');
   var $replyForm = document.getElementById('replyForm');
   var $replyContent = document.getElementById('replyContent');
-  var $replyBoardId = document.getElementById('replyBoardId');
 
   var $btnLike = document.getElementById('btnLike');
   var $likePill = document.getElementById('likePill');
@@ -81,18 +53,30 @@
   var $reportReason = document.getElementById('reportReason');
   var $reportContent = document.getElementById('reportContent');
 
+  // ✅ CHANGED: 댓글 수정/삭제 동기 submit용 hidden form
+  var $replyEditForm = document.getElementById('replyEditForm');
+  var $editBoardId = document.getElementById('editBoardId');
+  var $editReplyId = document.getElementById('editReplyId');
+  var $editReplyContent = document.getElementById('editReplyContent');
+
+  var $replyDeleteForm = document.getElementById('replyDeleteForm');
+  var $delBoardId = document.getElementById('delBoardId');
+  var $delReplyId = document.getElementById('delReplyId');
+
+  // ✅ CHANGED: 좋아요 누른 사람 모달 DOM
+  var $likeUsersList = document.getElementById('likeUsersList');
+  var $likeUsersEmpty = document.getElementById('likeUsersEmpty');
+
   // =========================================================
-  // ✅ 제재회원 공통 안내(메시지 통일)
+  // ✅ 제재회원 공통 안내
   // =========================================================
   function alertBanned(actionText) {
     alert('제재회원은 ' + (actionText || '해당 기능') + '이(가) 제한됩니다.');
   }
 
   // =========================================================
-  // Utils - XSS/표시 안정화/값 정규화
+  // Utils
   // =========================================================
-
-  // 문자열을 안전한 HTML로(댓글/닉네임/사유 등 출력 시 필수)
   function escapeHtml(v) {
     var s = (v === null || v === undefined) ? '' : String(v);
     return s
@@ -103,45 +87,31 @@
       .replace(/'/g, '&#39;');
   }
 
-  // 댓글 본문 줄바꿈 유지(텍스트 -> HTML)
   function nl2br(v) {
     return escapeHtml(v).replace(/\r?\n/g, '<br/>');
   }
 
-  // 닉네임/프로필 컬러는 CSS 인젝션 방지용으로 허용 패턴만 통과
   function sanitizeColor(v) {
     if (!v) return '';
     var s = String(v).trim();
-
-    // #RGB / #RRGGBB / #RRGGBBAA
     if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(s)) return s;
-
-    // rgb()/rgba()/hsl()/hsla()
     if (/^(rgb|rgba|hsl|hsla)\(\s*[-0-9.,% ]+\s*\)$/.test(s)) return s;
-
-    // color keyword(예: red, blue)
     if (/^[a-zA-Z]+$/.test(s)) return s;
-
     return '';
   }
 
-  // 프로필 이미지 src를 ctx 기준으로 절대화
   function normalizeUrl(src) {
     if (!src) return '';
     var s = String(src).trim();
     if (!s) return '';
-
-    // 이미 절대/데이터/blob면 그대로
     if (/^(https?:|data:|blob:)/i.test(s)) return s;
-
-    // 이미 ctx로 시작하면 그대로
     if (ctx && s.indexOf(ctx + '/') === 0) return s;
-
-    // /로 시작하면 ctx + '/...'
     if (s.charAt(0) === '/') return ctx + s;
-
-    // 그 외는 ctx + '/...'
     return ctx + '/' + s;
+  }
+
+  function isTruthy(v) {
+    return v === true || v === 1 || v === '1' || v === 'true';
   }
 
   function setReplyCount(n) {
@@ -153,7 +123,6 @@
     $replyEmpty.style.display = show ? 'block' : 'none';
   }
 
-  // 댓글 리스트를 다시 그릴 때 기존 reply-item만 싹 제거(Empty 영역은 유지)
   function removeAllReplyItems() {
     if (!$replyList) return;
     var items = $replyList.querySelectorAll('.reply-item');
@@ -162,14 +131,12 @@
     }
   }
 
-  // 댓글 수정 가능: 로그인 + 본인 댓글 + (제재 아님)
   function canEditReply(r) {
     if (!isLogin) return false;
     if (typeof isBanned !== 'undefined' && isBanned) return false;
     return String(r.memberId) === String(sessionMemberId);
   }
 
-  // 댓글 삭제 가능: 로그인 + (본인 댓글 or ADMIN) + (제재 아님)
   function canDeleteReply(r) {
     if (!isLogin) return false;
     if (typeof isBanned !== 'undefined' && isBanned) return false;
@@ -177,16 +144,8 @@
     return String(sessionMemberRole) === 'ADMIN';
   }
 
-  // 서버에서 boolean을 1/'1'/'true' 등으로 내려주는 경우를 흡수
-  function isTruthy(v) {
-    return v === true || v === 1 || v === '1' || v === 'true';
-  }
-
   // =========================================================
-  // CKEditor src 경로 보정
-  // ---------------------------------------------------------
-  // CKEditor 내용에 img/video/iframe 등이 상대경로로 들어오면
-  // 배포 환경에서 깨지는 일이 많아서 ctx를 붙여주는 보정 루틴
+  // CKEditor src 보정
   // =========================================================
   function normalizeEditorMediaUrls() {
     var root = (typeof ctx === 'string') ? ctx : '';
@@ -196,27 +155,18 @@
       var el = nodes[i];
       var src = el.getAttribute('src');
       if (!src) continue;
-
-      // 절대/데이터/blob면 보정 불필요
       if (/^(https?:|data:|blob:)/i.test(src)) continue;
-
-      // 이미 ctx 포함이면 보정 불필요
       if (root && src.indexOf(root + '/') === 0) continue;
-
-      // '/uploads/..' 같은 절대경로면 ctx+src, 아니면 ctx+'/'+src
       if (src.charAt(0) === '/') el.setAttribute('src', root + src);
       else el.setAttribute('src', root + '/' + src);
     }
   }
 
   // =========================================================
-  // HTTP 래퍼(fetch)
-  // ---------------------------------------------------------
-  // ✅ 세션 쿠키 안정성 위해 credentials: 'same-origin' 명시
-  // (브라우저마다 기본값이 같아도, 의도를 코드에 박아두는 게 안전)
+  // HTTP 래퍼
   // =========================================================
   function httpGetJson(url) {
-    return fetch(url, { method: 'GET', credentials: 'same-origin' }) // ✅
+    return fetch(url, { method: 'GET', credentials: 'same-origin' })
       .then(function (res) {
         if (!res.ok) throw new Error('GET failed: ' + res.status);
         return res.json();
@@ -224,7 +174,7 @@
   }
 
   function httpPostForm(url, formData) {
-    return fetch(url, { method: 'POST', body: formData, credentials: 'same-origin' }) // ✅
+    return fetch(url, { method: 'POST', body: formData, credentials: 'same-origin' })
       .then(function (res) {
         if (!res.ok) throw new Error('POST failed: ' + res.status);
         return res;
@@ -232,10 +182,8 @@
   }
 
   // =========================================================
-  // Like - UI 갱신/토글/목록
+  // Like
   // =========================================================
-
-  // 좋아요 UI를 한 함수로 통일(텍스트/클래스/카운트 동기화)
   function setLikeUI(liked, likeCnt) {
     if ($likePill) $likePill.classList.toggle('is-liked', !!liked);
 
@@ -249,7 +197,6 @@
     }
   }
 
-  // 초기 liked 상태는 JSP data-liked에 들어있음
   function initLike() {
     if (!$btnLike) return;
 
@@ -270,7 +217,6 @@
       httpPostForm(API.likeToggle, fd)
         .then(function (res) { return res.json(); })
         .then(function (json) {
-          // 서버 응답 계약이 깨졌을 때 대비(방어)
           if (!json || json.result !== 'OK') {
             alert((json && json.msg) ? json.msg : '처리에 실패했습니다.');
             return;
@@ -288,7 +234,54 @@
     });
   }
 
-  // 좋아요 누른 사람 목록(간단히 alert로 표시)
+  // ✅ CHANGED: 좋아요 누른 사람 -> alert 대신 모달
+  function openLikeUsersModal(users) {
+    // 모달 DOM이 없으면 폴백(alert)
+    if (!$likeUsersList || !$likeUsersEmpty) {
+      var namesFallback = [];
+      for (var i = 0; i < users.length; i++) {
+        namesFallback.push(users[i].memberNickname || users[i].nickname || 'unknown');
+      }
+      alert(namesFallback.join('\n'));
+      return;
+    }
+
+    // 초기화
+    $likeUsersList.innerHTML = '';
+
+    if (!users || !users.length) {
+      $likeUsersEmpty.style.display = 'block';
+    } else {
+      $likeUsersEmpty.style.display = 'none';
+
+      for (var j = 0; j < users.length; j++) {
+        var u = users[j];
+        var name = u.memberNickname || u.nickname || u.memberId || 'unknown';
+        var img = normalizeUrl(u.profileImage || u.profileImg || u.memberProfileImage || '');
+
+        var li = document.createElement('li');
+        li.className = 'like-user-item';
+
+        if (img) {
+          li.innerHTML =
+            "<img class='like-user-avatar' src='" + escapeHtml(img) + "' alt='avatar'/>" +
+            "<div class='like-user-name'>" + escapeHtml(name) + "</div>";
+        } else {
+          var initial = String(name).charAt(0);
+          li.innerHTML =
+            "<div class='like-user-avatar like-user-avatar--fallback'>" + escapeHtml(initial) + "</div>" +
+            "<div class='like-user-name'>" + escapeHtml(name) + "</div>";
+        }
+
+        $likeUsersList.appendChild(li);
+      }
+    }
+
+    // 부트스트랩 모달 오픈
+    if (window.jQuery) window.jQuery('#likeUsersModal').modal('show');
+    else alert('모달 라이브러리가 없어 목록을 표시할 수 없습니다.');
+  }
+
   function initLikeUsers() {
     var btn = document.getElementById('btnLikeUsers');
     if (!btn) return;
@@ -304,17 +297,7 @@
           }
 
           var users = json.users || [];
-          if (!users.length) {
-            alert('아직 좋아요를 누른 사용자가 없습니다.');
-            return;
-          }
-
-          var names = [];
-          for (var i = 0; i < users.length; i++) {
-            names.push(users[i].memberNickname || users[i].nickname || 'unknown');
-          }
-
-          alert(names.join('\n'));
+          openLikeUsersModal(users);
         })
         .catch(function (e) {
           console.error(e);
@@ -324,34 +307,29 @@
   }
 
   // =========================================================
-  // Replies - 조회/렌더/작성/수정/삭제
+  // Replies - 조회/렌더/정렬
   // =========================================================
-
-  // 현재 정렬 조건(셀렉트가 없거나 이상값이면 최신순으로 폴백)
   function getSelectedCondition() {
     if (!$replySort) return CONDITION_RECENT;
     var v = ($replySort.value || '').trim();
     return (v === CONDITION_OLDEST) ? CONDITION_OLDEST : CONDITION_RECENT;
   }
 
-  // 댓글 1개를 HTML 문자열로 렌더링
-  // 서버가 내려주는 필드가 케이스별로 다를 수 있어서 폴백을 촘촘히 둠
+  // ✅ CHANGED: 작성일/수정일 표시 정책
+  // - 수정됨이면 "수정일"만 표시
+  // - 아니면 "작성일"만 표시
   function renderReplyItem(r) {
-    // 작성자 표시(닉네임 없으면 id)
     var nickname = (r.writerNickname && String(r.writerNickname).trim() !== '')
       ? r.writerNickname
       : r.memberId;
 
-    // 프로필 이미지 필드 명이 여러 케이스일 수 있어서 다 흡수
     var profileImgRaw = r.writerProfileImage || r.writerProfileImg || r.writer_profile_image || '';
     var profileImg = normalizeUrl(profileImgRaw);
 
-    // 꾸미기(닉색/프사테두리/데코클래스)
     var nickColor = sanitizeColor(r.writerNicknameColor || r.writer_nickname_color || '');
     var profileColor = sanitizeColor(r.writerProfileColor || r.writer_profile_color || '');
     var decoClass = (r.writerDecoClass || r.writer_deco_class || '').trim();
 
-    // 프로필 테두리/글로우(색이 있을 때만)
     var avatarFx = '';
     if (profileColor) {
       avatarFx =
@@ -359,7 +337,6 @@
         'box-shadow:0 0 0 3px rgba(255,255,255,0.06), 0 0 18px ' + escapeHtml(profileColor) + ';';
     }
 
-    // 프로필 이미지가 있으면 img, 없으면 이니셜 fallback
     var avatarHtml = '';
     if (profileImg) {
       avatarHtml =
@@ -376,20 +353,32 @@
 
     var nickStyleAttr = nickColor ? (" style='color:" + escapeHtml(nickColor) + ";'") : '';
 
-    // ✅ 제재회원이면 actions(수정/삭제 버튼) 자체를 렌더링하지 않음
-    // (UI 1차 차단 + JS 클릭 차단이 2차)
     var actions = '';
     if (!(typeof isBanned !== 'undefined' && isBanned) && (canEditReply(r) || canDeleteReply(r))) {
+      actions += "<div class='reply-actions-wrap'>";
       actions += "<div class='reply-actions'>";
       if (canEditReply(r)) actions += "<button type='button' class='btn-reply-edit'>수정</button>";
       if (canDeleteReply(r)) actions += "<button type='button' class='btn-reply-del'>삭제</button>";
       actions += "</div>";
+      // ✅ CHANGED: 인라인 편집 버튼(저장/취소)
+      actions += "<div class='reply-edit-actions' style='display:none;'>";
+      actions += "<button type='button' class='btn-reply-save'>저장</button>";
+      actions += "<button type='button' class='btn-reply-cancel'>취소</button>";
+      actions += "</div>";
+      actions += "</div>";
     }
 
-    // 수정 여부 판단(필드가 없으면 created/updated 비교로 폴백)
     var edited = isTruthy(r.isEdited);
     if (typeof r.isEdited === 'undefined' || r.isEdited === null) {
       edited = !!(r.replyUpdatedAt && r.replyCreatedAt && String(r.replyUpdatedAt) !== String(r.replyCreatedAt));
+    }
+
+    // ✅ CHANGED: 시간 라인 1개만
+    var timeHtml = '';
+    if (edited && r.replyUpdatedAt) {
+      timeHtml = "<span class='t-time'>수정일 " + escapeHtml(r.replyUpdatedAt || '') + "</span>";
+    } else {
+      timeHtml = "<span class='t-time'>작성일 " + escapeHtml(r.replyCreatedAt || '') + "</span>";
     }
 
     return (
@@ -401,12 +390,7 @@
               "<div class='reply-writer " + escapeHtml(decoClass) + "'" + nickStyleAttr + ">" +
                 escapeHtml(nickname) +
               "</div>" +
-              "<div class='reply-times'>" +
-                "<span class='t-created'>작성 " + escapeHtml(r.replyCreatedAt || '') + "</span>" +
-                (edited && r.replyUpdatedAt
-                  ? "<span class='t-updated'>수정 " + escapeHtml(r.replyUpdatedAt) + "</span>"
-                  : "") +
-              "</div>" +
+              "<div class='reply-times'>" + timeHtml + "</div>" +
             "</div>" +
           "</div>" +
           actions +
@@ -416,7 +400,6 @@
     );
   }
 
-  // 댓글 목록 로드(정렬 조건 포함)
   function loadReplies(condition) {
     if (!$replyList) return Promise.resolve();
 
@@ -437,13 +420,11 @@
 
       showReplyEmpty(false);
 
-      // replyEmpty 앞에 reply-item들을 삽입(Empty 노드는 유지)
       var html = '';
       for (var i = 0; i < list.length; i++) {
         html += renderReplyItem(list[i]);
       }
 
-      // ✅ replyEmpty가 없으면 replyList 끝에라도 붙이도록 폴백
       if ($replyEmpty && $replyEmpty.insertAdjacentHTML) {
         $replyEmpty.insertAdjacentHTML('beforebegin', html);
       } else {
@@ -452,151 +433,226 @@
     });
   }
 
-  // 댓글 작성
-  function writeReply(content) {
-    var fd = new FormData();
-    var bid = ($replyBoardId && $replyBoardId.value) ? $replyBoardId.value : boardId;
-
-    fd.append('boardId', bid);
-    fd.append('replyContent', content);
-
-    return httpPostForm(API.replyWrite, fd);
+  // =========================================================
+  // ✅ CHANGED: 댓글 수정/삭제는 동기 submit
+  // =========================================================
+  function submitReplyEdit(replyId, content) {
+    if (!$replyEditForm || !$editBoardId || !$editReplyId || !$editReplyContent) {
+      alert('수정 폼이 없어 동기 수정이 불가능합니다.');
+      return;
+    }
+    $editBoardId.value = String(boardId);
+    $editReplyId.value = String(replyId);
+    $editReplyContent.value = String(content);
+    $replyEditForm.submit(); // ✅ 동기 전환(redirect/message 화면 정상 동작)
   }
 
-  // 댓글 수정
-  function editReply(replyId, content) {
-    var fd = new FormData();
-    fd.append('boardId', boardId);
-    fd.append('replyId', replyId);
-    fd.append('replyContent', content);
-    return httpPostForm(API.replyEdit, fd);
+  function submitReplyDelete(replyId) {
+    if (!$replyDeleteForm || !$delBoardId || !$delReplyId) {
+      alert('삭제 폼이 없어 동기 삭제가 불가능합니다.');
+      return;
+    }
+    $delBoardId.value = String(boardId);
+    $delReplyId.value = String(replyId);
+    $replyDeleteForm.submit(); // ✅ 동기 전환
   }
 
-  // 댓글 삭제
-  function deleteReply(replyId) {
-    var fd = new FormData();
-    fd.append('boardId', boardId);
-    fd.append('replyId', replyId);
-    return httpPostForm(API.replyDelete, fd);
-  }
-
-  // 댓글 관련 이벤트 바인딩(정렬/작성/수정/삭제)
+  // =========================================================
+  // Replies - 이벤트(정렬/작성/수정/삭제)
+  // =========================================================
   function bindReplyEvents() {
-    // niceSelect는 있으면 적용, 없으면 그냥 기본 select 사용(폴백)
+    // niceSelect 적용
     if ($replySort && window.jQuery && window.jQuery.fn && window.jQuery.fn.niceSelect) {
       try { window.jQuery($replySort).niceSelect(); } catch (e) {}
     }
 
-    // 정렬 변경 -> 목록 다시 로드
-    if ($replySort) {
-      $replySort.addEventListener('change', function () {
-        loadReplies(getSelectedCondition()).catch(function (e) {
-          console.error(e);
-        });
-      });
-    }
+	// 정렬 변경 -> 목록 다시 로드
+	// ✅ nice-select가 적용되면 DOM addEventListener('change')가 안 타는 케이스가 있음
+	// ✅ 그래서 DOM change + jQuery change + nice-select option click까지 모두 커버한다.
+	if ($replySort) {
 
-    // 댓글 작성 submit
+	  // ✅ 중복 호출 방지(같은 값이 짧은 시간에 여러 번 트리거되는 경우 방어)
+	  var _lastSortCond = null;
+	  var _lastSortAt = 0;
+
+	  function requestReloadBySort() {
+	    var cond = getSelectedCondition();
+	    var now = Date.now();
+
+	    // 같은 조건이 200ms 안에 다시 들어오면 무시(중복 방지)
+	    if (_lastSortCond === cond && (now - _lastSortAt) < 200) return;
+
+	    _lastSortCond = cond;
+	    _lastSortAt = now;
+
+	    loadReplies(cond).catch(function (e) {
+	      console.error(e);
+	    });
+	  }
+
+	  // ✅ 1) 기본 DOM change (nice-select 미사용/정상 케이스)
+	  $replySort.addEventListener('change', requestReloadBySort);
+
+	  // ✅ 2) jQuery change (nice-select가 trigger('change')로만 쏘는 케이스 대응)
+	  if (window.jQuery) {
+	    try {
+	      window.jQuery($replySort).on('change.replySort', requestReloadBySort);
+	    } catch (e) {}
+	  }
+
+	  // ✅ 3) nice-select 옵션 클릭 (일부 버전에서 change가 누락되는 케이스 대응)
+	  if (window.jQuery) {
+	    try {
+	      window.jQuery(document).on('click.replySort', '.reply-card .nice-select .option', function () {
+	        // 값 반영 후 호출되게 0ms 지연
+	        setTimeout(requestReloadBySort, 0);
+	      });
+	    } catch (e) {}
+	  }
+	}
+
+    // ✅ CHANGED: 댓글 작성은 동기 submit
+    // - 단, 프론트에서 1차 검증만 하고(비었으면 막기), 정상 값이면 submit 통과
     if ($replyForm) {
       $replyForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-
+        // 로그인/제재는 JSP UI로 1차 처리되어있지만, 방어적으로 체크
         if (!isLogin) {
+          e.preventDefault();
           alert('로그인 후 이용 가능합니다.');
           return;
         }
-
-        // ✅ 제재회원: 댓글 작성 금지(프론트 1차 차단)
         if (typeof isBanned !== 'undefined' && isBanned) {
+          e.preventDefault();
           alertBanned('댓글 작성');
           return;
         }
 
         var v = ($replyContent && $replyContent.value) ? $replyContent.value.trim() : '';
         if (!v) {
+          e.preventDefault();
           alert('댓글 내용을 입력하세요.');
           return;
         }
+        if (v.length > 500) {
+          e.preventDefault();
+          alert('댓글은 500자 이내로 작성해주세요.');
+          return;
+        }
 
-        writeReply(v)
-          .then(function () {
-            if ($replyContent) $replyContent.value = '';
-            return loadReplies(getSelectedCondition());
-          })
-          .catch(function (err) {
-            console.error(err);
-            alert('댓글 등록에 실패했습니다.');
-          });
+        // ✅ 여기서부터는 막지 않음 -> form submit(동기) 진행
       });
     }
 
-    // 댓글 리스트 내부 이벤트 위임(수정/삭제 버튼)
+    // 댓글 리스트 내부 이벤트 위임(수정/삭제 + 저장/취소)
     if ($replyList) {
       $replyList.addEventListener('click', function (e) {
         var target = e.target;
         if (!target) return;
 
-        // reply-item을 찾는다(버튼 클릭이든 내부 클릭이든 동일)
         var item = target.closest ? target.closest('.reply-item') : null;
         if (!item) return;
 
         var replyId = item.getAttribute('data-reply-id');
 
-        // ✅ 제재회원: 수정/삭제 클릭 자체를 막고 안내만 출력
+        // 제재회원 차단
         if (typeof isBanned !== 'undefined' && isBanned) {
-          if (target.classList.contains('btn-reply-del') || target.classList.contains('btn-reply-edit')) {
+          if (
+            target.classList.contains('btn-reply-del') ||
+            target.classList.contains('btn-reply-edit') ||
+            target.classList.contains('btn-reply-save') ||
+            target.classList.contains('btn-reply-cancel')
+          ) {
             alertBanned('댓글 수정/삭제');
           }
           return;
         }
 
-        // 삭제
+        // 삭제(동기 submit)
         if (target.classList.contains('btn-reply-del')) {
           if (!confirm('댓글을 삭제할까요?')) return;
-
-          deleteReply(replyId)
-            .then(function () { return loadReplies(getSelectedCondition()); })
-            .catch(function (err) {
-              console.error(err);
-              alert('삭제에 실패했습니다.');
-            });
+          submitReplyDelete(replyId);
           return;
         }
 
-        // 수정
+        // ✅ CHANGED: 수정(인라인 편집 시작)
         if (target.classList.contains('btn-reply-edit')) {
-          var currentEl = item.querySelector('.reply-content');
-          var current = currentEl ? (currentEl.innerText || currentEl.textContent || '') : '';
-          var next = prompt('수정할 내용을 입력하세요', current);
-          if (next === null) return;
+          if (item.classList.contains('is-editing')) return;
 
-          next = String(next).trim();
-          if (!next) return;
+          var contentEl = item.querySelector('.reply-content');
+          if (!contentEl) return;
 
-          editReply(replyId, next)
-            .then(function () { return loadReplies(getSelectedCondition()); })
-            .catch(function (err) {
-              console.error(err);
-              alert('수정에 실패했습니다.');
-            });
+          var currentText = (contentEl.innerText || contentEl.textContent || '');
+          item.setAttribute('data-original-content', currentText);
+
+          // textarea로 교체
+          contentEl.innerHTML =
+            "<textarea class='reply-inline-textarea' rows='3' maxlength='500'></textarea>";
+          var ta = contentEl.querySelector('textarea');
+          if (ta) {
+            ta.value = currentText;
+            try { ta.focus(); } catch (err) {}
+          }
+
+          // 버튼 상태 전환
+          var act = item.querySelector('.reply-actions');
+          var editAct = item.querySelector('.reply-edit-actions');
+          if (act) act.style.display = 'none';
+          if (editAct) editAct.style.display = 'flex';
+
+          item.classList.add('is-editing');
+          return;
+        }
+
+        // ✅ CHANGED: 저장(동기 submit)
+        if (target.classList.contains('btn-reply-save')) {
+          var contentBox = item.querySelector('.reply-content');
+          var ta2 = contentBox ? contentBox.querySelector('textarea.reply-inline-textarea') : null;
+          var next = ta2 ? String(ta2.value || '').trim() : '';
+
+          if (!next) {
+            alert('댓글 내용을 입력하세요.');
+            return;
+          }
+          if (next.length > 500) {
+            alert('댓글은 500자 이내로 작성해주세요.');
+            return;
+          }
+
+          submitReplyEdit(replyId, next);
+          return;
+        }
+
+        // ✅ CHANGED: 취소(원복)
+        if (target.classList.contains('btn-reply-cancel')) {
+          var original = item.getAttribute('data-original-content') || '';
+
+          var contentEl2 = item.querySelector('.reply-content');
+          if (contentEl2) contentEl2.innerHTML = nl2br(original);
+
+          var act2 = item.querySelector('.reply-actions');
+          var editAct2 = item.querySelector('.reply-edit-actions');
+          if (act2) act2.style.display = 'flex';
+          if (editAct2) editAct2.style.display = 'none';
+
+          item.classList.remove('is-editing');
+          item.removeAttribute('data-original-content');
+          return;
         }
       });
     }
   }
 
   // =========================================================
-  // Report - 모달 열기/신고 접수
+  // Report
   // =========================================================
   function initReport() {
     if (!$btnReport || !$btnReportSubmit) return;
 
-    // 이미 신고한 글이면 버튼 자체를 숨김(UI 정책)
     if (typeof isReported !== 'undefined' && isReported) {
       $btnReport.style.display = 'none';
       return;
     }
 
-    // 신고 버튼 -> 모달 오픈
     $btnReport.addEventListener('click', function () {
       if (!isLogin) {
         alert('로그인 후 이용 가능합니다.');
@@ -605,7 +661,6 @@
       if (window.jQuery) window.jQuery('#reportModal').modal('show');
     });
 
-    // 신고 접수
     $btnReportSubmit.addEventListener('click', function () {
       var reason = ($reportReason && $reportReason.value) ? String($reportReason.value) : 'ETC';
       var content = ($reportContent && $reportContent.value) ? String($reportContent.value).trim() : '';
@@ -620,8 +675,6 @@
           alert('신고가 접수되었습니다.');
           if ($reportContent) $reportContent.value = '';
           if (window.jQuery) window.jQuery('#reportModal').modal('hide');
-
-          // 접수 후 UI에서 버튼 숨김(중복 신고 방지 UX)
           if ($btnReport) $btnReport.style.display = 'none';
         })
         .catch(function (e) {
@@ -632,16 +685,7 @@
   }
 
   // =========================================================
-  // ✅ 게시글 수정/삭제 2중 차단
-  // ---------------------------------------------------------
-  // JSP에서 수정/삭제를 숨겨도,
-  // - 캐시/렌더 꼬임
-  // - 권한 데이터 누락
-  // - 개발 중 임시 노출
-  // 같은 상황에서 버튼이 살아남을 수 있음.
-  //
-  // 그래서 data-ban-lock="1" 요소는
-  // 제재 상태일 때 클릭/submit 자체를 capture 단계에서 차단한다.
+  // 게시글 수정/삭제 2중 차단(제재)
   // =========================================================
   function lockPostManageIfBanned() {
     if (!(typeof isBanned !== 'undefined' && isBanned)) return;
@@ -673,7 +717,7 @@
   }
 
   // =========================================================
-  // Init - 페이지 진입 시 한 번만 실행
+  // Init
   // =========================================================
   function init() {
     normalizeEditorMediaUrls();
@@ -693,7 +737,6 @@
     });
   }
 
-  // DOM ready 대응(스크립트 로딩 위치가 바뀌어도 안전)
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
