@@ -2,16 +2,22 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
 
-<c:set var="typeRaw"
-	value="${empty param.type ? requestScope.type : param.type}" />
+<c:set var="ctx" value="${pageContext.request.contextPath}" /> <%-- ✅ (추가) ctx 통일 변수 --%>
+
+<c:set var="typeRaw" value="${empty param.type ? requestScope.type : param.type}" />
 <c:set var="type" value="${fn:toUpperCase(typeRaw)}" />
 <c:set var="isEditPage" value="true" />
 
+<%-- ✅ (추가) BOARD 카테고리도 컨트롤러 파라미터명(boardCategory) 기준으로 통일 --%>
+<c:set var="boardCategoryRaw" value="${empty param.boardCategory ? requestScope.boardCategory : param.boardCategory}" />
+<c:set var="boardCategory" value="${empty boardCategoryRaw ? 'ANIME' : fn:toUpperCase(boardCategoryRaw)}" />
+
+<%-- ✅ (수정) activeMenu 값을 컨트롤러와 동일하게 맞춤 (NEWS / COMMUNITY) --%>
 <c:if test="${type eq 'NEWS'}">
-	<c:set var="activeMenu" value="news" />
+	<c:set var="activeMenu" value="NEWS" /> <%-- ✅ 변경 --%>
 </c:if>
 <c:if test="${type eq 'BOARD'}">
-	<c:set var="activeMenu" value="board" />
+	<c:set var="activeMenu" value="COMMUNITY" /> <%-- ✅ 변경 --%>
 </c:if>
 
 <!DOCTYPE html>
@@ -21,27 +27,17 @@
 <title>AniMale | 작성</title>
 
 <!-- CKEditor 5 커스텀 빌드 -->
-<script
-	src="${pageContext.request.contextPath}/js/ckeditor.js?v=20260102_6"></script>
+<script src="${ctx}/js/ckeditor.js?v=20260102_6"></script> <%-- ✅ (수정) ctx 통일 --%>
 
-<link rel="icon" type="image/png"
-	href="${pageContext.request.contextPath}/favicon.png">
-<link rel="stylesheet"
-	href="${pageContext.request.contextPath}/css/elegant-icons.css">
+<link rel="icon" type="image/png" href="${ctx}/favicon.png"> <%-- ✅ (수정) ctx 통일 --%>
+<link rel="stylesheet" href="${ctx}/css/elegant-icons.css"> <%-- ✅ (수정) ctx 통일 --%>
 
-<link
-	href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap"
-	rel="stylesheet">
-<link
-	href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700;800;900&display=swap"
-	rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-<link rel="stylesheet"
-	href="${pageContext.request.contextPath}/css/bootstrap.min.css">
-<link rel="stylesheet"
-	href="${pageContext.request.contextPath}/css/font-awesome.min.css">
-<link rel="stylesheet"
-	href="${pageContext.request.contextPath}/css/style.css">
+<link rel="stylesheet" href="${ctx}/css/bootstrap.min.css"> <%-- ✅ (수정) ctx 통일 --%>
+<link rel="stylesheet" href="${ctx}/css/font-awesome.min.css"> <%-- ✅ (수정) ctx 통일 --%>
+<link rel="stylesheet" href="${ctx}/css/style.css"> <%-- ✅ (수정) ctx 통일 --%>
 
 <style>
 /* 상단 검색 UI 숨김 */
@@ -101,8 +97,7 @@
 }
 
 /* CKEditor - 글자 색 */
-.ck-editor__editable, .ck-editor__editable *, .ck-content, .ck-content *
-	{
+.ck-editor__editable, .ck-editor__editable *, .ck-content, .ck-content * {
 	color: #000 !important;
 }
 
@@ -391,180 +386,170 @@
 <body>
 <%@ include file="/WEB-INF/common/header.jsp" %>
 
-	<c:choose>
+<c:choose>
 
-		<%-- NEWS 작성 --%>
-		<c:when test="${type eq 'NEWS'}">
-			<c:choose>
-				<c:when
-					test="${not empty sessionScope.memberId and sessionScope.memberRole eq 'ADMIN'}">
+	<%-- NEWS 작성 --%>
+	<c:when test="${type eq 'NEWS'}">
+		<c:choose>
+			<c:when test="${not empty sessionScope.memberId and sessionScope.memberRole eq 'ADMIN'}">
 
-					<section class="anime-details spad">
-						<div class="container">
-							<div class="row">
+				<section class="anime-details spad">
+					<div class="container">
+						<div class="row">
 
-								<div class="col-lg-3">
-									<div class="preview-box">
-										<img id="thumbPreviewImg" class="preview-img"
-											alt="thumbnail preview">
+							<div class="col-lg-3">
+								<div class="preview-box">
+									<img id="thumbPreviewImg" class="preview-img" alt="thumbnail preview">
+								</div>
+								<div class="preview-help">썸네일을 변경하면 즉시 반영됩니다.</div>
+							</div>
+
+							<div class="col-lg-9">
+								<h3 style="color: #fff;">뉴스 작성</h3>
+
+								<form class="admin-form" method="post"
+									action="${ctx}/newsWrite" <%-- ✅ (수정) ctx 통일 --%>
+									enctype="multipart/form-data">
+
+									<input type="hidden" name="animeId" id="animeIdHidden">
+
+									<div class="form-group">
+										<label>제목</label>
+										<input type="text" class="form-control" name="newsTitle">
 									</div>
-									<div class="preview-help">썸네일을 변경하면 즉시 반영됩니다.</div>
-								</div>
 
-								<div class="col-lg-9">
-									<h3 style="color: #fff;">뉴스 작성</h3>
+									<div class="form-group">
+										<label>썸네일</label><br>
+										<label class="thumb-btn" for="thumbFile">파일 선택</label>
+										<span class="thumb-filename" id="thumbFileName"></span>
+										<input type="file" id="thumbFile" name="thumbFile" class="thumb-file" accept="image/*">
+									</div>
 
-									<form class="admin-form" method="post"
-										action="${ctx}/newsWrite"
-										enctype="multipart/form-data">
+									<div class="form-group">
+										<label>상세 내용</label>
+										<textarea id="editor" name="newsContent"></textarea>
+									</div>
 
-										<input type="hidden" name="animeId" id="animeIdHidden">
+									<div class="related-wrap" id="relatedWrap">
+										<label style="color: #fff;">관련 애니</label>
 
-										<div class="form-group">
-											<label>제목</label> <input type="text" class="form-control"
-												name="newsTitle">
+										<div class="anime-input-wrap">
+											<input type="text" id="animeSearchInput"
+												class="form-control" placeholder="애니 제목을 입력하고 목록에서 선택하세요"
+												autocomplete="off">
+											<span id="animeSelectState" class="anime-select-state" aria-hidden="true"></span>
 										</div>
 
-										<div class="form-group">
-											<label>썸네일</label><br> <label class="thumb-btn"
-												for="thumbFile">파일 선택</label> <span class="thumb-filename"
-												id="thumbFileName"></span> <input type="file" id="thumbFile"
-												name="thumbFile" class="thumb-file" accept="image/*">
-										</div>
+										<div id="animeSelectWarn" class="anime-select-warn" style="display: none;"></div>
 
-										<div class="form-group">
-											<label>상세 내용</label>
-											<textarea id="editor" name="newsContent"></textarea>
-										</div>
+										<ul id="animeSearchResult" class="anime-search-result"></ul>
 
-										<div class="related-wrap" id="relatedWrap">
-											<label style="color: #fff;">관련 애니</label>
+										<div id="animeSelectedCard" class="anime-selected-card" style="display: none;"></div>
+									</div>
 
-											<div class="anime-input-wrap">
-												<input type="text" id="animeSearchInput"
-													class="form-control" placeholder="애니 제목을 입력하고 목록에서 선택하세요"
-													autocomplete="off"> <span id="animeSelectState"
-													class="anime-select-state" aria-hidden="true"></span>
-											</div>
+									<div class="form-actions">
+										<button type="submit" class="btn-submit">작성 완료</button>
+										<a href="${ctx}/newsList" class="btn-cancel">취소</a> <%-- ✅ (수정) ctx 중복 제거 --%>
+									</div>
 
-											<div id="animeSelectWarn" class="anime-select-warn"
-												style="display: none;"></div>
-
-											<ul id="animeSearchResult" class="anime-search-result"></ul>
-
-											<!-- 선택 완료 카드 -->
-											<div id="animeSelectedCard" class="anime-selected-card"
-												style="display: none;"></div>
-										</div>
-
-										<div class="form-actions">
-											<button type="submit" class="btn-submit">작성 완료</button>
-											<a href="${pageContext.request.contextPath}${ctx}/newsList"
-												class="btn-cancel">취소</a>
-										</div>
-
-									</form>
-								</div>
-
+								</form>
 							</div>
-						</div>
-					</section>
-
-				</c:when>
-
-				<c:otherwise>
-					<section class="anime-details spad">
-						<div class="container">
-							<div class="access-deny-box">
-								<p>뉴스 작성/수정은 관리자만 가능합니다.</p>
-							</div>
-						</div>
-					</section>
-				</c:otherwise>
-			</c:choose>
-		</c:when>
-
-		<%-- BOARD 작성 --%>
-		<c:when test="${type eq 'BOARD'}">
-			<c:choose>
-				<c:when test="${not empty sessionScope.memberId}">
-
-					<section class="anime-details spad">
-						<div class="container">
-
-							<form class="admin-form" method="post"
-								action="${pageContext.request.contextPath}${ctx}/boardWrite">
-
-								<h3 style="color: #fff;">게시글 작성</h3>
-								<input type="hidden" name="boardCategory" value="ANIME">
-
-								<div class="form-group">
-									<label>게시글 제목</label> <input type="text" class="form-control"
-										name="boardTitle">
-								</div>
-
-								<div class="form-group">
-									<label>텍스트 내용</label>
-									<textarea id="boardEditor" name="boardContent"></textarea>
-								</div>
-
-								<div class="form-actions">
-									<button type="submit" class="btn-submit">작성 완료</button>
-									<c:set var="cancelCategory"
-										value="${empty param.category ? 'ANIME' : fn:toUpperCase(param.category)}" />
-									<a
-										href="${pageContext.request.contextPath}${ctx}/boardList?category=${cancelCategory}"
-										class="btn-cancel">취소</a>
-								</div>
-
-							</form>
 
 						</div>
-					</section>
-
-				</c:when>
-
-				<c:otherwise>
-					<section class="anime-details spad">
-						<div class="container">
-							<div class="access-deny-box">
-								<p>게시글 작성은 로그인 후 가능합니다.</p>
-							</div>
-						</div>
-					</section>
-				</c:otherwise>
-			</c:choose>
-		</c:when>
-
-		<c:otherwise>
-			<section class="anime-details spad">
-				<div class="container">
-					<div class="access-deny-box">
-						<p>잘못된 접근입니다.</p>
 					</div>
-				</div>
-			</section>
-		</c:otherwise>
+				</section>
 
-	</c:choose>
+			</c:when>
+
+			<c:otherwise>
+				<section class="anime-details spad">
+					<div class="container">
+						<div class="access-deny-box">
+							<p>뉴스 작성/수정은 관리자만 가능합니다.</p>
+						</div>
+					</div>
+				</section>
+			</c:otherwise>
+		</c:choose>
+	</c:when>
+
+	<%-- BOARD 작성 --%>
+	<c:when test="${type eq 'BOARD'}">
+		<c:choose>
+			<c:when test="${not empty sessionScope.memberId}">
+
+				<section class="anime-details spad">
+					<div class="container">
+
+						<form class="admin-form" method="post"
+							action="${ctx}/boardWrite"> <%-- ✅ (수정) ctx 중복 제거 --%>
+
+							<h3 style="color: #fff;">게시글 작성</h3>
+
+							<input type="hidden" name="boardCategory" value="${boardCategory}"> <%-- ✅ (수정) 하드코딩 제거 --%>
+
+							<div class="form-group">
+								<label>게시글 제목</label>
+								<input type="text" class="form-control" name="boardTitle">
+							</div>
+
+							<div class="form-group">
+								<label>텍스트 내용</label>
+								<textarea id="boardEditor" name="boardContent"></textarea>
+							</div>
+
+							<div class="form-actions">
+								<button type="submit" class="btn-submit">작성 완료</button>
+								<a href="${ctx}/boardList?boardCategory=${boardCategory}" class="btn-cancel">취소</a>
+								<%-- ✅ (수정) category → boardCategory로 통일 --%>
+							</div>
+
+						</form>
+
+					</div>
+				</section>
+
+			</c:when>
+
+			<c:otherwise>
+				<section class="anime-details spad">
+					<div class="container">
+						<div class="access-deny-box">
+							<p>게시글 작성은 로그인 후 가능합니다.</p>
+						</div>
+					</div>
+				</section>
+			</c:otherwise>
+		</c:choose>
+	</c:when>
+
+	<c:otherwise>
+		<section class="anime-details spad">
+			<div class="container">
+				<div class="access-deny-box">
+					<p>잘못된 접근입니다.</p>
+				</div>
+			</div>
+		</section>
+	</c:otherwise>
+
+</c:choose>
 
 <%@ include file="/WEB-INF/common/footer.jsp" %>
 
-	<script src="${pageContext.request.contextPath}/js/jquery-3.3.1.min.js"></script>
-	<script src="${pageContext.request.contextPath}/js/bootstrap.min.js"></script>
-	<script src="${pageContext.request.contextPath}/js/player.js"></script>
-	<script
-		src="${pageContext.request.contextPath}/js/jquery.nice-select.min.js"></script>
-	<script src="${pageContext.request.contextPath}/js/mixitup.min.js"></script>
-	<script src="${pageContext.request.contextPath}/js/jquery.slicknav.js"></script>
-	<script src="${pageContext.request.contextPath}/js/owl.carousel.min.js"></script>
-	<script src="${pageContext.request.contextPath}/js/main.js"></script>
+<script src="${ctx}/js/jquery-3.3.1.min.js"></script> <%-- ✅ (수정) ctx 통일 --%>
+<script src="${ctx}/js/bootstrap.min.js"></script>
+<script src="${ctx}/js/player.js"></script>
+<script src="${ctx}/js/jquery.nice-select.min.js"></script>
+<script src="${ctx}/js/mixitup.min.js"></script>
+<script src="${ctx}/js/jquery.slicknav.js"></script>
+<script src="${ctx}/js/owl.carousel.min.js"></script>
+<script src="${ctx}/js/main.js"></script>
 
-	<script>
+<script>
 (function(){
-  var ctx = '${pageContext.request.contextPath}';
+  var ctx = '${ctx}'; // ✅ (수정) ctx 변수 통일
 
-  /* 썸네일 URL 보정 */
   function resolveThumb(url){
     var fallback = ctx + '/images/anisample/bleach.jpg';
     if (!url) return fallback;
@@ -589,12 +574,11 @@
   function endsWithJamo(text){
     if (!text) return false;
     var ch = text.charCodeAt(text.length - 1);
-    return (ch >= 0x3131 && ch <= 0x318E); // ㄱ-ㅎ/ㅏ-ㅣ
+    return (ch >= 0x3131 && ch <= 0x318E);
   }
 
   document.addEventListener('DOMContentLoaded', function(){
 
-    /* CKEditor - NEWS */
     var newsEditorEl = document.querySelector('#editor');
     if (newsEditorEl && window.ClassicEditor) {
       ClassicEditor.create(newsEditorEl, {
@@ -604,7 +588,6 @@
       });
     }
 
-    /* CKEditor - BOARD */
     var boardEditorEl = document.querySelector('#boardEditor');
     if (boardEditorEl && window.ClassicEditor) {
       ClassicEditor.create(boardEditorEl, {
@@ -614,7 +597,6 @@
       });
     }
 
-    /* 썸네일 미리보기 */
     var thumbInput = document.getElementById('thumbFile');
     var previewImg = document.getElementById('thumbPreviewImg');
     var fileNameEl = document.getElementById('thumbFileName');
@@ -634,8 +616,6 @@
       });
     }
 
-    /* 관련 애니 검색 */
-
     var input        = document.getElementById('animeSearchInput');
     var resultBox    = document.getElementById('animeSearchResult');
     var hiddenId     = document.getElementById('animeIdHidden');
@@ -645,22 +625,19 @@
 
     if (!input || !resultBox) return;
 
-    // 중복 바인딩 방지
     if (input.dataset.relAnimeBound === '1') return;
     input.dataset.relAnimeBound = '1';
 
-    var REL_DBG = hasRelDebug(); // rel_debug=1 일때만 콘솔 출력
+    var REL_DBG = hasRelDebug();
     var REL_ID  = Math.random().toString(16).slice(2, 7);
     function dbg(tag, extra){
       if (!REL_DBG) return;
-      try {
-        console.log('REL-ANIME[' + REL_ID + '] ' + tag, extra || '');
-      } catch(e) {}
+      try { console.log('REL-ANIME[' + REL_ID + '] ' + tag, extra || ''); } catch(e) {}
     }
 
     var timer = null;
     var abortCtrl = null;
-    var scheduledKeyword = ''; // 같은 키워드 타이머 중복 방지
+    var scheduledKeyword = '';
     var inflight = false;
     var inflightKeyword = '';
     var lastSentAt = 0;
@@ -686,13 +663,8 @@
     function nowTs(){
       return (window.performance && performance.now) ? performance.now() : Date.now();
     }
-    function isLocked(){
-      return nowTs() < lockUntil;
-    }
-    function lock(ms){
-      lockUntil = nowTs() + ms;
-      dbg('LOCK', { ms: ms });
-    }
+    function isLocked(){ return nowTs() < lockUntil; }
+    function lock(ms){ lockUntil = nowTs() + ms; dbg('LOCK', { ms: ms }); }
 
     function cancelTimerOnly(){
       if (timer) { clearTimeout(timer); timer = null; }
@@ -711,62 +683,13 @@
       abortRequestOnly();
     }
 
-    function doClearPicked(){
-      lock(200);
-      pickingFromList = true;
-
-      cancelPending();
-
-      input.value = '';
-      lastValue = '';
-      lastQuery = '';
-      pendingKeyword = '';
-      stashedQuery = '';
-      stashedList = null;
-
-      ignoreInputOnce = false;
-
-      clearPickedUI();
-      hideResult();
-
-      composing = false;
-      hoveringResult = false;
-      pickingFromList = false;
-
-      input.focus();
-      dbg('doClearPicked');
-    }
-
-    function bindClearDelegation(){
-      if (!selectedCard) return;
-      if (selectedCard.dataset.relAnimeClearBound === '1') return;
-      selectedCard.dataset.relAnimeClearBound = '1';
-
-      function handler(ev){
-        var btn = (ev.target && ev.target.closest) ? ev.target.closest('.anime-clear-btn') : null;
-        if (!btn) return;
-        ev.preventDefault();
-        ev.stopPropagation();
-        doClearPicked();
-      }
-
-      selectedCard.addEventListener('pointerdown', handler, true);
-      selectedCard.addEventListener('click', handler, false);
-    }
-    bindClearDelegation();
-
-    function showResult(){
-      resultBox.style.display = 'block';
-      dbg('showResult');
-    }
-
+    function showResult(){ resultBox.style.display = 'block'; }
     function hideResult(){
       resultBox.style.display = 'none';
       resultBox.innerHTML = '';
       currentList = [];
       activeIndex = -1;
       hoveringResult = false;
-      dbg('hideResult');
     }
 
     function renderHint(message){
@@ -774,7 +697,6 @@
       activeIndex = -1;
       resultBox.innerHTML = '<li class="is-hint anime-search-hint">' + esc(message) + '</li>';
       showResult();
-      dbg('renderHint', { message: message });
     }
 
     function setPickedUI(on){
@@ -850,11 +772,7 @@
       hideWarn();
       hideResult();
 
-      dbg('selectAnime', { title: anime.animeTitle, id: anime.animeId });
-
-      setTimeout(function(){
-        pickingFromList = false;
-      }, 0);
+      setTimeout(function(){ pickingFromList = false; }, 0);
     }
 
     function setActive(idx){
@@ -908,36 +826,22 @@
 
       showResult();
       setActive(0);
-      dbg('renderList', { keyword: keyword, count: list.length });
     }
 
     function doFetch(keyword){
 
-      // 페이지 전체에서 동일 키워드 중복 호출 방지
       window.__REL_ANIME_GUARD__ = window.__REL_ANIME_GUARD__ || { k: '', t: 0 };
       var g = window.__REL_ANIME_GUARD__;
       var tnow = Date.now();
-      if (g.k === keyword && (tnow - g.t) < 1200) {
-        dbg('GLOBAL GUARD dedup', { keyword: keyword, dt: (tnow - g.t) });
-        return;
-      }
+      if (g.k === keyword && (tnow - g.t) < 1200) return;
       g.k = keyword;
       g.t = tnow;
 
-      // 아주 짧은 시간 내 동일 키워드 재호출 방지 (중복 GET 방지)
       var now = Date.now();
-      if (keyword === lastQuery && (now - lastSentAt) < 1000){
-        dbg('doFetch dedup by time', { keyword: keyword, dt: (now - lastSentAt) });
-        return;
-      }
+      if (keyword === lastQuery && (now - lastSentAt) < 1000) return;
 
-      // 같은 키워드가 이미 요청 중이면 추가 요청 금지
-      if (inflight && inflightKeyword === keyword){
-        dbg('doFetch skip inflight same', { keyword: keyword });
-        return;
-      }
+      if (inflight && inflightKeyword === keyword) return;
 
-      // 다른 키워드 요청이면 이전 요청 abort
       if (inflight && inflightKeyword !== keyword){
         if (abortCtrl) { try { abortCtrl.abort(); } catch(e){} }
         abortCtrl = null;
@@ -949,19 +853,12 @@
 
       if (hoveringResult){
         pendingKeyword = keyword;
-        dbg('doFetch blocked by hover -> pendingKeyword', { pendingKeyword: pendingKeyword });
         return;
       }
 
-      if (hiddenId && String(hiddenId.value || '').trim().length > 0) {
-        dbg('doFetch blocked by picked');
-        return;
-      }
+      if (hiddenId && String(hiddenId.value || '').trim().length > 0) return;
 
-      if (keyword === lastQuery && currentList.length > 0 && resultBox.style.display === 'block'){
-        dbg('doFetch skip same lastQuery');
-        return;
-      }
+      if (keyword === lastQuery && currentList.length > 0 && resultBox.style.display === 'block') return;
 
       if (resultBox.style.display !== 'block' || currentList.length === 0){
         renderHint('검색 중...');
@@ -977,27 +874,23 @@
       var myQuery = keyword;
       var localCtrl = abortCtrl;
 
-      dbg('FETCH start', { myQuery: myQuery });
-
       fetch(ctx + '/newsAnimeSearch?keyword=' + encodeURIComponent(keyword), { signal: localCtrl.signal })
         .then(function(res){ return res.json(); })
         .then(function(list){
-          dbg('FETCH done', { myQuery: myQuery, lastQuery: lastQuery, count: (list ? list.length : 0) });
 
-          if (myQuery !== lastQuery) { dbg('FETCH ignore late'); return; }
-          if (hiddenId && String(hiddenId.value || '').trim().length > 0) { dbg('FETCH ignore picked'); return; }
+          if (myQuery !== lastQuery) return;
+          if (hiddenId && String(hiddenId.value || '').trim().length > 0) return;
 
           if (hoveringResult || pickingFromList || isLocked()){
             stashedList = list || [];
-            stashedQuery = myQuery;ㅂ
-            dbg('FETCH stashed (hover/pick/lock)', { stashedQuery: stashedQuery, count: stashedList.length });
+            stashedQuery = myQuery; // ✅ (수정) 여기 오타(ㅂ) 제거로 JS 문법 정상화
             return;
           }
 
           renderList(list || [], myQuery);
         })
         .catch(function(err){
-          if (err && err.name === 'AbortError') { dbg('FETCH aborted'); return; }
+          if (err && err.name === 'AbortError') return;
           console.error('[NewsAnimeSearch 오류]', err);
           renderHint('검색 중 오류가 발생했습니다.');
         })
@@ -1011,23 +904,11 @@
     }
 
     function scheduleSearch(keyword){
-
-      // 전역가드 조건이면 "예약 자체"를 안 함 (불필요한 타이머/시도 제거)
       var gg = window.__REL_ANIME_GUARD__;
-      if (gg && gg.k === keyword && (Date.now() - gg.t) < 1200) {
-        dbg('scheduleSearch skip by GLOBAL GUARD', { keyword: keyword });
-        return;
-      }
+      if (gg && gg.k === keyword && (Date.now() - gg.t) < 1200) return;
 
-      if (timer && scheduledKeyword === keyword){
-        dbg('scheduleSearch skip same scheduled', { keyword: keyword });
-        return;
-      }
-
-      if (inflight && inflightKeyword === keyword){
-        dbg('scheduleSearch skip inflight same', { keyword: keyword });
-        return;
-      }
+      if (timer && scheduledKeyword === keyword) return;
+      if (inflight && inflightKeyword === keyword) return;
 
       cancelTimerOnly();
       scheduledKeyword = keyword;
@@ -1036,8 +917,6 @@
         scheduledKeyword = '';
         doFetch(keyword);
       }, 250);
-
-      dbg('scheduleSearch', { keyword: keyword });
     }
 
     function handleValueChanged(force){
@@ -1046,14 +925,12 @@
 
       if (isLocked() || pickingFromList){
         lastValue = raw;
-        dbg('handleValueChanged blocked', { force: force });
         return;
       }
 
       if (ignoreInputOnce){
         ignoreInputOnce = false;
         lastValue = raw;
-        dbg('handleValueChanged ignore once');
         return;
       }
 
@@ -1063,15 +940,9 @@
       var picked = hiddenId && String(hiddenId.value || '').trim().length > 0;
       if (picked && pickedTitle && keyword !== pickedTitle){
         clearPickedUI();
-        dbg('picked cleared by typing');
       }
 
-      //    IME 특성: 결과 뜬 직후 값이 잠깐 1글자로 튀는 경우 방어
-      //    방금 2글자 이상 검색을 보냈고 아주 최근이면 그 짧아짐 이벤트는 무시해서 hideResult / 재검색 스케줄이 발생하지 않게 막는다.
-      if (keyword.length < 2 && lastQuery && lastQuery.length >= 2 && (Date.now() - lastSentAt) < 1500) {
-        dbg('ignore transient short keyword', { raw: raw, lastQuery: lastQuery });
-        return;
-      }
+      if (keyword.length < 2 && lastQuery && lastQuery.length >= 2 && (Date.now() - lastSentAt) < 1500) return;
 
       if (keyword.length < 2){
         lastQuery = '';
@@ -1085,56 +956,31 @@
 
       if (hoveringResult && !force){
         pendingKeyword = keyword;
-        dbg('pendingKeyword set by hover', { pendingKeyword: pendingKeyword });
         return;
       }
 
-      // 조합중인데 끝이 자모로 끝나면 스킵 (ㄱ/ㅏ 등)
-      if (!force && composing && endsWithJamo(keyword)){
-        dbg('skip composing jamo tail', { keyword: keyword });
-        return;
-      }
+      if (!force && composing && endsWithJamo(keyword)) return;
 
       scheduleSearch(keyword);
     }
-
-    /* 이벤트 */
 
     input.addEventListener('focus', function(){
       if (resultBox.innerHTML && resultBox.innerHTML.trim().length > 0) showResult();
     });
 
-    input.addEventListener('compositionstart', function(){
-      composing = true;
-      dbg('EVT compositionstart');
-    });
-
-    input.addEventListener('compositionend', function(){
-      composing = false;
-      dbg('EVT compositionend');
-      // 여기서 handleValueChanged 호출하지 않음 (중복/튀는 이벤트의 원인 구간 차단)
-      // 검색은 input 이벤트에서만 처리
-    });
+    input.addEventListener('compositionstart', function(){ composing = true; });
+    input.addEventListener('compositionend', function(){ composing = false; });
 
     input.addEventListener('input', function(e){
       var isComp = !!(e && e.isComposing);
-
       if (isComp) composing = true;
-
-      dbg('EVT input', { isComposing: isComp, v: input.value });
-
-      // 조합중에도 2글자 완성되면 바로 검색되게 (끝자모는 handleValueChanged가 차단)
       handleValueChanged(false);
     });
 
-    resultBox.addEventListener('pointerenter', function(){
-      hoveringResult = true;
-      dbg('EVT result pointerenter');
-    });
+    resultBox.addEventListener('pointerenter', function(){ hoveringResult = true; });
 
     resultBox.addEventListener('pointerleave', function(){
       hoveringResult = false;
-      dbg('EVT result pointerleave');
 
       if (stashedList !== null){
         var q = stashedQuery;
@@ -1154,7 +1000,6 @@
 
     resultBox.addEventListener('pointerdown', function(ev){
       var li = ev.target.closest('li[data-index]');
-      dbg('EVT result pointerdown', { hasLi: !!li, tag: (ev.target && ev.target.tagName) });
       if (!li) return;
 
       ev.preventDefault();
@@ -1221,7 +1066,7 @@
 
   });
 })();
-	</script>
+</script>
 
 </body>
 </html>

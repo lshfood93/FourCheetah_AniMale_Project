@@ -283,10 +283,22 @@ public class MemberController {
     // ==================== 마이페이지 ====================
 
     @GetMapping("/myPage")
-    public String myPage(HttpSession session) {
+    public String myPage(HttpSession session, Model model) {
         if (session == null || session.getAttribute("memberId") == null) {
             return "redirect:/login";
         }
+        
+        // 회원 정보 조회
+        Integer memberId = (Integer) session.getAttribute("memberId");
+        
+        MemberDTO dto = new MemberDTO();
+        dto.setCondition("MEMBER_MYPAGE");
+        dto.setMemberId(memberId);
+        
+        MemberDTO member = memberService.selectOne(dto);
+        
+        model.addAttribute("memberData", member);
+        
         return "mypage";
     }
 
@@ -338,7 +350,7 @@ public class MemberController {
 
         int needCash = 0;
         if (!isAdmin) {
-            needCash = (nickChange ? 500 : 0) + (imgChange ? 500 : 0);
+            needCash = (nickChange ? 300 : 0) + (imgChange ? 500 : 0);
         }
 
         // 관리자면 adminPage로, 일반이면 mypage로
@@ -415,7 +427,7 @@ public class MemberController {
         } else if (nickChange) {
             dto.setCondition(isAdmin ? "ADMIN_MEMBER_NICKNAME_UPDATE" : "MEMBER_NICKNAME_UPDATE");
             dto.setMemberNickname(newNickname.trim());
-            if (!isAdmin) dto.setMemberPayCash(500);
+            if (!isAdmin) dto.setMemberPayCash(300);
         } else {
             dto.setCondition(isAdmin ? "ADMIN_MEMBER_PROFILE_UPDATE" : "MEMBER_PROFILE_UPDATE");
             dto.setMemberProfileImage(token);  // ← token 사용!
