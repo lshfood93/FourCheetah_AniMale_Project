@@ -321,12 +321,13 @@ public class MemberController {
     public String legacyChangeProfile() {
         return "redirect:/changeprofile";
     }
-
-    @PostMapping("/member/change-profile")
+    @PostMapping("/member/profile")
     public String changeProfile(
             @RequestParam(value = "newNickname", required = false) String newNickname,
-            @RequestParam(value = "newProfileImage", required = false) String newProfileImage,
+            @RequestParam(value = "newProfileImage", required = false) String newProfileImage, // 현재 로직에서는 token 기준이라 실사용 X
             @RequestParam(value = "temporaryProfileImageToken", required = false) String temporaryProfileImageToken,
+            @RequestParam(value = "memberProfileColor", required = false) String memberProfileColor,
+            @RequestParam(value = "memberNicknameColor", required = false) String memberNicknameColor,
             HttpSession session
     ) {
         if (session == null || session.getAttribute("memberId") == null) {
@@ -334,39 +335,34 @@ public class MemberController {
         }
 
         Integer memberId = (Integer) session.getAttribute("memberId");
-        String currentNick = (String) session.getAttribute("memberNickName");
-        String currentImg = (String) session.getAttribute("memberProfileImage");
 
         String role = (String) session.getAttribute("memberRole");
         boolean isAdmin = "ADMIN".equals(role);
 
-        boolean nickChange = (newNickname != null && !newNickname.trim().isEmpty() && !newNickname.equals(currentNick));
-        boolean imgChange = (newProfileImage != null && !newProfileImage.trim().isEmpty() && !newProfileImage.equals(currentImg));
-
-        if (!nickChange && !imgChange) {
-            session.setAttribute("msg", "변경 사항이 없습니다.");
-            return "redirect:/member/mypage";
-        }
-
-        int needCash = 0;
-        if (!isAdmin) {
-            needCash = (nickChange ? 300 : 0) + (imgChange ? 500 : 0);
-        }
-
-        // 관리자면 adminPage로, 일반이면 mypage로
         String backPage = isAdmin ? "redirect:/adminPage" : "redirect:/member/mypage";
 
-        MemberDTO curQ = new MemberDTO();
-        curQ.setCondition("MEMBER_CASH_SELECT");
-        curQ.setMemberId(memberId);
+        // =========================================================
+        // 1) 요청값 정리 (빈문자열 -> null)
+        String newNick = trimToNull(newNickname);
+        String reqProfileColor = trimToNull(memberProfileColor);
+        String reqNicknameColor = trimToNull(memberNicknameColor);
+        String token = trimToNull(temporaryProfileImageToken); // 이미지 변경 판단은 token 기준
 
-        MemberDTO cashInfo = memberService.selectOne(curQ);
-        if (!isAdmin) {
-            if (cashInfo == null || cashInfo.getMemberCash() < needCash) {
-                session.setAttribute("msg", "캐시가 부족합니다. (필요: " + needCash + ")");
-                return "redirect:/member/mypage";
-            }
-        }  // ← 349줄: 중괄호 추가!
+        // (추천) 색상값 검증 (#RRGGBB)
+        if (reqProfileColor != null && !isValidHexColor(reqProfileColor)) {
+            session.setAttribute("msg", "프로필 테두리 색상 값이 올바르지 않습니다. (#RRGGBB)");
+            return backPage;
+        }
+        if (reqNicknameColor != null && !isValidHexColor(reqNicknameColor)) {
+            session.setAttribute("msg", "닉네임 색상 값이 올바르지 않습니다. (#RRGGBB)");
+            return backPage;
+        }
+
+        // =========================================================
+        // 2) 현재 회원 정보 조회 (⭐ MEMBER_MYPAGE로!)
+        MemberDTO curQ = new MemberDTO();
+        curQ.setCondition("MEMBER_MYPAGE");
+        curQ.setMemberId(memberId);
 
         MemberDTO cur = memberService.selectOne(curQ);
         if (cur == null) {
@@ -374,41 +370,72 @@ public class MemberController {
             return backPage;
         }
 
-        String newNick = (newNickname == null) ? "" : newNickname.trim();
-        boolean nickChanged = !newNick.isEmpty() && !newNick.equals(cur.getMemberNickname());
+        // =========================================================
+        // 3) 변경 여부 판단 (DB 기준)
+        boolean nickChanged = (newNick != null && !newNick.equals(cur.getMemberNickname()));
+        boolean imgChanged = (token != null && !token.equals(cur.getMemberProfileImage()));
 
-        boolean profileChanged = (temporaryProfileImageToken != null && !temporaryProfileImageToken.trim().isEmpty());
-        String token = profileChanged ? temporaryProfileImageToken.trim() : null;
+        boolean profileColorChanged = (reqProfileColor != null &&
+                (cur.getMemberProfileColor() == null || !reqProfileColor.equals(cur.getMemberProfileColor())));
 
-        if (!nickChanged && !profileChanged) {
+        boolean nicknameColorChanged = (reqNicknameColor != null &&
+                (cur.getMemberNicknameColor() == null || !reqNicknameColor.equals(cur.getMemberNicknameColor())));
+
+        // ✅ 색상도 포함해서 "변경사항 없음" 처리
+        if (!nickChanged && !imgChanged && !profileColorChanged && !nicknameColorChanged) {
             session.setAttribute("msg", "변경된 내용이 없습니다.");
             return backPage;
         }
 
+        // =========================================================
+        // 4) 비용 계산 (원하면 숫자만 바꾸면 됨)
+        final int NICK_COST = 300;
+        final int IMG_COST = 500;
+        final int BORDER_COLOR_COST = 200;   // 예: 100
+        final int NICK_COLOR_COST = 200;     // 예: 100
+
+        int needCash = 0;
+        if (!isAdmin) {
+            needCash += (nickChanged ? NICK_COST : 0);
+            needCash += (imgChanged ? IMG_COST : 0);
+            needCash += (profileColorChanged ? BORDER_COLOR_COST : 0);
+            needCash += (nicknameColorChanged ? NICK_COLOR_COST : 0);
+
+            if (cur.getMemberCash() < needCash) {
+                session.setAttribute("msg", "캐시가 부족합니다. (필요: " + needCash + ")");
+                return backPage;
+            }
+        }
+
+        // =========================================================
+        // 5) 닉네임 변경 시 중복 체크
         if (nickChanged) {
             MemberDTO dup = new MemberDTO();
             dup.setCondition("JOIN_NICKNAME");
             dup.setMemberNickname(newNick);
 
             MemberDTO found = memberService.selectOne(dup);
-            if (found != null && found.getMemberId() != memberId) {
+
+            if (found != null && found.getMemberId() != memberId.intValue()) {
                 session.setAttribute("msg", "이미 사용 중인 닉네임입니다.");
                 return backPage;
             }
         }
 
-        if (profileChanged) {  // ← 380줄: 조건 변경!
+        // =========================================================
+        // 6) 이미지 변경 시 파일 이동 (token 기준)
+        if (imgChanged) {
             try {
-                Path tempFile1 = Paths.get(profileTempDir, token);
-                if (!Files.exists(tempFile1)) {
+                Path tempFile = Paths.get(profileTempDir, token);
+                if (!Files.exists(tempFile)) {
                     session.setAttribute("msg", "프로필 임시 파일이 없습니다. 다시 업로드해주세요.");
                     return backPage;
                 }
-                
+
                 Path targetFile = Paths.get(profileDir, token);
                 Files.createDirectories(targetFile.getParent());
-                Files.move(tempFile1, targetFile, StandardCopyOption.REPLACE_EXISTING);
-                
+                Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
+
             } catch (Exception e) {
                 e.printStackTrace();
                 session.setAttribute("msg", "프로필 파일 처리 중 오류가 발생했습니다.");
@@ -416,26 +443,23 @@ public class MemberController {
             }
         }
 
-        MemberDTO dto = new MemberDTO();
-        dto.setMemberId(memberId);
+        // =========================================================
+        // 7) 업데이트 (⭐ INFORM_UPDATE로 통일)
+        MemberDTO up = new MemberDTO();
+        up.setMemberId(memberId);
+        up.setCondition(isAdmin ? "ADMIN_MEMBER_INFORM_UPDATE" : "MEMBER_INFORM_UPDATE");
 
-        if (nickChange && imgChange) {
-            dto.setCondition(isAdmin ? "ADMIN_MEMBER_INFORM_UPDATE" : "MEMBER_INFORM_UPDATE");
-            dto.setMemberNickname(newNickname.trim());
-            dto.setMemberProfileImage(token);  // ← token 사용!
-            if (!isAdmin) dto.setMemberPayCash(needCash);
-        } else if (nickChange) {
-            dto.setCondition(isAdmin ? "ADMIN_MEMBER_NICKNAME_UPDATE" : "MEMBER_NICKNAME_UPDATE");
-            dto.setMemberNickname(newNickname.trim());
-            if (!isAdmin) dto.setMemberPayCash(300);
-        } else {
-            dto.setCondition(isAdmin ? "ADMIN_MEMBER_PROFILE_UPDATE" : "MEMBER_PROFILE_UPDATE");
-            dto.setMemberProfileImage(token);  // ← token 사용!
-            if (!isAdmin) dto.setMemberPayCash(500);
+        // 변경된 값만 세팅, 나머지는 null -> COALESCE로 기존값 유지
+        up.setMemberNickname(nickChanged ? newNick : null);
+        up.setMemberProfileImage(imgChanged ? token : null);
+        up.setMemberProfileColor(profileColorChanged ? reqProfileColor : null);
+        up.setMemberNicknameColor(nicknameColorChanged ? reqNicknameColor : null);
+
+        if (!isAdmin) {
+            up.setMemberPayCash(needCash); // UPDATE_MEMBER_INFORM에서 cash 차감 + cash>=pay 검증
         }
 
-        boolean ok = memberService.update(dto);
-
+        boolean ok = memberService.update(up);
         if (!ok) {
             session.setAttribute("msg", isAdmin
                     ? "수정 실패(DB 반영 실패)."
@@ -443,11 +467,15 @@ public class MemberController {
             return backPage;
         }
 
+        // =========================================================
+        // 8) 세션 최신화 (⭐ MEMBER_MYPAGE로 다시 조회)
         MemberDTO after = memberService.selectOne(curQ);
         if (after != null) {
             session.setAttribute("memberNickName", after.getMemberNickname());
             session.setAttribute("memberProfileImage", after.getMemberProfileImage());
             session.setAttribute("memberCash", after.getMemberCash());
+            session.setAttribute("memberProfileColor", after.getMemberProfileColor());
+            session.setAttribute("memberNicknameColor", after.getMemberNicknameColor());
             if (after.getMemberRole() != null) {
                 session.setAttribute("memberRole", after.getMemberRole());
             }
@@ -456,6 +484,21 @@ public class MemberController {
         session.setAttribute("msg", "내 정보가 수정되었습니다.");
         return backPage;
     }
+
+    // =========================================================
+    // 컨트롤러 클래스 안에 같이 추가
+
+    private String trimToNull(String s) {
+        if (s == null) return null;
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    private boolean isValidHexColor(String color) {
+        return color != null && color.matches("^#([0-9a-fA-F]{6})$");
+    }
+
+    
     // ==================== 비밀번호 변경 ====================
 
     @GetMapping("/changePasswordPage")

@@ -8,6 +8,11 @@ import java.util.Set;
 
 public class AiChatSessionState implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	private Integer memberId;
 
 	// 최근 N턴 유지 (턴=유저+어시스턴트 한 쌍이므로 메시지는 2*N개로 관리하는게 편함)

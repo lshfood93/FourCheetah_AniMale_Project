@@ -28,22 +28,37 @@ public class ReplyDAO {
 	private static final String SELECT_REPLY_LIST_RECENT = "SELECT " + "  r.reply_id, " + "  r.board_id, "
 			+ "  r.member_id, " + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' "
 			+ "       ELSE m.member_nickname END AS writer_nickname, "
-			+ "  m.member_profile_image AS writer_profile_image, "  // ⬅️ 프로필 이미지 추가
-			+ "  r.reply_content, "
-			+ "  r.reply_created_at, "  // ⬅️ 작성일 추가
-			+ "  r.reply_updated_at "    // ⬅️ 수정일 추가
-			+ "FROM reply r "
-			+ "JOIN member m ON m.member_id = r.member_id " + "WHERE r.board_id = ? " + "ORDER BY r.reply_id DESC";
+			+ "  m.member_profile_image AS writer_profile_image, " // ⬅️ 프로필 이미지 추가
+			+ "  m.member_profile_color  AS writer_profile_color, "
+			+ "  m.member_nickname_color AS writer_nickname_color, " + "  r.reply_content, " + "  r.reply_created_at, " // ⬅️
+																														// 작성일
+																														// 추가
+			+ "  r.reply_updated_at " // ⬅️ 수정일 추가
+			+ // ⭐⭐⭐ isEdited 추가 ⭐⭐⭐
+			"  CASE " + "    WHEN r.reply_updated_at IS NULL THEN 0 "
+			+ "    WHEN r.reply_created_at = r.reply_updated_at THEN 0 " + "    ELSE 1 " + "  END AS is_edited "
+			// ⭐⭐⭐ 추가 끝 ⭐⭐⭐
+
+			+ "FROM reply r " + "JOIN member m ON m.member_id = r.member_id " + "WHERE r.board_id = ? "
+			+ "ORDER BY r.reply_id DESC";
 
 	private static final String SELECT_REPLY_LIST_OLDEST = "SELECT " + "  r.reply_id, " + "  r.board_id, "
 			+ "  r.member_id, " + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' "
 			+ "       ELSE m.member_nickname END AS writer_nickname, "
-			+ "  m.member_profile_image AS writer_profile_image, "  // ⬅️ 프로필 이미지 추가
-			+ "  r.reply_content, "
-			+ "  r.reply_created_at, "  // ⬅️ 작성일 추가
-			+ "  r.reply_updated_at "    // ⬅️ 수정일 추가
-			+ "FROM reply r "
+			+ "  m.member_profile_image AS writer_profile_image, " // ⬅️ 프로필 이미지 추가
+			+ "  r.reply_content, " + "  r.reply_created_at, " // ⬅️ 작성일 추가
+			+ "  r.reply_updated_at " // ⬅️ 수정일 추가
+			+ "  m.member_profile_color  AS writer_profile_color, "
+			// ⭐⭐⭐ isEdited 추가 ⭐⭐⭐
+			+ "  CASE " + "    WHEN r.reply_updated_at IS NULL THEN 0 "
+			+ "    WHEN r.reply_created_at = r.reply_updated_at THEN 0 " + "    ELSE 1 " + "  END AS is_edited " 
+			// ⭐⭐⭐ 추가 끝 ⭐⭐⭐
+			+ " m.member_nickname_color AS writer_nickname_color " + "FROM reply r "
 			+ "JOIN member m ON m.member_id = r.member_id " + "WHERE r.board_id = ? " + "ORDER BY r.reply_id ASC";
+
+			
+
+	
 
 	// =========================================================
 	// INSERT (MySQL AUTO_INCREMENT 전제)
@@ -92,10 +107,16 @@ public class ReplyDAO {
 			data.setBoardId(rs.getInt("board_id"));
 			data.setMemberId(rs.getInt("member_id"));
 			data.setWriterNickname(rs.getString("writer_nickname"));
-			data.setWriterProfileImage(rs.getString("writer_profile_image"));  // ⬅️ 프로필 이미지
+			data.setWriterProfileImage(rs.getString("writer_profile_image")); // ⬅️ 프로필 이미지
+			data.setWriterProfileColor(rs.getString("writer_profile_color"));
+			data.setWriterNicknameColor(rs.getString("writer_nickname_color"));
 			data.setReplyContent(rs.getString("reply_content"));
-			data.setReplyCreatedAt(rs.getString("reply_created_at"));  // ⬅️ 작성일
-			data.setReplyUpdatedAt(rs.getString("reply_updated_at"));  // ⬅️ 수정일
+			data.setReplyCreatedAt(rs.getString("reply_created_at"));
+			data.setReplyUpdatedAt(rs.getString("reply_updated_at"));
+
+			// ⭐⭐⭐ isEdited 추가 ⭐⭐⭐
+			data.setIsEdited(rs.getInt("is_edited"));
+
 			return data;
 		}, dto.getBoardId());
 
