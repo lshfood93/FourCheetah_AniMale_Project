@@ -13,7 +13,7 @@ public class GenAiClientConfig {
 	@Value("${google.genai.apikey:}")
     private String apiKey;
 
-    @Value("${ai.chat.timeoutMs:30000}")
+    @Value("${ai.chat.timeoutMs:20000}")
     private int timeoutMs;
 
     @Bean(destroyMethod = "close") // ✅ [ADDED] Client는 close 가능(리소스 정리) :contentReference[oaicite:2]{index=2}
