@@ -429,7 +429,7 @@ public class BoardController {
         // 5) JSP 전달
         model.addAttribute("noticeList", noticeList);
         model.addAttribute("boardList", boardList);
-        model.addAttribute("category", category);
+        model.addAttribute("boardCategory", category);
 
         model.addAttribute("condition", condition);
         model.addAttribute("keyword", keyword);
