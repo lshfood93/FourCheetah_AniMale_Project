@@ -27,7 +27,7 @@ public class ReplyController {
 
     // =========================================================
     // 1) 댓글 작성 (POST /replyWrite)
-    @SanctionCheck      
+    @SanctionCheck(allowTypes = {"WARNING"})  
     @DeletedBoardCheck  
     @PostMapping("/replyWrite")
     public String replyWrite(
@@ -90,7 +90,7 @@ public class ReplyController {
 
     // =========================================================
     // 2) 댓글 수정 (POST /replyEdit)
-    @SanctionCheck  
+    @SanctionCheck(allowTypes = {"WARNING"})  
     @PostMapping("/replyEdit")
     public String replyEdit(
             ReplyDTO replyDTO,
@@ -161,7 +161,7 @@ public class ReplyController {
 
     // =========================================================
     // 3) 댓글 삭제 (POST /replyDelete)
-    @SanctionCheck  
+    @SanctionCheck(allowTypes = {"WARNING"})  
     @PostMapping("/replyDelete")
     public String replyDelete(
             ReplyDTO replyDTO,
