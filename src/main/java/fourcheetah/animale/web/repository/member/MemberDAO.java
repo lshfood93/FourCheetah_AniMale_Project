@@ -547,22 +547,18 @@ public class MemberDAO {
 	/**
 	 * 활성 제재 조회 (로그인 시 사용)
 	 */
-	// ✅ CHANGED: warning_id, notified 추가 SELECT
 	public MemberWarningDTO selectActiveWarning(int memberId) {
 		System.out.println("[MemberDAO] selectActiveWarning 실행 - memberId=" + memberId);
 
-		String sql = "SELECT warning_id, warning_type, reason, start_at, end_at, notified "
-				+ "FROM member_warning " + "WHERE member_id = ? "
+		String sql = "SELECT warning_type, reason, start_at, end_at " + "FROM member_warning " + "WHERE member_id = ? "
 				+ "AND start_at <= NOW() " + "AND (end_at IS NULL OR end_at > NOW()) " + "ORDER BY start_at DESC "
 				+ "LIMIT 1";
 
 		try {
 			return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
 				MemberWarningDTO dto = new MemberWarningDTO();
-				dto.setWarningId(rs.getInt("warning_id"));       // ✅ ADDED
 				dto.setWarningType(rs.getString("warning_type"));
 				dto.setReason(rs.getString("reason"));
-				dto.setNotified(rs.getInt("notified"));           // ✅ ADDED
 
 				Timestamp startTime = rs.getTimestamp("start_at");
 				dto.setStartAt(startTime == null ? null : startTime.toLocalDateTime());

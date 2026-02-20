@@ -53,20 +53,22 @@ public class MemberWarningDAO {
             }
             
             dto.setCreatedAt(rs.getObject("created_at", LocalDateTime.class));
-            dto.setNotified(rs.getInt("notified"));
-
+            
             return dto;
         }
     }
     
     /**
      * 회원의 최신 제재 조회 (1건)
+     * 
+     * @param memberId 회원 ID
+     * @return 최신 제재 정보 (없으면 null)
      */
     public MemberWarningDTO selectLatestWarning(int memberId) {
         System.out.println("[MemberWarningDAO] selectLatestWarning 실행 - memberId=" + memberId);
         
         String sql = "SELECT warning_id, member_id, issued_by, source_report_id, " +
-                     "warning_type, reason, start_at, end_at, created_at, notified " +
+                     "warning_type, reason, start_at, end_at, created_at " +
                      "FROM member_warning " +
                      "WHERE member_id = ? " +
                      "ORDER BY created_at DESC " +
@@ -83,6 +85,7 @@ public class MemberWarningDAO {
             return result;
             
         } catch (Exception e) {
+            // 제재 없음 (정상)
             System.out.println("[MemberWarningDAO] 제재 없음 (정상 회원)");
             return null;
         }
@@ -90,6 +93,9 @@ public class MemberWarningDAO {
     
     /**
      * 제재 이력 저장
+     * 
+     * @param dto 제재 정보
+     * @return 성공 시 1, 실패 시 0
      */
     public int insertWarning(MemberWarningDTO dto) {
         System.out.println("[MemberWarningDAO] insertWarning 실행");
@@ -124,22 +130,10 @@ public class MemberWarningDAO {
     }
     
     /**
-     * 제재 안내 표시 완료 처리 (notified = 1)
-     */
-    public void updateWarningNotified(int warningId) {
-        System.out.println("[MemberWarningDAO] updateWarningNotified 실행 - warningId=" + warningId);
-        String sql = "UPDATE member_warning SET notified = 1 WHERE warning_id = ?";
-        try {
-            jdbcTemplate.update(sql, warningId);
-            System.out.println("[MemberWarningDAO] notified 업데이트 완료 - warningId=" + warningId);
-        } catch (Exception e) {
-            System.out.println("[MemberWarningDAO] notified 업데이트 에러: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
      * 회원의 활성 제재 개수 조회 (현재 진행 중인 정지)
+     * 
+     * @param memberId 회원 ID
+     * @return 활성 제재 개수
      */
     public int selectActiveWarningCount(int memberId) {
         System.out.println("[MemberWarningDAO] selectActiveWarningCount 실행 - memberId=" + memberId);
@@ -156,20 +150,6 @@ public class MemberWarningDAO {
             
         } catch (Exception e) {
             System.out.println("[MemberWarningDAO] 조회 실패 - " + e.getMessage());
-            return 0;
-        }
-    }
-
-    // ADDED: WARNING 누적 횟수 조회
-    public int countWarnings(int memberId) {
-        System.out.println("[MemberWarningDAO] countWarnings 실행 - memberId=" + memberId);
-        String sql = "SELECT COUNT(*) FROM member_warning WHERE member_id = ? AND warning_type = 'WARNING'";
-        try {
-            Integer count = jdbcTemplate.queryForObject(sql, Integer.class, memberId);
-            System.out.println("[MemberWarningDAO] WARNING 누적 횟수=" + count);
-            return (count != null) ? count : 0;
-        } catch (Exception e) {
-            System.out.println("[MemberWarningDAO] countWarnings 실패 - " + e.getMessage());
             return 0;
         }
     }

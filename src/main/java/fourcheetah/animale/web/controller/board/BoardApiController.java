@@ -39,13 +39,12 @@ public class BoardApiController {
 
     // =========================================================
     // 1) 좋아요 토글 API (POST /BoardLikeToggle)
-    // ✅ CHANGED: WARNING 회원도 좋아요 가능
-    @SanctionCheck(allowTypes = {"WARNING"})
+    @SanctionCheck
     @DeletedBoardCheck
     @PostMapping("/BoardLikeToggle")
     public ResponseEntity<Map<String, Object>> toggleLike(
-            BoardLikeDTO boardLikeDTO,
-            BindingResult br,
+            BoardLikeDTO boardLikeDTO,  // boardId 바인딩
+            BindingResult br,           // boardId 타입 변환 오류 체크
             BoardDTO boardDTO,
             HttpServletRequest request
     ) {
@@ -180,6 +179,7 @@ public class BoardApiController {
 
     // =========================================================
     // 3) 댓글 정렬 API (GET /ReplyListOrder)
+    // 호출 예) /ReplyListOrder?boardId=3&condition=REPLY_LIST_OLDEST
     @GetMapping(value = "/ReplyListOrder", produces = "application/json; charset=UTF-8")
     public ResponseEntity<?> replyListOrder(
             ReplyDTO replyDTO,

@@ -6,6 +6,13 @@
 
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
 
+<%-- =========================
+     location 정규화 (핵심)
+     - location이 비면 "/"로
+     - http(s)면 그대로 사용
+     - "/"로 시작하면 ctx 붙임
+     - 그 외면 ctx + "/" + location
+   ========================= --%>
 <c:set var="rawLocation" value="${empty location ? '/' : location}" />
 <c:set var="finalLocation"
        value="${fn:startsWith(rawLocation,'http') ? rawLocation :
@@ -24,6 +31,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
+/* 제재 안내 전용 스타일 */
 .sanction-wrapper {
     background: #0a0a0f;
     min-height: 100vh;
@@ -33,56 +41,63 @@
     padding: 20px;
 }
 .sanction-box {
-    max-width: 560px;
+    max-width: 600px;
     width: 100%;
-    padding: 36px 32px;
+    padding: 30px;
     background: rgba(30, 30, 40, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
     color: #fff;
 }
-.sanction-msg {
-    font-size: 16px;
-    line-height: 1.7;
-    color: #e0e0e0;
-    margin-bottom: 24px;
+.sanction-box h2 {
+    color: #fff;
+    font-size: 24px;
+    margin-bottom: 20px;
     text-align: center;
-    white-space: pre-line;
 }
 .sanction-notice {
-    background: rgba(81, 207, 102, 0.07);
-    border: 1px solid rgba(81, 207, 102, 0.2);
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
     border-radius: 8px;
-    padding: 18px 20px;
+    padding: 20px;
+    margin-top: 20px;
+}
+.sanction-notice h3 {
+    color: #ff6b6b;
+    font-size: 18px;
+    margin-bottom: 15px;
+    margin-top: 0;
 }
 .sanction-notice p {
-    margin: 0 0 10px 0;
-    font-size: 14px;
-    color: #51cf66;
-    font-weight: 700;
+    margin: 10px 0;
+    font-size: 15px;
+}
+.sanction-notice hr {
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    margin: 15px 0;
 }
 .sanction-notice ul {
     list-style: none;
     padding-left: 0;
-    margin: 0;
+    margin: 10px 0;
 }
 .sanction-notice ul li {
-    padding: 4px 0;
+    padding: 5px 0;
     font-size: 14px;
-    color: #a8f0b8;
 }
+.sanction-notice .allowed { color: #51cf66; }
+.sanction-notice .blocked { color: #ff6b6b; }
+
 .btn-confirm {
-    display: block;
-    width: 100%;
-    margin-top: 24px;
-    padding: 13px 0;
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 30px;
     background: linear-gradient(135deg, rgba(120, 190, 255, 0.45), rgba(255, 255, 255, 0.08));
     border: 1px solid rgba(120, 190, 255, 0.35);
     border-radius: 999px;
     color: #fff;
     font-weight: 800;
-    font-size: 15px;
-    text-align: center;
     text-decoration: none;
     cursor: pointer;
     transition: all 0.3s;
@@ -91,9 +106,8 @@
     background: linear-gradient(135deg, rgba(120, 190, 255, 0.55), rgba(255, 255, 255, 0.12));
     border-color: rgba(120, 190, 255, 0.45);
     transform: translateY(-1px);
-    color: #fff;
-    text-decoration: none;
 }
+.text-center { text-align: center; }
 </style>
 </head>
 
@@ -105,30 +119,34 @@
     <c:when test="${not empty sessionScope.showSanctionModal}">
         <div class="sanction-wrapper">
             <div class="sanction-box">
+                <h2><c:out value="${msg}" /></h2>
 
-                <p class="sanction-msg"><c:out value="${msg}" /></p>
+                <div class="sanction-notice">
+                    <h3>⚠️ 계정 이용 제한 안내</h3>
 
-                <%-- SUSPEND_7D / SUSPEND_30D: 이용 가능 기능 목록 표시 --%>
-                <c:if test="${sessionScope.memberStatus eq 'SUSPEND_7D' or sessionScope.memberStatus eq 'SUSPEND_30D'}">
-                    <div class="sanction-notice">
-                        <p>✅ 이용 가능 기능</p>
-                        <ul>
-                            <li>• 게시글/댓글 조회</li>
-                            <li>• 좋아요 기능</li>
-                            <li>• 캐시 충전/사용</li>
-                        </ul>
-                    </div>
-                    <c:if test="${not empty sessionScope.sanctionEndAt}">
-                        <p style="margin-top:14px; font-size:13px; color:#aaa; text-align:center;">
-                            정지 해제일: <c:out value="${sessionScope.sanctionEndAt}" />
-                        </p>
-                    </c:if>
-                </c:if>
+                    <p><strong>사유:</strong> <c:out value="${sessionScope.sanctionReason}" /></p>
+                    <p><strong>제한 해제일:</strong> <c:out value="${sessionScope.sanctionEndAt}" /></p>
 
-                <%-- WARNING: 메시지만 표시, 이용 가능 목록 없음 --%>
-                <%-- (기능 제한 없으므로 별도 안내 불필요) --%>
+                    <hr>
 
-                <a href="${finalLocation}" class="btn-confirm">확인</a>
+                    <p><strong class="blocked">🚫 제한 내용:</strong></p>
+                    <ul>
+                        <li class="blocked">• 게시글 작성/수정/삭제 불가</li>
+                        <li class="blocked">• 댓글 작성/수정/삭제 불가</li>
+                        <li class="blocked">• 신고 기능 불가</li>
+                    </ul>
+
+                    <p><strong class="allowed">✅ 이용 가능:</strong></p>
+                    <ul>
+                        <li class="allowed">• 게시글/댓글 조회</li>
+                        <li class="allowed">• 좋아요 기능</li>
+                        <li class="allowed">• 캐시 충전/사용</li>
+                    </ul>
+                </div>
+
+                <div class="text-center">
+                    <a href="${finalLocation}" class="btn-confirm">확인</a>
+                </div>
             </div>
         </div>
 
@@ -140,9 +158,11 @@
     <%-- ✅ 일반 메시지: SweetAlert2로 띄우고 이동 --%>
     <c:otherwise>
         <script>
+          // JSTL로 들어온 문자열을 JS에서 안전하게 쓰기(따옴표/개행 최소 방어)
           const msg = "<c:out value='${msg}' />".replaceAll("&quot;", '"').replaceAll("&#39;", "'");
           const go  = "<c:out value='${finalLocation}' />".replaceAll("&quot;", '"').replaceAll("&#39;", "'");
 
+          // 메시지 문구로 아이콘 자동 분기(원하면 규칙 추가)
           const lower = msg.toLowerCase();
           let icon = "info";
           let title = "알림";
@@ -158,7 +178,7 @@
           }
 
           Swal.fire({
-             position: "top",
+             position: "top",          
              icon,
              title,
              text: msg,
@@ -167,6 +187,7 @@
            }).then(() => {
              location.href = go;
            });
+
         </script>
     </c:otherwise>
 
