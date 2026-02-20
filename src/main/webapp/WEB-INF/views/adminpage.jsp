@@ -102,14 +102,16 @@
 
 .disabled-btn{ opacity: 0.45; pointer-events: none; }
 
-/* 프로필 이미지 로더 */
+/* =========================
+   프로필 이미지 로더 (기본)
+   ========================= */
 .profile-img-wrap{
   width: 256px; height: 256px;
   margin: 0 auto 16px;
   border-radius: 18px;
-  overflow: hidden;
   position: relative;
   background: #0b0c2a;
+  overflow: hidden; /* 기본은 hidden */
 }
 .profile-img-wrap img{
   width: 100%; height: 100%;
@@ -119,6 +121,8 @@
   opacity: 1;
   transition: opacity .2s ease;
 }
+
+/* 로딩 스켈레톤 */
 .profile-img-wrap.is-loading{
   background: linear-gradient(110deg,
     rgba(255,255,255,.03) 20%,
@@ -129,6 +133,7 @@
 }
 .profile-img-wrap.is-loading img{ opacity: 0; }
 
+/* 로더 오버레이 */
 .profile-loader{
   position: absolute; inset: 0;
   display: none;
@@ -391,49 +396,79 @@ body.mypage-editing .mypage-right-card{
 }
 
 /* =========================
-   ADMIN 무료 꾸미기 - RAINBOW
+   ADMIN 무료 꾸미기 - RAINBOW (최종/정리본)
+   - 닉네임: rainbow-text
+   - 닉네임 pill: rainbow-border (기본 카드용)
+   - 프로필: profileWrap만 전용 레인보우 테두리(사진 위에 덮이지 않게)
    ========================= */
 :root{
-  --rainbow: linear-gradient(90deg,
-    #ff4d4d, #ffa94d, #ffd43b, #51cf66, #38d9a9, #4dabf7, #845ef7, #ff4d4d);
+  --rb1: #ff4d4d;
+  --rb2: #ffa94d;
+  --rb3: #ffd43b;
+  --rb4: #51cf66;
+  --rb5: #38d9a9;
+  --rb6: #4dabf7;
+  --rb7: #845ef7;
 }
 
-/* 움직이는 레인보우 텍스트 */
 .rainbow-text{
-  background: var(--rainbow);
-  background-size: 300% 100%;
+  background: linear-gradient(90deg,
+    var(--rb1),var(--rb2),var(--rb3),var(--rb4),var(--rb5),var(--rb6),var(--rb7),var(--rb1));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent !important;
-  animation: rainbowShift 2.2s linear infinite;
-}
-@keyframes rainbowShift{
-  0%{ background-position: 0% 50%; }
-  100%{ background-position: 100% 50%; }
+
+  /* ✅ 고정 */
+  background-size: 100% 100%;
+  background-position: 50% 50%;
 }
 
-/* 레인보우 테두리 */
+
+/* 카드/필드용 레인보우 테두리(닉네임 pill에 사용) */
 .rainbow-border{
   position: relative;
   border-radius: inherit;
+  isolation: isolate;
 }
 .rainbow-border::before{
   content:"";
   position:absolute;
-  inset:-2px;
+  inset:-3px;
   border-radius: inherit;
-  background: var(--rainbow);
+  background: conic-gradient(from 0deg,
+    var(--rb1),var(--rb2),var(--rb3),var(--rb4),var(--rb5),var(--rb6),var(--rb7),var(--rb1));
+  z-index: 0;
+
+  /* ✅ 회전/움직임 제거 */
+  transform: none;
+  animation: none;
+}
+
+.rainbow-border > *{ position: relative; z-index: 2; }
+
+/* ✅ 프로필은 “전용” 테두리로 처리 (overflow hidden 때문에 안 보이던 문제 해결) */
+#profileWrap.rainbow-border{
+  overflow: visible !important;   /* 테두리 보이게 */
+  padding: 3px;                  /* 테두리 두께 */
+  background: transparent !important;
+}
+#profileWrap.rainbow-border::before{
+  inset: 0 !important;           /* -3px 금지(잘림 방지) */
+  border-radius: 18px !important;
   z-index: 0;
 }
-.rainbow-border::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  border-radius: inherit;
+#profileWrap.rainbow-border::after{
+  inset: 3px !important;         /* padding 만큼 안쪽 */
+  border-radius: 15px !important;
   background: rgba(11,12,42,.92);
   z-index: 1;
 }
-.rainbow-border > *{ position: relative; z-index: 2; }
+/* 이미지가 테두리 위에 “덮어씌우는” 문제 방지: img를 안쪽 카드 레이어 위로 */
+#profileWrap.rainbow-border img{
+  position: relative;
+  z-index: 2;
+  border-radius: 15px;
+}
 
 /* 꾸미기 버튼 */
 .deco-btn{
@@ -476,6 +511,15 @@ body.mypage-editing .mypage-right-card{
   font-weight: 620;
   color: rgba(255,255,255,0.90);
   line-height: 52px;
+}
+/* ✅ 닉네임 줄(박스/바탕)은 레인보우 금지: 글자만 */
+#nicknamePill.rainbow-border,
+#nicknamePill.rainbow-border::before,
+#nicknamePill.rainbow-border::after{
+  content: none !important;
+  background: transparent !important;
+  animation: none !important;
+  filter: none !important;
 }
 </style>
 </head>
@@ -785,9 +829,11 @@ body.mypage-editing .mypage-right-card{
       const nickChanged = editMode && (newNickname !== originalNickname);
       const profileOk = editMode && profileChanged && token.length > 0;
 
+      const decoDirty = (typeof window.__adminDecoDirty === "function") ? window.__adminDecoDirty() : false;
+
       let canSave = true;
 
-      if (!nickChanged && !profileOk) canSave = false;
+      if (!nickChanged && !profileOk && !decoDirty) canSave = false;
 
       if (nickChanged) {
         if (!NICK_REGEX.test(newNickname)) canSave = false;
@@ -807,7 +853,6 @@ body.mypage-editing .mypage-right-card{
       $("#viewActions").hide();
       $("#editActions").show();
 
-      /* 원래 로직 그대로 */
       $("#nicknameInput").prop("readonly", false);
       $("#nickCheckBtn").removeClass("disabled-btn");
       $("#profileBtnLabel").removeClass("disabled-btn");
@@ -841,6 +886,11 @@ body.mypage-editing .mypage-right-card{
 
         $("#temporaryProfileImageToken").val("");
         $("#profileInput").val("");
+
+        // ✅ 꾸미기도 원상복구(로컬 저장값이 있으면 그 값으로 다시 렌더링됨)
+        if (typeof window.__adminDecoResetToBase === "function") {
+          window.__adminDecoResetToBase();
+        }
       }
 
       $("#nicknameInput").prop("readonly", true);
@@ -983,16 +1033,15 @@ body.mypage-editing .mypage-right-card{
       });
     });
 
-    $("#saveBtn").on("click", function() {
-      if ($(this).hasClass("disabled-btn")) return;
-      if (!confirm("수정을 완료할까요?")) return;
-
-      $("#saveBtn").addClass("disabled-btn");
-      $("#mypageForm").submit();
-    });
-
-    /* ADMIN 무료 꾸미기(레인보우) */
+    /* =========================
+       ADMIN 무료 꾸미기(레인보우)
+       - 즉시 editMode 진입
+       - 저장버튼 즉시 활성화
+       - 수정완료 누르면 localStorage에 저장 → 새로고침/시간 지나도 유지
+       ========================= */
     (function(){
+      const STORAGE_KEY = "ANIMALE_ADMIN_DECO_V2";
+
       const $btnNick = $("#btnNickDeco");
       const $btnProf = $("#btnProfileDeco");
 
@@ -1003,30 +1052,123 @@ body.mypage-editing .mypage-right-card{
       const $hNick = $("#adminNickDecoStyle");    // NONE|RAINBOW
       const $hProf = $("#adminProfileDecoStyle"); // NONE|RAINBOW
 
+      // 기준값(“변경 감지”)
+      let baseNick = "NONE";
+      let baseProf = "NONE";
+
+      function enterEditModeIfNeeded(){
+        if (editMode) return;
+
+        editMode = true;
+        $("body").addClass("mypage-editing");
+
+        $("#viewActions").hide();
+        $("#editActions").show();
+
+        $("#nicknameInput").prop("readonly", false);
+        $("#nickCheckBtn").removeClass("disabled-btn");
+        $("#profileBtnLabel").removeClass("disabled-btn");
+
+        // 기존 규칙 유지
+        nicknameChecked = false;
+        $("#nickCheckBtn").text("중복 확인");
+        $("#nicknameMsg").text("");
+      }
+
+      function loadSaved(){
+        try{
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return null;
+          return JSON.parse(raw);
+        }catch(e){
+          return null;
+        }
+      }
+
+      function persist(){
+        try{
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            nick: $hNick.val(),
+            prof: $hProf.val(),
+            savedAt: Date.now()
+          }));
+        }catch(e){}
+      }
+
       function render(){
         const nickOn = ($hNick.val() === "RAINBOW");
         const profOn = ($hProf.val() === "RAINBOW");
 
         $nickText.toggleClass("rainbow-text", nickOn);
-        $nickPill.toggleClass("rainbow-border", nickOn);
         $btnNick.toggleClass("is-on", nickOn);
 
+        // ✅ 프로필은 테두리만
         $profile.toggleClass("rainbow-border", profOn);
         $btnProf.toggleClass("is-on", profOn);
       }
 
+      // updateSaveButton에서 쓰는 dirty
+      window.__adminDecoDirty = function(){
+        return editMode && ($hNick.val() !== baseNick || $hProf.val() !== baseProf);
+      };
+
+      // 취소 시 원복용(현재 기준값으로 되돌림)
+      window.__adminDecoResetToBase = function(){
+        $hNick.val(baseNick);
+        $hProf.val(baseProf);
+        render();
+      };
+
+      // 1) 로컬 저장값 로드 → hidden 반영
+      const saved = loadSaved();
+      if (saved){
+        if (saved.nick) $hNick.val(saved.nick);
+        if (saved.prof) $hProf.val(saved.prof);
+      }
+
+      // 2) 기준값 확정(로드 직후)
+      baseNick = $hNick.val() || "NONE";
+      baseProf = $hProf.val() || "NONE";
+
+      // 3) 첫 렌더
+      render();
+
+      // 4) 버튼 클릭: 즉시 editMode + 토글 + 저장버튼 활성화
       $btnNick.on("click", function(){
+        enterEditModeIfNeeded();
         $hNick.val(($hNick.val() === "RAINBOW") ? "NONE" : "RAINBOW");
         render();
+        updateSaveButton();
       });
 
       $btnProf.on("click", function(){
+        enterEditModeIfNeeded();
         $hProf.val(($hProf.val() === "RAINBOW") ? "NONE" : "RAINBOW");
         render();
+        updateSaveButton();
       });
 
-      render();
+      // 5) ✅ 저장 시점은 saveBtn 핸들러에서 “반드시 먼저 persist()” 하도록(중요)
+      window.__adminDecoPersistNow = function(){
+        persist();
+        baseNick = $hNick.val() || "NONE";
+        baseProf = $hProf.val() || "NONE";
+      };
     })();
+
+    /* ✅ 저장 버튼: localStorage 저장 → 그 다음 submit (순서가 핵심) */
+    $("#saveBtn").off("click").on("click", function() {
+      if ($(this).hasClass("disabled-btn")) return;
+      if (!confirm("수정을 완료할까요?")) return;
+
+      // ✅ 먼저 꾸미기 상태 저장(이게 없어서 원복됐던 것)
+      if (typeof window.__adminDecoPersistNow === "function") {
+        window.__adminDecoPersistNow();
+      }
+
+      $("#saveBtn").addClass("disabled-btn");
+      $("#mypageForm").submit();
+    });
 
     updateSaveButton();
   });
