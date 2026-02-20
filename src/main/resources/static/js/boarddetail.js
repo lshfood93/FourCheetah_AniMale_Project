@@ -323,26 +323,12 @@
       ? r.writerNickname
       : r.memberId;
 
-    // ✅ ADMIN 보정(서버에서 role/decoClass가 안 내려오는 경우 대비)
-    // - 현재 ReplyDTO에는 role 필드가 없어서, 닉네임 기반으로만 휴리스틱 적용
-    // - 프로젝트에서 관리자 닉네임이 '관리자'로 고정이라면 정상 동작
-    var isAdminWriter = false;
-    try {
-      var nn = String(nickname || '').trim();
-      isAdminWriter = (nn === '관리자' || nn.toUpperCase() === 'ADMIN');
-    } catch (e) { /* ignore */ }
-
     var profileImgRaw = r.writerProfileImage || r.writerProfileImg || r.writer_profile_image || '';
     var profileImg = normalizeUrl(profileImgRaw);
 
     var nickColor = sanitizeColor(r.writerNicknameColor || r.writer_nickname_color || '');
     var profileColor = sanitizeColor(r.writerProfileColor || r.writer_profile_color || '');
     var decoClass = (r.writerDecoClass || r.writer_deco_class || '').trim();
-
-    // ✅ ADMIN이면 닉네임 레인보우 기본 적용(닉네임 컬러가 비어있을 때)
-    if (isAdminWriter && !nickColor) {
-      decoClass = (decoClass ? (decoClass + ' ') : '') + 'is-rainbow';
-    }
 
     var avatarFx = '';
     if (profileColor) {
@@ -351,34 +337,24 @@
         'box-shadow:0 0 0 3px rgba(255,255,255,0.06), 0 0 18px ' + escapeHtml(profileColor) + ';';
     }
 
-    // ✅ ADMIN + 프로필색 없음 => 레인보우 링 래퍼 사용
-    var useRainbowRing = (isAdminWriter && !profileColor);
-
     var avatarHtml = '';
     if (profileImg) {
       avatarHtml =
-        (useRainbowRing ? "<div class='reply-avatar-ring is-rainbow'>" : "") +
-        "<img class='reply-avatar' style='" + avatarFx + "' src='" + escapeHtml(profileImg) + "' alt='profile'/>" +
-        (useRainbowRing ? "</div>" : "");
+        "<img class='reply-avatar' style='" + avatarFx + "' src='" + escapeHtml(profileImg) + "' alt='profile'/>";
     } else {
       var initial = String(nickname).charAt(0);
       var bg = profileColor ? ('background:' + escapeHtml(profileColor) + ';') : 'background:rgba(255,255,255,0.10);';
 
       // ✅ CHANGED: 크기는 CSS(--avatar-size)가 담당 -> 인라인 32px 고정 제거
       avatarHtml =
-        (useRainbowRing ? "<div class='reply-avatar-ring is-rainbow'>" : "") +
         "<div class='reply-avatar reply-avatar--fallback' style='" +
           bg + avatarFx +
         "'>" +
           escapeHtml(initial) +
-        "</div>" +
-        (useRainbowRing ? "</div>" : "");
+        "</div>";
     }
 
-    // ✅ 레인보우 적용 시에는 color 인라인을 넣지 않음(그라데이션이 깨짐)
-    var nickStyleAttr = (nickColor && !/\bis-rainbow\b/.test(decoClass))
-      ? (" style='color:" + escapeHtml(nickColor) + ";'")
-      : '';
+    var nickStyleAttr = nickColor ? (" style='color:" + escapeHtml(nickColor) + ";'") : '';
 
     var actions = '';
     if (!(typeof isBanned !== 'undefined' && isBanned) && (canEditReply(r) || canDeleteReply(r))) {
