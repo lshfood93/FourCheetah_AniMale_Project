@@ -390,27 +390,71 @@
   padding:14px 16px;
   margin-bottom:10px;
   box-shadow:0 10px 28px rgba(0,0,0,0.22);
+
+  /* ✅ CHANGED: 프로필 영역 확장 변수(댓글 단위로 관리) */
+  --avatar-size: 56px;
+  --avatar-gap: 14px;
 }
+
+/* ✅ CHANGED: 상단 라인(왼쪽 프로필 + 오른쪽 액션) */
 .board-detail-page .reply-top{
   display:flex;
   justify-content:space-between;
   align-items:flex-start;
   gap:12px;
+  flex-wrap:wrap; /* ✅ 좁아지면 액션이 아래로 자연스럽게 떨어지게 */
 }
+
+/* ✅ NEW: 왼쪽 프로필 영역(폭 확보) */
+.board-detail-page .reply-left{
+  display:flex;
+  align-items:flex-start;
+  gap: var(--avatar-gap);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ✅ NEW: 아바타 슬롯(고정폭/높이) */
+.board-detail-page .reply-avatar-slot{
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  flex: 0 0 var(--avatar-size);
+  position: relative;
+}
+
+/* ✅ CHANGED: 아바타(사진/이니셜) 공통 - 슬롯을 꽉 채움 */
 .board-detail-page .reply-avatar{
-  width:32px;
-  height:32px;
+  width:100%;
+  height:100%;
   border-radius:50%;
   object-fit:cover;
   display:block;
-  border:1px solid rgba(255,255,255,0.14);
+  border:2px solid rgba(255,255,255,0.16); /* ✅ 링을 조금 더 두껍게 */
   background: rgba(0,0,0,0.18);
 }
+
+/* ✅ NEW: 이니셜 fallback(크기/원형은 reply-avatar가 담당) */
+.board-detail-page .reply-avatar--fallback{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  font-size:16px;
+  color:#fff;
+}
+
+/* ✅ NEW: 닉네임/시간 메타 컬럼 */
+.board-detail-page .reply-meta-col{ min-width:0; }
+
+/* 닉네임(꾸밈 클래스 부착 지점) */
 .board-detail-page .reply-writer{
   font-weight:900;
   color: rgba(255,255,255,0.92);
   line-height:1.2;
-  margin-top:2px;
+  margin-top:4px;
+  font-size:15px; /* ✅ CHANGED: 꾸밈 체감 살짝 키움 */
 }
 .board-detail-page .reply-times{
   display:flex;
@@ -418,8 +462,9 @@
   flex-wrap:wrap;
   font-size:12px;
   color: rgba(255,255,255,0.70);
-  margin-top:4px;
+  margin-top:6px;
 }
+
 .board-detail-page .reply-actions-wrap{
   flex:0 0 auto;
   white-space:nowrap;
@@ -469,8 +514,10 @@
   box-sizing:border-box;
 }
 
+/* ✅ CHANGED: 본문을 프로필 오른쪽 라인에 맞춰 들여쓰기 */
 .board-detail-page .reply-content{
   margin-top:10px;
+  margin-left: calc(var(--avatar-size) + var(--avatar-gap)); /* ✅ 핵심 */
   color: rgba(255,255,255,0.95);
   line-height:1.8;
   font-size:14px;
@@ -626,4 +673,13 @@
     width:100%;
   }
   .board-detail-page .reply-form .bd-btn.accent{ width:100%; }
+
+  /* ✅ CHANGED: 모바일에서는 아바타 살짝 줄이고, 본문 들여쓰기 해제 */
+  .board-detail-page .reply-item{
+    --avatar-size: 44px;
+    --avatar-gap: 12px;
+  }
+  .board-detail-page .reply-content{
+    margin-left:0;
+  }
 }

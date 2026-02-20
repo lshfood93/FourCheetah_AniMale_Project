@@ -72,7 +72,7 @@ public class DeletedBoardCheckAspect {
         // 2. 게시글 상태 확인
         BoardDTO boardDTO = new BoardDTO();
         boardDTO.setBoardId(boardId);
-        boardDTO.setCondition("BOARD_ONE");
+        boardDTO.setCondition("BOARD_DETAIL");
         
         BoardDTO board = boardService.selectOne(boardDTO);
         

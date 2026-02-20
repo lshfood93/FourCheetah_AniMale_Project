@@ -89,6 +89,20 @@
 .login-box-clean .login-options .auto-login:hover {
   opacity: 1;
 }
+
+/* 로그인 페이지 배너 높이 강제 (이 페이지에서만 적용) */
+.normal-breadcrumb.set-bg{
+  height: 400px !important;
+  min-height: 400px !important;
+
+  /* 위쪽이 더 보이게(필요하면 0%~30% 사이로 조절) */
+  background-position: 50% 15% !important;
+
+  /* 혹시 다른 CSS가 background-size를 건드리면 같이 고정 */
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+}
+
 </style>
 </head>
 

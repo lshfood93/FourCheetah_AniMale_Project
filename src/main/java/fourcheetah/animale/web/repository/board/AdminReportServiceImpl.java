@@ -7,13 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import fourcheetah.animale.web.service.board.AdminReportService;
 import fourcheetah.animale.web.service.member.EmailService;
 import fourcheetah.animale.web.dto.board.BoardReportDTO;
-import fourcheetah.animale.web.dto.board.BoardDTO;
 import fourcheetah.animale.web.dto.member.MemberDTO;
-import fourcheetah.animale.web.dto.member.MemberWarningDTO;
-import fourcheetah.animale.web.repository.board.BoardReportDAO;
-import fourcheetah.animale.web.repository.board.BoardDAO;
 import fourcheetah.animale.web.repository.member.MemberDAO;
-import fourcheetah.animale.web.repository.member.MemberWarningDAO;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -25,13 +20,7 @@ public class AdminReportServiceImpl implements AdminReportService {
     private BoardReportDAO boardReportDAO;
     
     @Autowired
-    private BoardDAO boardDAO;
-    
-    @Autowired
     private MemberDAO memberDAO;
-    
-    @Autowired
-    private MemberWarningDAO memberWarningDAO;
     
     @Autowired
     private EmailService emailService;
