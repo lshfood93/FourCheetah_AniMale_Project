@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
@@ -24,7 +25,9 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import fourcheetah.animale.web.dto.admin.CashChargeDTO;
 import fourcheetah.animale.web.dto.member.MemberDTO;
+import fourcheetah.animale.web.service.admin.CashChargeService;
 import fourcheetah.animale.web.service.member.MemberService;
 import jakarta.servlet.http.HttpSession;
 
@@ -49,6 +52,9 @@ public class PaymentController {
     private String secretKey;
 
     private final MemberService memberService;
+    
+    @Autowired
+    private CashChargeService cashChargeService;
 
     public PaymentController(MemberService memberService) {
         this.memberService = memberService;
@@ -102,7 +108,28 @@ public class PaymentController {
 
             String tid = resObj.get("tid").getAsString();
             String nextRedirectPcUrl = resObj.get("next_redirect_pc_url").getAsString();
+            
+         // [ADD] CASH_CHARGE에 READY INSERT (대시보드/승인 업데이트의 기반 row)
+            CashChargeDTO charge = new CashChargeDTO();
+            charge.setMemberId(memberId);
+            charge.setProvider("KAKAOPAY");
+            charge.setAmount(cashCharge);
+            charge.setCashAmount(cashCharge);
+            charge.setStatus("READY");
+            charge.setPartnerOrderId(partnerOrderId);
+            charge.setApprovedAt(null);
+            
+            charge.setCondition("CHARGE_INSERT");	
 
+         boolean insOk = cashChargeService.insert(charge);
+         if (!insOk) {
+             model.addAttribute("payResult", "FAIL");
+             model.addAttribute("message", "결제 준비 내역 저장 실패(CASH_CHARGE)");
+             return "cashresult";
+         }
+
+            
+            
             session.setAttribute("kakaopay_tid", tid);
             session.setAttribute("kakaopay_partner_order_id", partnerOrderId);
             session.setAttribute("kakaopay_partner_user_id", partnerUserId);
@@ -119,7 +146,6 @@ public class PaymentController {
     }
 
     // ==================== 결제 승인 ====================
-
     @GetMapping("/payment/kakaopay/approve")
     public String approve(@RequestParam("pg_token") String pgToken,
                           HttpSession session,
@@ -171,6 +197,9 @@ public class PaymentController {
                 return "cashresult";
             }
 
+            // =========================================================
+            // 1) MEMBER 캐시 증가
+            // =========================================================
             MemberDTO upd = new MemberDTO();
             upd.setCondition("MEMBER_CASH_PLUS");
             upd.setMemberId(memberId);
@@ -183,30 +212,64 @@ public class PaymentController {
                 return "cashresult";
             }
 
+            // =========================================================
+            // 2) approved_at 파싱 (LocalDateTime)
+            // =========================================================
+            java.time.LocalDateTime approvedAt = java.time.LocalDateTime.now();
+
+            if (resObj.has("approved_at") && !resObj.get("approved_at").isJsonNull()) {
+                String s = resObj.get("approved_at").getAsString();
+                try {
+                    approvedAt = java.time.OffsetDateTime.parse(s).toLocalDateTime();
+                } catch (Exception ignore) {
+                    try {
+                        approvedAt = java.time.LocalDateTime.parse(s.replace("Z","")); // ✅ [FIX] 풀네임
+                    } catch (Exception ignore2) {
+                        // 파싱 실패하면 now() 유지
+                    }
+                }
+            }
+
+            // =========================================================
+            // 3) CASH_CHARGE: READY -> APPROVED (partner_order_id 기준)
+            // =========================================================
+            CashChargeDTO chargeUpd = new CashChargeDTO();
+            chargeUpd.setCondition("CHARGE_APPROVE_READY_BY_ORDER");
+            chargeUpd.setPartnerOrderId(partnerOrderId);
+            chargeUpd.setApprovedAt(approvedAt);
+
+         // approvedAt 파싱 로직은 그대로 두고
+            boolean txOk = cashChargeService.approveChargeTx(
+                memberId,
+                partnerOrderId,
+                approvedTotal,
+                approvedAt
+            );
+
+            if (!txOk) {
+                model.addAttribute("payResult", "FAIL");
+                model.addAttribute("message", "결제 승인 내역 반영 실패(트랜잭션)");
+                return "cashresult";
+            }
+
+            //  [CHANGED] 트랜잭션 성공 후에만 중복 처리 세션 세팅
+            session.setAttribute("kakaopay_processed_order_id", partnerOrderId);
+            // =========================================================
+            // 4) 화면 출력용 데이터 세팅 + 성공 리턴
+            // =========================================================
             MemberDTO sel = new MemberDTO();
             sel.setCondition("MEMBER_MYPAGE");
             sel.setMemberId(memberId);
             MemberDTO memberData = memberService.selectOne(sel);
             int totalCash = (memberData == null) ? 0 : memberData.getMemberCash();
 
-            session.setAttribute("kakaopay_processed_order_id", partnerOrderId);
-
             model.addAttribute("payResult", "SUCCESS");
             model.addAttribute("payMethod", "카카오페이");
             model.addAttribute("totalAmount", String.format("%,d", approvedTotal));
             model.addAttribute("totalCash", String.format("%,d", totalCash));
+            model.addAttribute("approvedAt", approvedAt.toString()); // 필요하면 포맷 적용
 
-            if (resObj.has("approved_at") && !resObj.get("approved_at").isJsonNull()) {
-                model.addAttribute("approvedAt", resObj.get("approved_at").getAsString());
-            } else {
-                // (선택) approved_at이 없을 때 대비해서 서버시간 찍기
-                model.addAttribute("approvedAt",
-                    java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-                );
-            }
-
-            return "cashresult";
-
+            return "cashresult"; // [FIX] 성공 시 리턴 추가
 
         } catch (DataAccessException dae) {
             dae.printStackTrace();
