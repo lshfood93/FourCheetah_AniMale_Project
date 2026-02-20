@@ -86,21 +86,34 @@
 	    
 	 // [ADD] 승인(READY -> APPROVED) : partner_order_id 기준
 	    private static final String UPDATE_APPROVE_READY_BY_ORDER =
-	        "UPDATE CASH_CHARGE " +
-	        "SET status='APPROVED', approved_at=? " +
-	        "WHERE partner_order_id=? AND status='READY'";
+	    	    "UPDATE CASH_CHARGE " +
+	    	    "SET status='APPROVED', approved_at=? " +
+	    	    "WHERE partner_order_id=? " +
+	    	    "  AND member_id=? " +
+	    	    "  AND provider=? " +
+	    	    "  AND status='READY'";
 
 	    // [ADD] 취소(READY -> CANCEL) : partner_order_id 기준
+	 // [ADD] CANCEL: READY -> CANCEL
 	    private static final String UPDATE_CANCEL_READY_BY_ORDER =
 	        "UPDATE CASH_CHARGE " +
-	        "SET status='CANCEL', approved_at=NULL " +
-	        "WHERE partner_order_id=? AND status='READY'";
+	        "SET status='CANCEL' " +
+	        "WHERE partner_order_id=? " +
+	        "  AND member_id=? " +
+	        "  AND provider=? " +
+	        "  AND status='READY'";
+
 
 	    // [ADD] 실패(READY -> FAIL) : partner_order_id 기준
+	 // [ADD] READY -> FAIL
+	 // [ADD] FAIL: READY -> FAIL
 	    private static final String UPDATE_FAIL_READY_BY_ORDER =
 	        "UPDATE CASH_CHARGE " +
-	        "SET status='FAIL', approved_at=NULL " +
-	        "WHERE partner_order_id=? AND status='READY'";
+	        "SET status='FAIL' " +
+	        "WHERE partner_order_id=? " +
+	        "  AND member_id=? " +
+	        "  AND provider=? " +
+	        "  AND status='READY'";
 	
 	    // delete
 	    private static final String DELETE_BY_ID =
@@ -241,34 +254,49 @@
 	        // [ADD] 승인 처리(READY -> APPROVED) : partner_order_id 기준
 	        if ("CHARGE_APPROVE_READY_BY_ORDER".equals(dto.getCondition())) {
 	            Timestamp approvedAt = toTs(dto.getApprovedAt());
-	            if (approvedAt == null) approvedAt = Timestamp.valueOf(LocalDateTime.now()); // 방어
+	            if (approvedAt == null) approvedAt = Timestamp.valueOf(LocalDateTime.now());
 
+	            
+	            
 	            int result = jdbcTemplate.update(
 	                UPDATE_APPROVE_READY_BY_ORDER,
 	                approvedAt,
-	                dto.getPartnerOrderId()
+	                dto.getPartnerOrderId(),
+	                dto.getMemberId(),
+	                dto.getProvider()
 	            );
+	            
+	            System.out.println("[APPROVE DTO] orderId=" + dto.getPartnerOrderId()
+	            + ", memberId=" + dto.getMemberId()
+	            + ", provider=" + dto.getProvider());
+	            
 	            return result > 0;
 	        }
 
-	        // [ADD] 취소 처리(READY -> CANCEL)
+	        // [ADD] 취소 전환 (READY에서만)
 	        if ("CHARGE_CANCEL_READY_BY_ORDER".equals(dto.getCondition())) {
 	            int result = jdbcTemplate.update(
 	                UPDATE_CANCEL_READY_BY_ORDER,
-	                dto.getPartnerOrderId()
+	                dto.getPartnerOrderId(),
+	                dto.getMemberId(),
+	                dto.getProvider()
 	            );
 	            return result > 0;
 	        }
 
-	        // [ADD] 실패 처리(READY -> FAIL)
+
+	        // [ADD] 실패 전환 (READY에서만)
 	        if ("CHARGE_FAIL_READY_BY_ORDER".equals(dto.getCondition())) {
 	            int result = jdbcTemplate.update(
 	                UPDATE_FAIL_READY_BY_ORDER,
-	                dto.getPartnerOrderId()
+	                dto.getPartnerOrderId(),
+	                dto.getMemberId(),
+	                dto.getProvider()
 	            );
 	            return result > 0;
 	        }
-	
+
+
 	        return false;
 	    }
 	

@@ -27,5 +27,9 @@ public interface CashChargeService {
     
  //  [ADD]
     boolean approveTossTx(int memberId, String orderId, String paymentKey, int amountFromQuery);
+
+	boolean cancelReadyTx(int memberId, String orderId, String provider);
+
+	boolean failReadyTx(int memberId, String orderId, String provider);
     
 }

@@ -149,6 +149,8 @@ public class CashChargeServiceImpl implements CashChargeService {
         CashChargeDTO upd = new CashChargeDTO();
         upd.setCondition("CHARGE_APPROVE_READY_BY_ORDER");
         upd.setPartnerOrderId(partnerOrderId);
+        upd.setMemberId(memberId);                 // 추가
+        upd.setProvider(charge.getProvider());     //  추가(가장 안전)
         upd.setApprovedAt(approvedAt == null ? LocalDateTime.now() : approvedAt);
 
         boolean chargeOk = cashChargeDAO.update(upd);
@@ -238,6 +240,8 @@ public class CashChargeServiceImpl implements CashChargeService {
         CashChargeDTO updCharge = new CashChargeDTO();
         updCharge.setCondition("CHARGE_APPROVE_READY_BY_ORDER");
         updCharge.setPartnerOrderId(orderId);
+        updCharge.setMemberId(memberId);               //  추가
+        updCharge.setProvider(charge.getProvider());   //  "TOSSPAY" 직접 쓰지 말고 DB값 사용 추천
         updCharge.setApprovedAt(approvedAt);
 
         boolean chargeOk = cashChargeDAO.update(updCharge);
@@ -253,6 +257,52 @@ public class CashChargeServiceImpl implements CashChargeService {
         if (!memberOk) throw new IllegalStateException("MEMBER 캐시 증가 실패");
 
         return true;
+    }
+    
+    @Override
+    @Transactional
+    public boolean cancelReadyTx(int memberId, String orderId, String provider) {
+        if (memberId <= 0 || orderId == null || orderId.isBlank()) return false;
+
+        CashChargeDTO sel = new CashChargeDTO();
+        sel.setCondition("CHARGE_SELECT_BY_ORDER_ID");
+        sel.setPartnerOrderId(orderId);
+
+        CashChargeDTO charge = cashChargeDAO.selectOne(sel);
+        if (charge == null) return false;
+
+        if (charge.getMemberId() != memberId) return false;
+        if (!"READY".equalsIgnoreCase(charge.getStatus())) return false;
+        if (provider != null && !provider.equalsIgnoreCase(charge.getProvider())) return false;
+
+        CashChargeDTO upd = new CashChargeDTO();
+        upd.setCondition("CHARGE_CANCEL_READY_BY_ORDER");
+        upd.setPartnerOrderId(orderId);
+
+        return cashChargeDAO.update(upd);
+    }
+
+    @Override
+    @Transactional
+    public boolean failReadyTx(int memberId, String orderId, String provider) {
+        if (memberId <= 0 || orderId == null || orderId.isBlank()) return false;
+
+        CashChargeDTO sel = new CashChargeDTO();
+        sel.setCondition("CHARGE_SELECT_BY_ORDER_ID");
+        sel.setPartnerOrderId(orderId);
+
+        CashChargeDTO charge = cashChargeDAO.selectOne(sel);
+        if (charge == null) return false;
+
+        if (charge.getMemberId() != memberId) return false;
+        if (!"READY".equalsIgnoreCase(charge.getStatus())) return false;
+        if (provider != null && !provider.equalsIgnoreCase(charge.getProvider())) return false;
+
+        CashChargeDTO upd = new CashChargeDTO();
+        upd.setCondition("CHARGE_FAIL_READY_BY_ORDER");
+        upd.setPartnerOrderId(orderId);
+
+        return cashChargeDAO.update(upd);
     }
 
 }
