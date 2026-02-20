@@ -13,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import fourcheetah.animale.web.dto.admin.CashChargeDTO;
@@ -25,23 +24,21 @@ public class AdminCashDashboardController {
     @Autowired
     private CashChargeService cashChargeService;
 
-    // ✅ DAO에 쿼리 추가 안 하고 "승인 건수"만 뽑기 위해 사용
+    // DAO에 쿼리 추가 안 하고 "승인 건수"만 뽑기 위해 사용
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // 승인 건수 (이번달)
+ // [CHANGED #1] approved_at NULL 허용 → created_at로 fallback 해서 집계 안정화
     private static final String DASHBOARD_MONTH_APPROVED_COUNT =
         "SELECT COUNT(*) " +
         "FROM CASH_CHARGE " +
         "WHERE status='APPROVED' " +
-        "  AND YEAR(approved_at)=? " +
-        "  AND MONTH(approved_at)=?";
+        "  AND YEAR(COALESCE(approved_at, created_at))=? " +
+        "  AND MONTH(COALESCE(approved_at, created_at))=?";
 
-    @GetMapping("/api/admin/cash/dashboard")
+    @GetMapping("/api/admin/cash/admindashboard")
     public ResponseEntity<Map<String, Object>> dashboard(
-            HttpSession session,
-            @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Integer month
+            HttpSession session, CashChargeDTO cashChargeDTO
     ) {
 
         // =========================================================
@@ -66,9 +63,15 @@ public class AdminCashDashboardController {
         // 1) year/month 기본값(현재)
         // =========================================================
         LocalDate now = LocalDate.now();
+    
+        Integer year = cashChargeDTO.getYear();
+        Integer month = cashChargeDTO.getMonth();
+
         int y = (year == null) ? now.getYear() : year;
         int m = (month == null) ? now.getMonthValue() : month;
 
+        
+        
         if (m < 1 || m > 12) {
             return ResponseEntity.badRequest().body(Map.of(
                 "ok", false,
@@ -91,18 +94,27 @@ public class AdminCashDashboardController {
         @SuppressWarnings("unchecked")
         List<CashChargeDTO> yearMonthly = (List<CashChargeDTO>) summary.get("yearMonthly");
 
+
         // =========================================================
-        // 3) 승인 건수(이번달) + 일 평균
-        //    - APPROVED + approved_at 기준
+        // 3) [CHANGED #2] 승인 건수(이번달/전월) 둘 다 계산
         // =========================================================
         Integer cnt = jdbcTemplate.queryForObject(DASHBOARD_MONTH_APPROVED_COUNT, Integer.class, y, m);
         int approvedCount = (cnt == null) ? 0 : cnt;
 
+        YearMonth prevYm = YearMonth.of(y, m).minusMonths(1);
+        Integer prevCnt = jdbcTemplate.queryForObject(
+            DASHBOARD_MONTH_APPROVED_COUNT,
+            Integer.class,
+            prevYm.getYear(),
+            prevYm.getMonthValue()
+        );
+        int lastMonthApprovedCount = (prevCnt == null) ? 0 : prevCnt;
+
         int days;
         if (y == now.getYear() && m == now.getMonthValue()) {
-            days = now.getDayOfMonth(); // 현재 달이면 "오늘까지" 평균
+            days = now.getDayOfMonth();
         } else {
-            days = YearMonth.of(y, m).lengthOfMonth(); // 과거 달이면 "해당월 총일수"
+            days = YearMonth.of(y, m).lengthOfMonth();
         }
         int dailyAvg = (days <= 0) ? 0 : (thisMonthTotal / days);
 
@@ -143,17 +155,17 @@ public class AdminCashDashboardController {
         }
 
         // =========================================================
-        // 6) MoM "전월 데이터 없음" 처리를 위한 플래그/방향
+        // 6) [CHANGED #3] 전월 데이터 유무 판정은 "전월 승인건수" 기반이 더 정확
         // =========================================================
-        boolean hasPrev = lastMonthTotal > 0;
+        boolean hasPrev = lastMonthApprovedCount > 0;
         String direction = "NONE";
         int diffAmount = thisMonthTotal - lastMonthTotal;
 
-        if (hasPrev) {
+        if (hasPrev && lastMonthTotal > 0) {
             direction = (diffAmount >= 0) ? "UP" : "DOWN";
         } else {
-            // 전월 0이면 퍼센트 의미없으니 null로 보내는 게 UI처리 쉬움
-            momPercent = 0.0;
+            // 전월이 없거나 전월 총액이 0이면 비교 퍼센트는 null로
+            momPercent = 0.0; // 내부값은 의미 없지만, 응답은 아래에서 null 처리
         }
 
         // =========================================================
@@ -168,12 +180,15 @@ public class AdminCashDashboardController {
         // 기존 키도 유지 (너 서비스에서 쓰던 형태 호환)
         res.put("thisMonthTotal", thisMonthTotal);
         res.put("lastMonthTotal", lastMonthTotal);
-        res.put("momPercent", hasPrev ? momPercent : null);
-
+        res.put("momPercent", (hasPrev && lastMonthTotal > 0) ? momPercent : null);
+        
         res.put("providerList", providerList);
         res.put("yearMonthly", yearMonthly);
 
         // 프론트 바로 쓰기 좋은 가공값들
+        res.put("thisMonthCount", approvedCount);
+        res.put("lastMonthCount", lastMonthApprovedCount);
+        
         res.put("approvedCount", approvedCount);
         res.put("dailyAvg", dailyAvg);
 
