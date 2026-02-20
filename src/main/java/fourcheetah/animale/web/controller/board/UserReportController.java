@@ -7,6 +7,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import fourcheetah.animale.web.aop.SanctionCheck;
 import fourcheetah.animale.web.aop.DeletedBoardCheck;
+import fourcheetah.animale.web.dto.board.BoardDTO;
+import fourcheetah.animale.web.service.board.BoardService;
 import fourcheetah.animale.web.service.board.UserReportService;
 import jakarta.servlet.http.HttpSession;
 
@@ -21,14 +23,16 @@ public class UserReportController {
     @Autowired
     private UserReportService userReportService;
 
+    @Autowired
+    private BoardService boardService;
+
     /**
      * 게시글 신고 (AJAX)
-     * 
+     *
      * POST /report/board
      * 파라미터: boardId, reasonCode
      * 응답: JSON {ok: "메시지"} 또는 {fail: "메시지"}
      */
-    // ✅ CHANGED: allowTypes 제거 -> WARNING 회원도 신고 불가
     @SanctionCheck
     @DeletedBoardCheck
     @PostMapping("/report/board")
@@ -79,10 +83,22 @@ public class UserReportController {
                 return ResponseEntity.badRequest().body(response);
             }
 
+            // 4. 공지글(관리자 작성) 신고 차단
+            BoardDTO boardData = new BoardDTO();
+            boardData.setBoardId(boardId);
+            boardData.setCondition("BOARD_DETAIL");
+            BoardDTO targetBoard = boardService.selectOne(boardData);
+
+            if (targetBoard != null && "ADMIN".equals(targetBoard.getWriterRole())) {
+                System.out.println("[사용자 신고] 공지글 신고 차단 boardId=" + boardId);
+                response.put("fail", "공지글은 신고할 수 없습니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
             System.out.println("[사용자 신고] 파라미터 검증 완료");
             System.out.println("[사용자 신고] Service.reportBoard() 호출");
 
-            // 4. Service 호출
+            // 5. Service 호출
             boolean result = userReportService.reportBoard(boardId, memberId, trimmedReasonCode);
 
             if (result) {

@@ -1,17 +1,16 @@
-// ✅ FINAL: /js/boarddetail.js
 // =========================================================
 // Board Detail Page Script (ES5 + fetch) - 동기/비동기 정책 최종본
 // ---------------------------------------------------------
 // [비동기(fetch + JSON)]
 // 1) 좋아요 토글: /BoardLikeToggle
-// 2) 좋아요 누른 사람: /LikeMemberList  -> ✅ 모달
+// 2) 좋아요 누른 사람: /LikeMemberList  -> 모달
 // 3) 댓글 목록 + 정렬: /ReplyListOrder  -> 화면 부분 렌더
 // 4) 신고 접수: /report/board (fetch 유지)
 //
 // [동기(form submit)]
 // 5) 댓글 작성: POST /replyWrite  -> ReplyController redirect/message 그대로 사용
-// 6) 댓글 수정: POST /replyEdit   -> ✅ 인라인 편집 후 hidden form submit
-// 7) 댓글 삭제: POST /replyDelete -> ✅ hidden form submit
+// 6) 댓글 수정: POST /replyEdit   -> 인라인 편집 후 hidden form submit
+// 7) 댓글 삭제: POST /replyDelete -> hidden form submit
 // =========================================================
 (function () {
   'use strict';
@@ -28,11 +27,7 @@
     likeToggle: ctx + '/BoardLikeToggle',     // POST {boardId} -> JSON {result,isLiked,likeCnt,msg}
     likeMembers: ctx + '/LikeMemberList',     // GET  ?boardId= -> JSON {ok,users:[...],message}
     replyOrder: ctx + '/ReplyListOrder',      // GET  ?boardId=&condition= -> JSON Array
-<<<<<<< HEAD
-    boardReport: ctx + '/report/board'       // POST {boardId, reasonCode, reasonDetail}
-=======
     boardReport: ctx + '/report/board'        // POST {boardId, reasonCode} -> JSON {ok} or {fail}
->>>>>>> a0e3aa3 (chore: sync develop and restore local work)
   };
 
   // =========================================================
@@ -229,7 +224,7 @@
     if (raw === '1') setLikeUI(true);
 
     $btnLike.addEventListener('click', function () {
-      // ✅ NEW: 삭제된 게시글 차단
+      // NEW: 삭제된 게시글 차단
       if (isDeletedBoard()) {
         alertDeletedBoard();
         return;
@@ -265,7 +260,7 @@
     });
   }
 
-  // ✅ CHANGED: 좋아요 누른 사람 -> alert 대신 모달
+  // CHANGED: 좋아요 누른 사람 -> alert 대신 모달
   function openLikeUsersModal(users) {
     // 모달 DOM이 없으면 폴백(alert)
     if (!$likeUsersList || !$likeUsersEmpty) {
@@ -318,7 +313,7 @@
     if (!btn) return;
 
     btn.addEventListener('click', function () {
-      // ✅ NEW: 삭제된 게시글 차단
+      // NEW: 삭제된 게시글 차단
       if (isDeletedBoard()) {
         alertDeletedBoard();
         return;
@@ -353,16 +348,14 @@
   }
 
   // ✅ CHANGED: 작성일/수정일 표시 정책
-  // - 수정됨이면 '수정일'만 표시
-  // - 아니면 '작성일'만 표시
+  // - 수정됨이면 "수정일"만 표시
+  // - 아니면 "작성일"만 표시
   function renderReplyItem(r) {
     var nickname = (r.writerNickname && String(r.writerNickname).trim() !== '')
       ? r.writerNickname
       : r.memberId;
 
-    // ✅ ADMIN 보정(서버에서 role/decoClass가 안 내려오는 경우 대비)
-    // - 현재 ReplyDTO에는 role 필드가 없어서, 닉네임 기반으로만 휴리스틱 적용
-    // - 프로젝트에서 관리자 닉네임이 '관리자'로 고정이라면 정상 동작
+    // ✅ ADDED: 관리자 여부 판별 (닉네임 기반 휴리스틱)
     var isAdminWriter = false;
     try {
       var nn = String(nickname || '').trim();
@@ -376,7 +369,7 @@
     var profileColor = sanitizeColor(r.writerProfileColor || r.writer_profile_color || '');
     var decoClass = (r.writerDecoClass || r.writer_deco_class || '').trim();
 
-    // ✅ ADMIN이면 닉네임 레인보우 기본 적용(닉네임 컬러가 비어있을 때)
+    // ADDED: 관리자이고 닉네임 색이 없으면 레인보우 클래스 기본 적용
     if (isAdminWriter && !nickColor) {
       decoClass = (decoClass ? (decoClass + ' ') : '') + 'is-rainbow';
     }
@@ -388,7 +381,7 @@
         'box-shadow:0 0 0 3px rgba(255,255,255,0.06), 0 0 18px ' + escapeHtml(profileColor) + ';';
     }
 
-    // ✅ ADMIN + 프로필색 없음 => 레인보우 링 래퍼 사용
+    // ADDED: 관리자 + 프로필 색 없으면 레인보우 링 래퍼 사용
     var useRainbowRing = (isAdminWriter && !profileColor);
 
     var avatarHtml = '';
@@ -400,8 +393,6 @@
     } else {
       var initial = String(nickname).charAt(0);
       var bg = profileColor ? ('background:' + escapeHtml(profileColor) + ';') : 'background:rgba(255,255,255,0.10);';
-
-      // ✅ CHANGED: 크기는 CSS(--avatar-size)가 담당 -> 인라인 32px 고정 제거
       avatarHtml =
         (useRainbowRing ? "<div class='reply-avatar-ring is-rainbow'>" : "") +
         "<div class='reply-avatar reply-avatar--fallback' style='" +
@@ -412,13 +403,13 @@
         (useRainbowRing ? "</div>" : "");
     }
 
-    // ✅ 레인보우 적용 시에는 color 인라인을 넣지 않음(그라데이션이 깨짐)
-    var nickStyleAttr = (nickColor && !/\bis-rainbow\b/.test(decoClass))
+    // ADDED: 레인보우 클래스 있으면 인라인 color 제거 (그라데이션 깨짐 방지)
+    var nickStyleAttr = (nickColor && !/is-rainbow/.test(decoClass))
       ? (" style='color:" + escapeHtml(nickColor) + ";'")
       : '';
 
-    // ✅ NEW: 관리자 삭제 댓글 여부 (내용 치환 방식)
-    // ✅ CHANGED: startsWith로 비교 (관리자 삭제 후 내용 추가 수정된 경우도 커버)
+    // NEW: 관리자 삭제 댓글 여부 (내용 치환 방식)
+    // CHANGED: startsWith로 비교 (관리자 삭제 후 내용 추가 수정된 경우도 커버)
     var isAdminDeleted = (r.replyContent && r.replyContent.indexOf('관리자에 의해 삭제된 댓글입니다.') === 0);
 
     var actions = '';
@@ -428,7 +419,7 @@
       if (canEditReply(r)) actions += "<button type='button' class='btn-reply-edit'>수정</button>";
       if (canDeleteReply(r)) actions += "<button type='button' class='btn-reply-del'>삭제</button>";
       actions += "</div>";
-      // ✅ CHANGED: 인라인 편집 버튼(저장/취소)
+      // CHANGED: 인라인 편집 버튼(저장/취소)
       actions += "<div class='reply-edit-actions' style='display:none;'>";
       actions += "<button type='button' class='btn-reply-save'>저장</button>";
       actions += "<button type='button' class='btn-reply-cancel'>취소</button>";
@@ -441,7 +432,7 @@
       edited = !!(r.replyUpdatedAt && r.replyCreatedAt && String(r.replyUpdatedAt) !== String(r.replyCreatedAt));
     }
 
-    // ✅ CHANGED: 시간 라인 1개만
+    // CHANGED: 시간 라인 1개만
     var timeHtml = '';
     if (edited && r.replyUpdatedAt) {
       timeHtml = "<span class='t-time'>수정일 " + escapeHtml(r.replyUpdatedAt || '') + "</span>";
@@ -449,18 +440,15 @@
       timeHtml = "<span class='t-time'>작성일 " + escapeHtml(r.replyCreatedAt || '') + "</span>";
     }
 
-    // ✅ CHANGED: 댓글 프로필 레이아웃 확장(.reply-left/.reply-avatar-slot/.reply-meta-col)
     return (
       "<div class='reply-item'" +
         " data-reply-id='" + escapeHtml(r.replyId) + "'" +
         (isAdminDeleted ? " data-admin-deleted='1'" : "") +
         ">" +
         "<div class='reply-top'>" +
-          "<div class='reply-left'>" +
-            "<div class='reply-avatar-slot'>" +
-              avatarHtml +
-            "</div>" +
-            "<div class='reply-meta-col'>" +
+          "<div style='display:flex; gap:10px; align-items:flex-start;'>" +
+            avatarHtml +
+            "<div>" +
               "<div class='reply-writer " + escapeHtml(decoClass) + "'" + nickStyleAttr + ">" +
                 escapeHtml(nickname) +
               "</div>" +
@@ -508,7 +496,7 @@
   }
 
   // =========================================================
-  // ✅ CHANGED: 댓글 수정/삭제는 동기 submit
+  // CHANGED: 댓글 수정/삭제는 동기 submit
   // =========================================================
   function submitReplyEdit(replyId, content) {
     if (!$replyEditForm || !$editBoardId || !$editReplyId || !$editReplyContent) {
@@ -518,7 +506,7 @@
     $editBoardId.value = String(boardId);
     $editReplyId.value = String(replyId);
     $editReplyContent.value = String(content);
-    $replyEditForm.submit(); // ✅ 동기 전환(redirect/message 화면 정상 동작)
+    $replyEditForm.submit(); // 동기 전환(redirect/message 화면 정상 동작)
   }
 
   function submitReplyDelete(replyId) {
@@ -528,7 +516,7 @@
     }
     $delBoardId.value = String(boardId);
     $delReplyId.value = String(replyId);
-    $replyDeleteForm.submit(); // ✅ 동기 전환
+    $replyDeleteForm.submit(); // 동기 전환
   }
 
   // =========================================================
@@ -540,50 +528,50 @@
       try { window.jQuery($replySort).niceSelect(); } catch (e) {}
     }
 
-    // 정렬 변경 -> 목록 다시 로드
-    // ✅ nice-select가 적용되면 DOM addEventListener('change')가 안 타는 케이스가 있음
-    // ✅ 그래서 DOM change + jQuery change + nice-select option click까지 모두 커버한다.
-    if ($replySort) {
+	// 정렬 변경 -> 목록 다시 로드
+	// ✅ nice-select가 적용되면 DOM addEventListener('change')가 안 타는 케이스가 있음
+	// ✅ 그래서 DOM change + jQuery change + nice-select option click까지 모두 커버한다.
+	if ($replySort) {
 
-      // ✅ 중복 호출 방지(같은 값이 짧은 시간에 여러 번 트리거되는 경우 방어)
-      var _lastSortCond = null;
-      var _lastSortAt = 0;
+	  // ✅ 중복 호출 방지(같은 값이 짧은 시간에 여러 번 트리거되는 경우 방어)
+	  var _lastSortCond = null;
+	  var _lastSortAt = 0;
 
-      function requestReloadBySort() {
-        var cond = getSelectedCondition();
-        var now = Date.now();
+	  function requestReloadBySort() {
+	    var cond = getSelectedCondition();
+	    var now = Date.now();
 
-        // 같은 조건이 200ms 안에 다시 들어오면 무시(중복 방지)
-        if (_lastSortCond === cond && (now - _lastSortAt) < 200) return;
+	    // 같은 조건이 200ms 안에 다시 들어오면 무시(중복 방지)
+	    if (_lastSortCond === cond && (now - _lastSortAt) < 200) return;
 
-        _lastSortCond = cond;
-        _lastSortAt = now;
+	    _lastSortCond = cond;
+	    _lastSortAt = now;
 
-        loadReplies(cond).catch(function (e) {
-          console.error(e);
-        });
-      }
+	    loadReplies(cond).catch(function (e) {
+	      console.error(e);
+	    });
+	  }
 
-      // ✅ 1) 기본 DOM change (nice-select 미사용/정상 케이스)
-      $replySort.addEventListener('change', requestReloadBySort);
+	  // ✅ 1) 기본 DOM change (nice-select 미사용/정상 케이스)
+	  $replySort.addEventListener('change', requestReloadBySort);
 
-      // ✅ 2) jQuery change (nice-select가 trigger('change')로만 쏘는 케이스 대응)
-      if (window.jQuery) {
-        try {
-          window.jQuery($replySort).on('change.replySort', requestReloadBySort);
-        } catch (e) {}
-      }
+	  // ✅ 2) jQuery change (nice-select가 trigger('change')로만 쏘는 케이스 대응)
+	  if (window.jQuery) {
+	    try {
+	      window.jQuery($replySort).on('change.replySort', requestReloadBySort);
+	    } catch (e) {}
+	  }
 
-      // ✅ 3) nice-select 옵션 클릭 (일부 버전에서 change가 누락되는 케이스 대응)
-      if (window.jQuery) {
-        try {
-          window.jQuery(document).on('click.replySort', '.reply-card .nice-select .option', function () {
-            // 값 반영 후 호출되게 0ms 지연
-            setTimeout(requestReloadBySort, 0);
-          });
-        } catch (e) {}
-      }
-    }
+	  // ✅ 3) nice-select 옵션 클릭 (일부 버전에서 change가 누락되는 케이스 대응)
+	  if (window.jQuery) {
+	    try {
+	      window.jQuery(document).on('click.replySort', '.reply-card .nice-select .option', function () {
+	        // 값 반영 후 호출되게 0ms 지연
+	        setTimeout(requestReloadBySort, 0);
+	      });
+	    } catch (e) {}
+	  }
+	}
 
     // ✅ CHANGED: 댓글 작성은 동기 submit
     // - 단, 프론트에서 1차 검증만 하고(비었으면 막기), 정상 값이면 submit 통과
@@ -765,33 +753,6 @@
       if (window.jQuery) window.jQuery('#reportModal').modal('show');
     });
 
-<<<<<<< HEAD
-	$btnReportSubmit.addEventListener('click', function () {
-	  var reason = ($reportReason && $reportReason.value) ? String($reportReason.value) : 'ETC';
-	  var content = ($reportContent && $reportContent.value) ? String($reportContent.value).trim() : '';
-
-	  var fd = new FormData();
-
-	  // DTO 기준 파라미터명으로 통일
-	  // - 지금 서버는 boardId, reasonCode만 받지만
-	  //   reasonDetail도 같이 보내두면 추후 DTO 바인딩 전환 시 바로 매핑됨
-	  fd.append('boardId', boardId);      // 그대로
-	  fd.append('reasonCode', reason);    // CHANGED: reportReason -> reasonCode
-	  fd.append('reasonDetail', content); // CHANGED: reportContent -> reasonDetail(추후용)
-
-	  httpPostForm(API.boardReport, fd)
-	    .then(function () {
-	      alert('신고가 접수되었습니다.');
-	      if ($reportContent) $reportContent.value = '';
-	      if (window.jQuery) window.jQuery('#reportModal').modal('hide');
-	      if ($btnReport) $btnReport.style.display = 'none';
-	    })
-	    .catch(function (e) {
-	      console.error(e);
-	      alert('신고 접수에 실패했습니다.');
-	    });
-	});
-=======
     $btnReportSubmit.addEventListener('click', function () {
       // ✅ CHANGED: 파라미터 맞춤 - reasonCode만 전송 (reportContent 제거)
       var reasonCode = ($reportReason && $reportReason.value) ? String($reportReason.value) : 'ETC';
@@ -826,7 +787,6 @@
           if (window.jQuery) window.jQuery('#reportResultModal').modal('show');
         });
     });
->>>>>>> a0e3aa3 (chore: sync develop and restore local work)
   }
 
   // =========================================================

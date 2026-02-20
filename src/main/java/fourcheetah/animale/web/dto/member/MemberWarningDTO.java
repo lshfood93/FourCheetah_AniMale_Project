@@ -13,6 +13,8 @@ public class MemberWarningDTO {
     private LocalDateTime startAt;
     private LocalDateTime endAt;
     private LocalDateTime createdAt;
+    // ✅ ADDED: 제재 안내 표시 여부 (0: 미표시, 1: 표시 완료)
+    private int notified;
     
     // Getter/Setter
     public int getWarningId() { return warningId; }
@@ -41,4 +43,7 @@ public class MemberWarningDTO {
     
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public int getNotified() { return notified; }
+    public void setNotified(int notified) { this.notified = notified; }
 }
