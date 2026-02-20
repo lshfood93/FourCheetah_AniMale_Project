@@ -1,23 +1,24 @@
+// ✅ FINAL: /js/boarddetail.js
 // =========================================================
 // Board Detail Page Script (ES5 + fetch) - 동기/비동기 정책 최종본
 // ---------------------------------------------------------
 // [비동기(fetch + JSON)]
 // 1) 좋아요 토글: /BoardLikeToggle
-// 2) 좋아요 누른 사람: /LikeMemberList  -> 모달
+// 2) 좋아요 누른 사람: /LikeMemberList  -> ✅ 모달
 // 3) 댓글 목록 + 정렬: /ReplyListOrder  -> 화면 부분 렌더
 // 4) 신고 접수: /report/board (fetch 유지)
 //
 // [동기(form submit)]
 // 5) 댓글 작성: POST /replyWrite  -> ReplyController redirect/message 그대로 사용
-// 6) 댓글 수정: POST /replyEdit   -> 인라인 편집 후 hidden form submit
-// 7) 댓글 삭제: POST /replyDelete -> hidden form submit
+// 6) 댓글 수정: POST /replyEdit   -> ✅ 인라인 편집 후 hidden form submit
+// 7) 댓글 삭제: POST /replyDelete -> ✅ hidden form submit
 // =========================================================
 (function () {
   'use strict';
 
   // =========================================================
   // JSP 전역 변수(계약)
-  // const ctx, boardId, boardStatus, isLogin, sessionMemberId, sessionMemberRole, isReported, isBanned
+  // const ctx, boardId, isLogin, sessionMemberId, sessionMemberRole, isReported, isBanned
   // =========================================================
 
   // =========================================================
@@ -27,7 +28,7 @@
     likeToggle: ctx + '/BoardLikeToggle',     // POST {boardId} -> JSON {result,isLiked,likeCnt,msg}
     likeMembers: ctx + '/LikeMemberList',     // GET  ?boardId= -> JSON {ok,users:[...],message}
     replyOrder: ctx + '/ReplyListOrder',      // GET  ?boardId=&condition= -> JSON Array
-    boardReport: ctx + '/report/board'        // POST {boardId, reasonCode} -> JSON {ok} or {fail}
+    boardReport: ctx + '/report/board'       // POST {boardId, reasonCode, reasonDetail}
   };
 
   // =========================================================
@@ -70,31 +71,10 @@
   var $banActionText = document.getElementById('banActionText');
 
   // =========================================================
-  // ✅ NEW: 삭제된 게시글 여부 체크
-  // =========================================================
-  function isDeletedBoard() {
-    return (typeof boardStatus !== 'undefined' && boardStatus !== '정상');
-  }
-
-  // =========================================================
-  // ✅ NEW: 삭제된 게시글 안내 모달
-  // =========================================================
-  function alertDeletedBoard() {
-    if (window.jQuery) {
-      window.jQuery('#deletedBoardModal').modal('show');
-    } else {
-      alert('이미 삭제된 게시글입니다.');
-    }
-  }
-
-  // =========================================================
   // ✅ 제재회원 공통 안내
   // =========================================================
   function alertBanned(actionText) {
-    var $msg = document.getElementById('bannedModalMsg');
-    if ($msg) $msg.textContent = '제재 중인 계정은 ' + (actionText || '해당 기능') + '이(가) 제한됩니다.';
-    if (window.jQuery) window.jQuery('#bannedModal').modal('show');
-    else alert('제재 중인 계정은 ' + (actionText || '해당 기능') + '이(가) 제한됩니다.');
+    alert('제재회원은 ' + (actionText || '해당 기능') + '이(가) 제한됩니다.');
   }
 
   // =========================================================
@@ -226,25 +206,11 @@
     var raw = $btnLike.getAttribute('data-liked');
     if (raw === '1') setLikeUI(true);
 
-<<<<<<< HEAD
-    $btnLike.addEventListener('click', function () {
-      // NEW: 삭제된 게시글 차단
-      if (isDeletedBoard()) {
-        alertDeletedBoard();
-        return;
-      }
-
-      if (!isLogin) {
-        alert('로그인 후 이용 가능합니다.');
-        return;
-      }
-=======
 	$btnLike.addEventListener('click', function () {
 	  if (!isLogin) {
 	    alert('로그인 후 이용 가능합니다.');
 	    return;
 	  }
->>>>>>> develop
 
 	  // ✅ CHANGED: 제재회원은 좋아요 차단(요청 자체를 안 보냄)
 	  if (typeof isBanned !== 'undefined' && isBanned) {
@@ -280,7 +246,7 @@
 	});
   }
 
-  // CHANGED: 좋아요 누른 사람 -> alert 대신 모달
+  // ✅ CHANGED: 좋아요 누른 사람 -> alert 대신 모달
   function openLikeUsersModal(users) {
     // 모달 DOM이 없으면 폴백(alert)
     if (!$likeUsersList || !$likeUsersEmpty) {
@@ -333,12 +299,6 @@
     if (!btn) return;
 
     btn.addEventListener('click', function () {
-      // NEW: 삭제된 게시글 차단
-      if (isDeletedBoard()) {
-        alertDeletedBoard();
-        return;
-      }
-
       var url = API.likeMembers + '?boardId=' + encodeURIComponent(boardId);
 
       httpGetJson(url)
@@ -368,14 +328,16 @@
   }
 
   // ✅ CHANGED: 작성일/수정일 표시 정책
-  // - 수정됨이면 "수정일"만 표시
-  // - 아니면 "작성일"만 표시
+  // - 수정됨이면 '수정일'만 표시
+  // - 아니면 '작성일'만 표시
   function renderReplyItem(r) {
     var nickname = (r.writerNickname && String(r.writerNickname).trim() !== '')
       ? r.writerNickname
       : r.memberId;
 
-    // ✅ ADDED: 관리자 여부 판별 (닉네임 기반 휴리스틱)
+    // ✅ ADMIN 보정(서버에서 role/decoClass가 안 내려오는 경우 대비)
+    // - 현재 ReplyDTO에는 role 필드가 없어서, 닉네임 기반으로만 휴리스틱 적용
+    // - 프로젝트에서 관리자 닉네임이 '관리자'로 고정이라면 정상 동작
     var isAdminWriter = false;
     try {
       var nn = String(nickname || '').trim();
@@ -389,7 +351,7 @@
     var profileColor = sanitizeColor(r.writerProfileColor || r.writer_profile_color || '');
     var decoClass = (r.writerDecoClass || r.writer_deco_class || '').trim();
 
-    // ADDED: 관리자이고 닉네임 색이 없으면 레인보우 클래스 기본 적용
+    // ✅ ADMIN이면 닉네임 레인보우 기본 적용(닉네임 컬러가 비어있을 때)
     if (isAdminWriter && !nickColor) {
       decoClass = (decoClass ? (decoClass + ' ') : '') + 'is-rainbow';
     }
@@ -401,7 +363,7 @@
         'box-shadow:0 0 0 3px rgba(255,255,255,0.06), 0 0 18px ' + escapeHtml(profileColor) + ';';
     }
 
-    // ADDED: 관리자 + 프로필 색 없으면 레인보우 링 래퍼 사용
+    // ✅ ADMIN + 프로필색 없음 => 레인보우 링 래퍼 사용
     var useRainbowRing = (isAdminWriter && !profileColor);
 
     var avatarHtml = '';
@@ -413,6 +375,8 @@
     } else {
       var initial = String(nickname).charAt(0);
       var bg = profileColor ? ('background:' + escapeHtml(profileColor) + ';') : 'background:rgba(255,255,255,0.10);';
+
+      // ✅ CHANGED: 크기는 CSS(--avatar-size)가 담당 -> 인라인 32px 고정 제거
       avatarHtml =
         (useRainbowRing ? "<div class='reply-avatar-ring is-rainbow'>" : "") +
         "<div class='reply-avatar reply-avatar--fallback' style='" +
@@ -423,23 +387,19 @@
         (useRainbowRing ? "</div>" : "");
     }
 
-    // ADDED: 레인보우 클래스 있으면 인라인 color 제거 (그라데이션 깨짐 방지)
-    var nickStyleAttr = (nickColor && !/is-rainbow/.test(decoClass))
+    // ✅ 레인보우 적용 시에는 color 인라인을 넣지 않음(그라데이션이 깨짐)
+    var nickStyleAttr = (nickColor && !/\bis-rainbow\b/.test(decoClass))
       ? (" style='color:" + escapeHtml(nickColor) + ";'")
       : '';
 
-    // NEW: 관리자 삭제 댓글 여부 (내용 치환 방식)
-    // CHANGED: startsWith로 비교 (관리자 삭제 후 내용 추가 수정된 경우도 커버)
-    var isAdminDeleted = (r.replyContent && r.replyContent.indexOf('관리자에 의해 삭제된 댓글입니다.') === 0);
-
     var actions = '';
-    if (!isAdminDeleted && !(typeof isBanned !== 'undefined' && isBanned) && (canEditReply(r) || canDeleteReply(r))) {
+    if (!(typeof isBanned !== 'undefined' && isBanned) && (canEditReply(r) || canDeleteReply(r))) {
       actions += "<div class='reply-actions-wrap'>";
       actions += "<div class='reply-actions'>";
       if (canEditReply(r)) actions += "<button type='button' class='btn-reply-edit'>수정</button>";
       if (canDeleteReply(r)) actions += "<button type='button' class='btn-reply-del'>삭제</button>";
       actions += "</div>";
-      // CHANGED: 인라인 편집 버튼(저장/취소)
+      // ✅ CHANGED: 인라인 편집 버튼(저장/취소)
       actions += "<div class='reply-edit-actions' style='display:none;'>";
       actions += "<button type='button' class='btn-reply-save'>저장</button>";
       actions += "<button type='button' class='btn-reply-cancel'>취소</button>";
@@ -452,7 +412,7 @@
       edited = !!(r.replyUpdatedAt && r.replyCreatedAt && String(r.replyUpdatedAt) !== String(r.replyCreatedAt));
     }
 
-    // CHANGED: 시간 라인 1개만
+    // ✅ CHANGED: 시간 라인 1개만
     var timeHtml = '';
     if (edited && r.replyUpdatedAt) {
       timeHtml = "<span class='t-time'>수정일 " + escapeHtml(r.replyUpdatedAt || '') + "</span>";
@@ -460,15 +420,15 @@
       timeHtml = "<span class='t-time'>작성일 " + escapeHtml(r.replyCreatedAt || '') + "</span>";
     }
 
+    // ✅ CHANGED: 댓글 프로필 레이아웃 확장(.reply-left/.reply-avatar-slot/.reply-meta-col)
     return (
-      "<div class='reply-item'" +
-        " data-reply-id='" + escapeHtml(r.replyId) + "'" +
-        (isAdminDeleted ? " data-admin-deleted='1'" : "") +
-        ">" +
+      "<div class='reply-item' data-reply-id='" + escapeHtml(r.replyId) + "'>" +
         "<div class='reply-top'>" +
-          "<div style='display:flex; gap:10px; align-items:flex-start;'>" +
-            avatarHtml +
-            "<div>" +
+          "<div class='reply-left'>" +
+            "<div class='reply-avatar-slot'>" +
+              avatarHtml +
+            "</div>" +
+            "<div class='reply-meta-col'>" +
               "<div class='reply-writer " + escapeHtml(decoClass) + "'" + nickStyleAttr + ">" +
                 escapeHtml(nickname) +
               "</div>" +
@@ -516,7 +476,7 @@
   }
 
   // =========================================================
-  // CHANGED: 댓글 수정/삭제는 동기 submit
+  // ✅ CHANGED: 댓글 수정/삭제는 동기 submit
   // =========================================================
   function submitReplyEdit(replyId, content) {
     if (!$replyEditForm || !$editBoardId || !$editReplyId || !$editReplyContent) {
@@ -526,7 +486,7 @@
     $editBoardId.value = String(boardId);
     $editReplyId.value = String(replyId);
     $editReplyContent.value = String(content);
-    $replyEditForm.submit(); // 동기 전환(redirect/message 화면 정상 동작)
+    $replyEditForm.submit(); // ✅ 동기 전환(redirect/message 화면 정상 동작)
   }
 
   function submitReplyDelete(replyId) {
@@ -536,7 +496,7 @@
     }
     $delBoardId.value = String(boardId);
     $delReplyId.value = String(replyId);
-    $replyDeleteForm.submit(); // 동기 전환
+    $replyDeleteForm.submit(); // ✅ 동기 전환
   }
 
   // =========================================================
@@ -548,62 +508,55 @@
       try { window.jQuery($replySort).niceSelect(); } catch (e) {}
     }
 
-	// 정렬 변경 -> 목록 다시 로드
-	// ✅ nice-select가 적용되면 DOM addEventListener('change')가 안 타는 케이스가 있음
-	// ✅ 그래서 DOM change + jQuery change + nice-select option click까지 모두 커버한다.
-	if ($replySort) {
+    // 정렬 변경 -> 목록 다시 로드
+    // ✅ nice-select가 적용되면 DOM addEventListener('change')가 안 타는 케이스가 있음
+    // ✅ 그래서 DOM change + jQuery change + nice-select option click까지 모두 커버한다.
+    if ($replySort) {
 
-	  // ✅ 중복 호출 방지(같은 값이 짧은 시간에 여러 번 트리거되는 경우 방어)
-	  var _lastSortCond = null;
-	  var _lastSortAt = 0;
+      // ✅ 중복 호출 방지(같은 값이 짧은 시간에 여러 번 트리거되는 경우 방어)
+      var _lastSortCond = null;
+      var _lastSortAt = 0;
 
-	  function requestReloadBySort() {
-	    var cond = getSelectedCondition();
-	    var now = Date.now();
+      function requestReloadBySort() {
+        var cond = getSelectedCondition();
+        var now = Date.now();
 
-	    // 같은 조건이 200ms 안에 다시 들어오면 무시(중복 방지)
-	    if (_lastSortCond === cond && (now - _lastSortAt) < 200) return;
+        // 같은 조건이 200ms 안에 다시 들어오면 무시(중복 방지)
+        if (_lastSortCond === cond && (now - _lastSortAt) < 200) return;
 
-	    _lastSortCond = cond;
-	    _lastSortAt = now;
+        _lastSortCond = cond;
+        _lastSortAt = now;
 
-	    loadReplies(cond).catch(function (e) {
-	      console.error(e);
-	    });
-	  }
+        loadReplies(cond).catch(function (e) {
+          console.error(e);
+        });
+      }
 
-	  // ✅ 1) 기본 DOM change (nice-select 미사용/정상 케이스)
-	  $replySort.addEventListener('change', requestReloadBySort);
+      // ✅ 1) 기본 DOM change (nice-select 미사용/정상 케이스)
+      $replySort.addEventListener('change', requestReloadBySort);
 
-	  // ✅ 2) jQuery change (nice-select가 trigger('change')로만 쏘는 케이스 대응)
-	  if (window.jQuery) {
-	    try {
-	      window.jQuery($replySort).on('change.replySort', requestReloadBySort);
-	    } catch (e) {}
-	  }
+      // ✅ 2) jQuery change (nice-select가 trigger('change')로만 쏘는 케이스 대응)
+      if (window.jQuery) {
+        try {
+          window.jQuery($replySort).on('change.replySort', requestReloadBySort);
+        } catch (e) {}
+      }
 
-	  // ✅ 3) nice-select 옵션 클릭 (일부 버전에서 change가 누락되는 케이스 대응)
-	  if (window.jQuery) {
-	    try {
-	      window.jQuery(document).on('click.replySort', '.reply-card .nice-select .option', function () {
-	        // 값 반영 후 호출되게 0ms 지연
-	        setTimeout(requestReloadBySort, 0);
-	      });
-	    } catch (e) {}
-	  }
-	}
+      // ✅ 3) nice-select 옵션 클릭 (일부 버전에서 change가 누락되는 케이스 대응)
+      if (window.jQuery) {
+        try {
+          window.jQuery(document).on('click.replySort', '.reply-card .nice-select .option', function () {
+            // 값 반영 후 호출되게 0ms 지연
+            setTimeout(requestReloadBySort, 0);
+          });
+        } catch (e) {}
+      }
+    }
 
     // ✅ CHANGED: 댓글 작성은 동기 submit
     // - 단, 프론트에서 1차 검증만 하고(비었으면 막기), 정상 값이면 submit 통과
     if ($replyForm) {
       $replyForm.addEventListener('submit', function (e) {
-        // ✅ NEW: 삭제된 게시글 차단
-        if (isDeletedBoard()) {
-          e.preventDefault();
-          alertDeletedBoard();
-          return;
-        }
-
         // 로그인/제재는 JSP UI로 1차 처리되어있지만, 방어적으로 체크
         if (!isLogin) {
           e.preventDefault();
@@ -643,31 +596,14 @@
 
         var replyId = item.getAttribute('data-reply-id');
 
-        var isReplyBtn =
-          target.classList.contains('btn-reply-del') ||
-          target.classList.contains('btn-reply-edit') ||
-          target.classList.contains('btn-reply-save') ||
-          target.classList.contains('btn-reply-cancel');
-
-        // ✅ NEW: 삭제된 게시글 차단
-        if (isDeletedBoard()) {
-          if (isReplyBtn) {
-            alertDeletedBoard();
-          }
-          return;
-        }
-
-        // ✅ NEW: 관리자 삭제 댓글 차단
-        if (item.getAttribute('data-admin-deleted') === '1') {
-          if (target.classList.contains('btn-reply-del') || target.classList.contains('btn-reply-edit')) {
-            alertDeletedBoard();
-          }
-          return;
-        }
-
         // 제재회원 차단
         if (typeof isBanned !== 'undefined' && isBanned) {
-          if (isReplyBtn) {
+          if (
+            target.classList.contains('btn-reply-del') ||
+            target.classList.contains('btn-reply-edit') ||
+            target.classList.contains('btn-reply-save') ||
+            target.classList.contains('btn-reply-cancel')
+          ) {
             alertBanned('댓글 수정/삭제');
           }
           return;
@@ -768,12 +704,6 @@
 	  );
 	}
     $btnReport.addEventListener('click', function () {
-      // ✅ NEW: 삭제된 게시글 차단
-      if (isDeletedBoard()) {
-        alertDeletedBoard();
-        return;
-      }
-
       if (!isLogin) {
         alert('로그인 후 이용 가능합니다.');
         return;
@@ -789,39 +719,6 @@
     });
 
     $btnReportSubmit.addEventListener('click', function () {
-<<<<<<< HEAD
-      // ✅ CHANGED: 파라미터 맞춤 - reasonCode만 전송 (reportContent 제거)
-      var reasonCode = ($reportReason && $reportReason.value) ? String($reportReason.value) : 'ETC';
-
-      var fd = new FormData();
-      fd.append('boardId', boardId);
-      fd.append('reasonCode', reasonCode);
-
-      // ✅ CHANGED: 403 포함 모든 응답을 JSON으로 파싱 (제재 차단 메시지 표시)
-      fetch(API.boardReport, { method: 'POST', body: fd, credentials: 'same-origin' })
-        .then(function (res) { return res.json(); })
-        .then(function (json) {
-          if (window.jQuery) window.jQuery('#reportModal').modal('hide');
-          if ($reportContent) $reportContent.value = '';
-
-          var msg = (json && (json.ok || json.fail || json.message))
-            ? (json.ok || json.fail || json.message)
-            : '신고 처리 중 오류가 발생했습니다.';
-
-          var $msgEl = document.getElementById('reportResultMsg');
-          if ($msgEl) $msgEl.textContent = msg;
-          if (window.jQuery) window.jQuery('#reportResultModal').modal('show');
-
-          // 신고 성공 시 버튼 숨김
-          if (json && json.ok && $btnReport) $btnReport.style.display = 'none';
-        })
-        .catch(function (e) {
-          console.error(e);
-          if (window.jQuery) window.jQuery('#reportModal').modal('hide');
-          var $msgEl2 = document.getElementById('reportResultMsg');
-          if ($msgEl2) $msgEl2.textContent = '서버 통신 오류가 발생했습니다.';
-          if (window.jQuery) window.jQuery('#reportResultModal').modal('show');
-=======
       if (!isLogin) {
         alert('로그인 후 이용 가능합니다.');
         return;
@@ -853,7 +750,6 @@
         .catch(function (e) {
           console.error(e);
           alert('신고 접수에 실패했습니다.');
->>>>>>> develop
         });
     });
   }
@@ -899,38 +795,6 @@
   }
 
   // =========================================================
-  // ✅ NEW: 게시글 수정/삭제 차단 - 삭제된 게시글
-  // =========================================================
-  function lockDeletedBoardActions() {
-    if (!isDeletedBoard()) return;
-
-    document.addEventListener('click', function (e) {
-      var t = e.target;
-      if (!t) return;
-
-      var lockEl = t.closest ? t.closest('[data-deleted-lock="1"]') : null;
-      if (!lockEl) return;
-
-      e.preventDefault();
-      e.stopPropagation();
-      alertDeletedBoard();
-      return false;
-    }, true);
-
-    document.addEventListener('submit', function (e) {
-      var form = e.target;
-      if (!form) return;
-
-      if (form.querySelector && form.querySelector('[data-deleted-lock="1"]')) {
-        e.preventDefault();
-        e.stopPropagation();
-        alertDeletedBoard();
-        return false;
-      }
-    }, true);
-  }
-
-  // =========================================================
   // Init
   // =========================================================
   function init() {
@@ -942,7 +806,6 @@
 
     bindReplyEvents();
     lockPostManageIfBanned();
-    lockDeletedBoardActions(); // ✅ NEW
 
     loadReplies(getSelectedCondition()).catch(function (e) {
       console.error(e);
