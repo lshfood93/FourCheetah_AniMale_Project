@@ -86,18 +86,22 @@
             <i class="fa fa-check-circle"></i>
           </div>
 
-          <h4>카카오페이 결제가 완료되었습니다</h4>
-          <p class="result-desc">캐시 충전이 정상적으로 승인되었습니다.</p>
+			<%-- 성공 메시지 --%>
+			<h4>
+				<c:out value="${payMethod}" />
+				결제가 완료되었습니다
+			</h4>
+			<p class="result-desc">캐시 충전이 정상적으로 승인되었습니다.</p>
 
-          <div class="result-info">
+			<div class="result-info">
             <dl>
               <dt>결제 금액</dt>
               <dd><c:out value="${totalAmount}" /> 원</dd>
             </dl>
             <dl>
-              <dt>결제 수단</dt>
-              <dd>카카오페이</dd>
-            </dl>
+  				<dt>결제 수단</dt>
+ 				 <dd><c:out value="${payMethod}" /></dd>
+			</dl>
             <dl>
               <dt>결제 승인 시각</dt>
               <dd><c:out value="${approvedAt}" /></dd>
