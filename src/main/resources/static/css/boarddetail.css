@@ -456,6 +456,39 @@
   margin-top:4px;
   font-size:15px; /* ✅ CHANGED: 꾸밈 체감 살짝 키움 */
 }
+
+/* ✅ NEW: 레인보우 닉네임(관리자/레인보우 꾸밈용) */
+.board-detail-page .reply-writer.is-rainbow{
+  background: linear-gradient(90deg,
+    #ff4c4c, #ff8a00, #ffc107, #25d366, #3b82f6, #1e3a8a, #a855f7);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color: transparent;
+}
+
+/* ✅ NEW: 레인보우 아바타 링(관리자 보정용) - img/div 자체는 ::after 불가라 래퍼 사용 */
+.board-detail-page .reply-avatar-ring{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  position:relative;
+  display:block;
+}
+.board-detail-page .reply-avatar-ring.is-rainbow{
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.06);
+}
+.board-detail-page .reply-avatar-ring.is-rainbow::after{
+  content:'';
+  position:absolute;
+  inset:-8px;
+  border-radius:999px;
+  pointer-events:none;
+  background: conic-gradient(from 90deg,
+    #ff4c4c, #ff8a00, #ffc107, #25d366, #3b82f6, #1e3a8a, #a855f7, #ff4c4c);
+  filter: blur(10px);
+  opacity: 0.55;
+  z-index:-1;
+}
 .board-detail-page .reply-times{
   display:flex;
   gap:10px;

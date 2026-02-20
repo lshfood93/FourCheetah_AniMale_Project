@@ -15,8 +15,13 @@
 <c:set var="createdAt" value="${boardData.boardCreatedAt}" />
 <c:set var="updatedAt" value="${boardData.boardUpdatedAt}" />
 
+<%-- ✅ CHANGED: board.jsp와 동일하게 memberStatus 기준으로 제재 플래그 통일 --%>
+<c:set var="memberStatus" value="${sessionScope.memberStatus}" />
+
 <c:set var="isBannedFlag"
-       value="${sessionScope.isBanned == 1 or isBanned == 1}" />
+       value="${memberStatus eq 'SUSPEND_7D'
+               or memberStatus eq 'SUSPEND_30D'
+               or memberStatus eq 'BAN'}" />
 
 <c:set var="canManagePost"
        value="${isLogin and (sessionMemberId eq boardData.memberId or sessionMemberRole eq 'ADMIN')}" />
@@ -27,12 +32,18 @@
 <c:set var="isReportedFlag"
        value="${isReported == 1}" />
 
-<c:set var="canReportPost"
-       value="${isLogin and (sessionMemberId ne boardData.memberId) and (not isReportedFlag)}" />
+<%-- ✅ CHANGED: 작성자 권한이 ADMIN이면 신고 버튼 숨김 --%>
+<c:set var="writerIsAdmin"
+       value="${boardData.writerRole eq 'ADMIN'}" />
 
-<c:set var="boardIsEdited"
-       value="${boardData.isEdited == 1 or boardData.isEdited == true or boardData.isEdited == '1'
-               or (not empty updatedAt and updatedAt ne createdAt)}" />
+<%-- ✅ CHANGED: 신고 가능 조건에서 ADMIN 작성 글 제외 --%>
+<c:set var="canReportPost"
+       value="${isLogin
+               and (sessionMemberId ne boardData.memberId)
+               and (not isReportedFlag)
+               and (not writerIsAdmin)}" />
+
+<c:set var="isEdited" value="${boardData.isEdited == 1}" />
 
 <!doctype html>
 <html lang="ko">
@@ -274,6 +285,32 @@
       </div>
     </div>
   </div>
+  
+	<%-- ✅ CHANGED: 제재회원 신고 불가 안내 모달 --%>
+	<div class="modal fade" id="banReportModal" tabindex="-1" role="dialog" aria-hidden="true">
+	  <div class="modal-dialog modal-dialog-centered" role="document">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <h5 class="modal-title">이용 불가</h5>
+	        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+	          <span aria-hidden="true">&times;</span>
+	        </button>
+	      </div>
+	
+			<div class="modal-body" style="line-height:1.6;">
+			  <!-- ✅ CHANGED: 텍스트를 JS에서 바꿀 수 있게 id 부여 -->
+			  <div id="banActionText">
+			    제재회원은 해당 기능을 이용할 수 없습니다.<br/>
+			    현재는 조회만 가능합니다.
+			  </div>
+			</div>
+	
+	      <div class="modal-footer">
+	        <button type="button" class="bd-btn" data-dismiss="modal">확인</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
 
   <%-- ✅ CHANGED: 좋아요 누른 사람 모달 --%>
   <div class="modal fade" id="likeUsersModal" tabindex="-1" role="dialog" aria-hidden="true">

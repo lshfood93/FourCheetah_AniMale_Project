@@ -66,6 +66,9 @@
   // ✅ CHANGED: 좋아요 누른 사람 모달 DOM
   var $likeUsersList = document.getElementById('likeUsersList');
   var $likeUsersEmpty = document.getElementById('likeUsersEmpty');
+  
+  // ✅ CHANGED: 제재 안내 모달 텍스트 DOM
+  var $banActionText = document.getElementById('banActionText');
 
   // =========================================================
   // ✅ 제재회원 공통 안내
@@ -203,35 +206,44 @@
     var raw = $btnLike.getAttribute('data-liked');
     if (raw === '1') setLikeUI(true);
 
-    $btnLike.addEventListener('click', function () {
-      if (!isLogin) {
-        alert('로그인 후 이용 가능합니다.');
-        return;
-      }
+	$btnLike.addEventListener('click', function () {
+	  if (!isLogin) {
+	    alert('로그인 후 이용 가능합니다.');
+	    return;
+	  }
 
-      var bid = $btnLike.getAttribute('data-board-id') || boardId;
+	  // ✅ CHANGED: 제재회원은 좋아요 차단(요청 자체를 안 보냄)
+	  if (typeof isBanned !== 'undefined' && isBanned) {
+	    openBanActionModal(
+	      '제재회원은 좋아요를 누를 수 없습니다.<br/>현재는 조회만 가능합니다.',
+	      '제재회원은 좋아요를 누를 수 없습니다. 현재는 조회만 가능합니다.'
+	    );
+	    return;
+	  }
 
-      var fd = new FormData();
-      fd.append('boardId', bid);
+	  var bid = $btnLike.getAttribute('data-board-id') || boardId;
 
-      httpPostForm(API.likeToggle, fd)
-        .then(function (res) { return res.json(); })
-        .then(function (json) {
-          if (!json || json.result !== 'OK') {
-            alert((json && json.msg) ? json.msg : '처리에 실패했습니다.');
-            return;
-          }
+	  var fd = new FormData();
+	  fd.append('boardId', bid);
 
-          var liked = (Number(json.isLiked) === 1);
-          var likeCnt = (json.likeCnt != null ? json.likeCnt : 0);
+	  httpPostForm(API.likeToggle, fd)
+	    .then(function (res) { return res.json(); })
+	    .then(function (json) {
+	      if (!json || json.result !== 'OK') {
+	        alert((json && json.msg) ? json.msg : '처리에 실패했습니다.');
+	        return;
+	      }
 
-          setLikeUI(liked, likeCnt);
-        })
-        .catch(function (e) {
-          console.error(e);
-          alert('서버 통신 오류가 발생했습니다.');
-        });
-    });
+	      var liked = (Number(json.isLiked) === 1);
+	      var likeCnt = (json.likeCnt != null ? json.likeCnt : 0);
+
+	      setLikeUI(liked, likeCnt);
+	    })
+	    .catch(function (e) {
+	      console.error(e);
+	      alert('서버 통신 오류가 발생했습니다.');
+	    });
+	});
   }
 
   // ✅ CHANGED: 좋아요 누른 사람 -> alert 대신 모달
@@ -323,12 +335,26 @@
       ? r.writerNickname
       : r.memberId;
 
+    // ✅ ADMIN 보정(서버에서 role/decoClass가 안 내려오는 경우 대비)
+    // - 현재 ReplyDTO에는 role 필드가 없어서, 닉네임 기반으로만 휴리스틱 적용
+    // - 프로젝트에서 관리자 닉네임이 '관리자'로 고정이라면 정상 동작
+    var isAdminWriter = false;
+    try {
+      var nn = String(nickname || '').trim();
+      isAdminWriter = (nn === '관리자' || nn.toUpperCase() === 'ADMIN');
+    } catch (e) { /* ignore */ }
+
     var profileImgRaw = r.writerProfileImage || r.writerProfileImg || r.writer_profile_image || '';
     var profileImg = normalizeUrl(profileImgRaw);
 
     var nickColor = sanitizeColor(r.writerNicknameColor || r.writer_nickname_color || '');
     var profileColor = sanitizeColor(r.writerProfileColor || r.writer_profile_color || '');
     var decoClass = (r.writerDecoClass || r.writer_deco_class || '').trim();
+
+    // ✅ ADMIN이면 닉네임 레인보우 기본 적용(닉네임 컬러가 비어있을 때)
+    if (isAdminWriter && !nickColor) {
+      decoClass = (decoClass ? (decoClass + ' ') : '') + 'is-rainbow';
+    }
 
     var avatarFx = '';
     if (profileColor) {
@@ -337,24 +363,34 @@
         'box-shadow:0 0 0 3px rgba(255,255,255,0.06), 0 0 18px ' + escapeHtml(profileColor) + ';';
     }
 
+    // ✅ ADMIN + 프로필색 없음 => 레인보우 링 래퍼 사용
+    var useRainbowRing = (isAdminWriter && !profileColor);
+
     var avatarHtml = '';
     if (profileImg) {
       avatarHtml =
-        "<img class='reply-avatar' style='" + avatarFx + "' src='" + escapeHtml(profileImg) + "' alt='profile'/>";
+        (useRainbowRing ? "<div class='reply-avatar-ring is-rainbow'>" : "") +
+        "<img class='reply-avatar' style='" + avatarFx + "' src='" + escapeHtml(profileImg) + "' alt='profile'/>" +
+        (useRainbowRing ? "</div>" : "");
     } else {
       var initial = String(nickname).charAt(0);
       var bg = profileColor ? ('background:' + escapeHtml(profileColor) + ';') : 'background:rgba(255,255,255,0.10);';
 
       // ✅ CHANGED: 크기는 CSS(--avatar-size)가 담당 -> 인라인 32px 고정 제거
       avatarHtml =
+        (useRainbowRing ? "<div class='reply-avatar-ring is-rainbow'>" : "") +
         "<div class='reply-avatar reply-avatar--fallback' style='" +
           bg + avatarFx +
         "'>" +
           escapeHtml(initial) +
-        "</div>";
+        "</div>" +
+        (useRainbowRing ? "</div>" : "");
     }
 
-    var nickStyleAttr = nickColor ? (" style='color:" + escapeHtml(nickColor) + ";'") : '';
+    // ✅ 레인보우 적용 시에는 color 인라인을 넣지 않음(그라데이션이 깨짐)
+    var nickStyleAttr = (nickColor && !/\bis-rainbow\b/.test(decoClass))
+      ? (" style='color:" + escapeHtml(nickColor) + ";'")
+      : '';
 
     var actions = '';
     if (!(typeof isBanned !== 'undefined' && isBanned) && (canEditReply(r) || canDeleteReply(r))) {
@@ -659,39 +695,63 @@
       return;
     }
 
+    // ✅ CHANGED: 제재회원 안내 모달
+	// ✅ CHANGED: 제재회원 안내 모달(공용 함수 사용)
+	function openBanReportModal() {
+	  openBanActionModal(
+	    '제재회원은 게시글 신고를 이용할 수 없습니다.<br/>현재는 조회만 가능합니다.',
+	    '제재회원은 게시글 신고를 이용할 수 없습니다. 현재는 조회만 가능합니다.'
+	  );
+	}
     $btnReport.addEventListener('click', function () {
       if (!isLogin) {
         alert('로그인 후 이용 가능합니다.');
         return;
       }
+
+      // ✅ CHANGED: 제재회원이면 신고 모달 대신 안내 모달
+      if (typeof isBanned !== 'undefined' && isBanned) {
+        openBanReportModal();
+        return;
+      }
+
       if (window.jQuery) window.jQuery('#reportModal').modal('show');
     });
 
-	$btnReportSubmit.addEventListener('click', function () {
-	  var reason = ($reportReason && $reportReason.value) ? String($reportReason.value) : 'ETC';
-	  var content = ($reportContent && $reportContent.value) ? String($reportContent.value).trim() : '';
+    $btnReportSubmit.addEventListener('click', function () {
+      if (!isLogin) {
+        alert('로그인 후 이용 가능합니다.');
+        return;
+      }
 
-	  var fd = new FormData();
+      // ✅ CHANGED: 제재회원이면 제출 자체 차단
+      if (typeof isBanned !== 'undefined' && isBanned) {
+        // 혹시 reportModal이 열려있으면 닫고 안내 모달로 전환
+        if (window.jQuery) window.jQuery('#reportModal').modal('hide');
+        openBanReportModal();
+        return;
+      }
 
-	  // DTO 기준 파라미터명으로 통일
-	  // - 지금 서버는 boardId, reasonCode만 받지만
-	  //   reasonDetail도 같이 보내두면 추후 DTO 바인딩 전환 시 바로 매핑됨
-	  fd.append('boardId', boardId);      // 그대로
-	  fd.append('reasonCode', reason);    // CHANGED: reportReason -> reasonCode
-	  fd.append('reasonDetail', content); // CHANGED: reportContent -> reasonDetail(추후용)
+      var reason = ($reportReason && $reportReason.value) ? String($reportReason.value) : 'ETC';
+      var content = ($reportContent && $reportContent.value) ? String($reportContent.value).trim() : '';
 
-	  httpPostForm(API.boardReport, fd)
-	    .then(function () {
-	      alert('신고가 접수되었습니다.');
-	      if ($reportContent) $reportContent.value = '';
-	      if (window.jQuery) window.jQuery('#reportModal').modal('hide');
-	      if ($btnReport) $btnReport.style.display = 'none';
-	    })
-	    .catch(function (e) {
-	      console.error(e);
-	      alert('신고 접수에 실패했습니다.');
-	    });
-	});
+      var fd = new FormData();
+      fd.append('boardId', boardId);
+      fd.append('reasonCode', reason);
+      fd.append('reasonDetail', content);
+
+      httpPostForm(API.boardReport, fd)
+        .then(function () {
+          alert('신고가 접수되었습니다.');
+          if ($reportContent) $reportContent.value = '';
+          if (window.jQuery) window.jQuery('#reportModal').modal('hide');
+          if ($btnReport) $btnReport.style.display = 'none';
+        })
+        .catch(function (e) {
+          console.error(e);
+          alert('신고 접수에 실패했습니다.');
+        });
+    });
   }
 
   // =========================================================
@@ -724,6 +784,14 @@
         return false;
       }
     }, true);
+  }
+  
+  // ✅ CHANGED: 제재 안내 모달(신고/좋아요 등 공용)
+  function openBanActionModal(htmlMsg, fallbackMsg) {
+    if ($banActionText && htmlMsg) $banActionText.innerHTML = htmlMsg;
+
+    if (window.jQuery) window.jQuery('#banReportModal').modal('show');
+    else alert(fallbackMsg || '제재회원은 해당 기능을 이용할 수 없습니다. 현재는 조회만 가능합니다.');
   }
 
   // =========================================================
