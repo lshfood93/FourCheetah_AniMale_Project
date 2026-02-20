@@ -196,6 +196,6 @@
     };
   </script>
 
-  <script src="${ctx}/assets/js/admindashboardcash.js"></script>
+  <script src="${ctx}/js/admindashboardcash.js"></script>
 </body>
 </html>
