@@ -1,6 +1,9 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
+
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
+<c:set var="uri" value="${pageContext.request.requestURI}" />
 
 <c:if test="${empty sessionScope.memberRole or sessionScope.memberRole ne 'ADMIN'}">
   <c:redirect url="${ctx}/mainPage" />
@@ -28,7 +31,7 @@
 <body class="admin-dashboard">
 <div class="page-wrapper" id="main-wrapper"
      data-layout="vertical" data-navbarbg="skin6"
-     data-sidebartype="full" data-sidebar-position="fixed"     data-header-position="fixed">
+     data-sidebartype="full" data-sidebar-position="fixed" data-header-position="fixed">
 
   <aside class="left-sidebar">
     <div>
@@ -40,18 +43,22 @@
 
       <nav class="sidebar-nav scroll-sidebar" data-simplebar="">
         <ul id="sidebarnav">
-          <li class="sidebar-item">
-            <a class="sidebar-link" href="${ctx}/admindashboard">
+          <li class="sidebar-item ${fn:contains(uri, '/admindashboard') ? 'selected' : ''}">
+            <a class="sidebar-link ${fn:contains(uri, '/admindashboard') ? 'active' : ''}"
+               href="${ctx}/admindashboard">
               <span class="hide-menu">관리자 대시보드</span>
             </a>
           </li>
-          <li class="sidebar-item">
-            <!-- ✅ 무조건 컨트롤러 타는 URL로 통일 -->
-            <a class="sidebar-link" href="${ctx}/admin/reports?page=1&sortOrder=desc">
-              <span class="hide-menu">신고 게시글 관리</span>
-            </a>
-          </li>
-        </ul>
+
+						<li
+							class="sidebar-item ${fn:contains(uri, '/admin/reports') ? 'selected' : ''}">
+							<a
+							class="sidebar-link ${fn:contains(uri, '/adminreportboard') ? 'active' : ''}"
+							href="${ctx}/adminreportboard"> <span class="hide-menu">신고
+									게시글 관리</span>
+						</a>
+						</li>
+					</ul>
       </nav>
     </div>
   </aside>
@@ -66,9 +73,9 @@
           <div class="d-flex align-items-center justify-content-between mb-3">
             <h5 class="card-title mb-0">신고 게시글 관리</h5>
 
-            <!-- ✅ 정렬도 컨트롤러 URL로 통일 -->
-            <select class="form-select" style="max-width: 180px;"
-                    onchange="location.href='${ctx}/admin/reports?page=1&sortOrder=' + this.value;">
+            <!-- ✅ 정렬: URL 이동 X (비동기) -->
+            <select id="sortSelect" class="form-select" style="max-width: 180px;"
+                    onchange="changeSort(this.value)">
               <option value="desc" ${sortOrder == 'desc' ? 'selected' : ''}>최신순</option>
               <option value="asc"  ${sortOrder == 'asc'  ? 'selected' : ''}>오래된순</option>
             </select>
@@ -76,7 +83,8 @@
 
           <p class="text-muted mb-3">제목 / 내용 클릭 시 게시글 상세로 이동합니다.</p>
 
-          <div class="table-responsive">
+          <!-- ✅ 테이블 교체 대상 -->
+          <div class="table-responsive" id="reportTableWrap">
             <table class="table align-middle">
               <thead>
                 <tr>
@@ -92,7 +100,6 @@
                 <c:choose>
                   <c:when test="${not empty reports}">
                     <c:forEach var="r" items="${reports}">
-                      <!-- ✅ 상세 URL: 프로젝트에 맞게 여기만 유지 -->
                       <c:url var="detailUrl" value="${ctx}/boardDetail">
                         <c:param name="boardId" value="${r.boardId}" />
                       </c:url>
@@ -149,37 +156,39 @@
             </table>
           </div>
 
-          <!-- ✅ 페이지네이션 URL도 통일 -->
-          <c:if test="${not empty totalPages and totalPages > 0}">
-            <nav class="d-flex justify-content-center mt-4">
-              <ul class="pagination mb-0">
+          <!-- ✅ 페이지네이션 교체 대상 -->
+          <div id="reportPagingWrap">
+            <c:if test="${not empty totalPages and totalPages > 0}">
+              <nav class="d-flex justify-content-center mt-4">
+                <ul class="pagination mb-0">
 
-                <li class="page-item ${(currentPage <= 1) ? 'disabled' : ''}">
-                  <a class="page-link"
-                     href="${ctx}/admin/reports?page=${currentPage-1}&sortOrder=${sortOrder}">
-                    이전
-                  </a>
-                </li>
-
-                <c:forEach var="p" begin="${startPage}" end="${endPage}">
-                  <li class="page-item ${(p == currentPage) ? 'active' : ''}">
-                    <a class="page-link"
-                       href="${ctx}/admin/reports?page=${p}&sortOrder=${sortOrder}">
-                      ${p}
+                  <li class="page-item ${(currentPage <= 1) ? 'disabled' : ''}">
+                    <a class="page-link" href="#"
+                       data-page="${currentPage-1}">
+                      이전
                     </a>
                   </li>
-                </c:forEach>
 
-                <li class="page-item ${(currentPage >= totalPages) ? 'disabled' : ''}">
-                  <a class="page-link"
-                     href="${ctx}/admin/reports?page=${currentPage+1}&sortOrder=${sortOrder}">
-                    다음
-                  </a>
-                </li>
+                  <c:forEach var="p" begin="${startPage}" end="${endPage}">
+                    <li class="page-item ${(p == currentPage) ? 'active' : ''}">
+                      <a class="page-link" href="#"
+                         data-page="${p}">
+                        ${p}
+                      </a>
+                    </li>
+                  </c:forEach>
 
-              </ul>
-            </nav>
-          </c:if>
+                  <li class="page-item ${(currentPage >= totalPages) ? 'disabled' : ''}">
+                    <a class="page-link" href="#"
+                       data-page="${currentPage+1}">
+                      다음
+                    </a>
+                  </li>
+
+                </ul>
+              </nav>
+            </c:if>
+          </div>
 
         </div>
       </div>
@@ -193,10 +202,12 @@
 <script src="${ctx}/js/app.min.js"></script>
 <script src="${ctx}/libs/simplebar/dist/simplebar.js"></script>
 
-<!-- ✅ JS는 이것 “하나만” 남기기 -->
 <script>
   const ctx = '${ctx}';
+  let currentPage = ${empty currentPage ? 1 : currentPage};
+  let currentSort = '${empty sortOrder ? "desc" : sortOrder}';
 
+  // ✅ 승인/반려 POST
   async function postAction(url, boardId) {
     const res = await fetch(url, {
       method: 'POST',
@@ -206,7 +217,59 @@
     return res.json();
   }
 
+  // ✅ 목록 GET (URL 이동 X)
+  async function reloadReportList(page, sortOrder) {
+    const url = `${ctx}/admin/reports?page=${page}&sortOrder=${sortOrder}`;
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+
+    const html = await res.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+
+    const newTableWrap = doc.querySelector('#reportTableWrap');
+    const newPagingWrap = doc.querySelector('#reportPagingWrap');
+
+    if (newTableWrap) {
+      document.querySelector('#reportTableWrap').innerHTML = newTableWrap.innerHTML;
+    }
+    if (newPagingWrap) {
+      document.querySelector('#reportPagingWrap').innerHTML = newPagingWrap.innerHTML;
+    }
+
+    currentPage = page;
+    currentSort = sortOrder;
+
+    // ✅ select UI 동기화
+    const sel = document.querySelector('#sortSelect');
+    if (sel) sel.value = sortOrder;
+  }
+
+  // ✅ 정렬 변경
+  function changeSort(sortOrder) {
+    reloadReportList(1, sortOrder);
+  }
+
+  // ✅ 클릭 이벤트 (페이지네이션 + 승인/반려)
   document.addEventListener('click', async (e) => {
+    // 1) 페이지네이션 (비동기)
+    const pageA = e.target.closest('a[data-page]');
+    if (pageA) {
+      e.preventDefault();
+
+      // disabled면 무시
+      if (pageA.closest('.page-item')?.classList.contains('disabled')) return;
+
+      const page = parseInt(pageA.dataset.page, 10);
+      if (!Number.isFinite(page) || page < 1) return;
+
+      reloadReportList(page, currentSort);
+      return;
+    }
+
+    // 2) 승인/반려 (비동기)
     const btn = e.target.closest('[data-action]');
     if(!btn) return;
 
@@ -228,7 +291,17 @@
       const data = await postAction(url, boardId);
 
       if(data.ok){
+        // 행 삭제 후, 페이지가 비어버리면 현재 페이지 재로딩
         tr.remove();
+
+        const tbody = document.querySelector('#reportTableWrap tbody');
+        const hasRow = tbody && tbody.querySelectorAll('tr[id^="row-"]').length > 0;
+
+        if (!hasRow) {
+          // 현재 페이지가 비었으면 같은 페이지 다시 불러오되, 최소 1페이지 유지
+          const nextPage = Math.max(1, currentPage);
+          reloadReportList(nextPage, currentSort);
+        }
       } else {
         alert(data.fail || '처리 실패');
       }
