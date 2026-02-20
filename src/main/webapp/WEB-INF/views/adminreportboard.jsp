@@ -16,8 +16,8 @@
   <title>Admin | Report Board</title>
 
   <link rel="icon" type="image/png" href="${ctx}/favicon.png" />
-  <link rel="stylesheet" href="${ctx}/assets/css/styles.min.css" />
-  <link rel="stylesheet" href="${ctx}/assets/css/admincustom.css" />
+  <link rel="stylesheet" href="${ctx}/css/styles.min.css" />
+  <link rel="stylesheet" href="${ctx}/css/admincustom.css" />
 </head>
 
 <body class="admin-dashboard">
@@ -35,7 +35,7 @@
       <div>
         <div class="brand-logo d-flex align-items-center justify-content-center">
           <a href="${ctx}/admindashboard" class="text-nowrap logo-img">
-            <img src="${ctx}/assets/images/logos/animale-logo.svg" width="150" alt="AniMale Logo">
+            <img src="${ctx}/images/logos/animale-logo.svg" width="150" alt="AniMale Logo">
           </a>
         </div>
 
@@ -184,10 +184,10 @@
   </div>
 
   <!-- 템플릿 JS -->
-  <script src="${ctx}/assets/libs/jquery/dist/jquery.min.js"></script>
-  <script src="${ctx}/assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="${ctx}/assets/js/sidebarmenu.js"></script>
-  <script src="${ctx}/assets/js/app.min.js"></script>
-  <script src="${ctx}/assets/libs/simplebar/dist/simplebar.js"></script>
+  <script src="${ctx}/libs/jquery/dist/jquery.min.js"></script>
+  <script src="${ctx}/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="${ctx}/js/sidebarmenu.js"></script>
+  <script src="${ctx}/js/app.min.js"></script>
+  <script src="${ctx}/libs/simplebar/dist/simplebar.js"></script>
 </body>
 </html>
