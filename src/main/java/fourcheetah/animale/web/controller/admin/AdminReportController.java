@@ -20,7 +20,7 @@ public class AdminReportController {
     /**
      * 신고 목록 페이지 (STEP 3: 실제 데이터 표시)
      */
-    @GetMapping("/admin/reports")
+    @GetMapping("")
     public String reportList(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "desc") String sortOrder,
