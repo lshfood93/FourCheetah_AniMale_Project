@@ -1,18 +1,11 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-
-<%-- JSTL: core/functions/fmt
-     - core(c): if/redirect/set 등 기본 제어용
-     - functions(fn): 문자열 처리 등(현재는 많이 안 쓰더라도 유지 가능)
-     - fmt: 숫자/날짜 포맷(현재 페이지에서 직접 쓰지 않아도 추후 확장 가능)
---%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt"%>
 
-<%-- 컨텍스트 경로:정적 리소스 및 내부 링크에 공통으로 사용 --%>
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
+<c:set var="uri" value="${pageContext.request.requestURI}" />
 
-<%-- ✅ 접근 제어(관리자만 접근) --%>
 <c:if test="${empty sessionScope.memberRole or sessionScope.memberRole ne 'ADMIN'}">
   <c:redirect url="${ctx}/mainPage" />
 </c:if>
@@ -47,21 +40,28 @@
           </a>
         </div>
 
-        <nav class="sidebar-nav scroll-sidebar" data-simplebar="">
-          <ul id="sidebarnav">
-            <li class="sidebar-item">
-              <a class="sidebar-link" href="${ctx}/admindashboard">
-                <span class="hide-menu">관리자 대시보드</span>
-              </a>
-            </li>
+        <%-- ✅ 현재 URI로 active 판별용 --%>
+<c:set var="uri" value="${pageContext.request.requestURI}" />
 
-            <li class="sidebar-item">
-              <a class="sidebar-link" href="${ctx}/adminreportboard">
-                <span class="hide-menu">신고 게시글 관리</span>
-              </a>
-            </li>
-          </ul>
-        </nav>
+<nav class="sidebar-nav scroll-sidebar" data-simplebar="">
+  <ul id="sidebarnav">
+
+    <li class="sidebar-item ${fn:contains(uri, '/admindashboard') ? 'selected' : ''}">
+      <a class="sidebar-link ${fn:contains(uri, '/admindashboard') ? 'active' : ''}"
+         href="${ctx}/admindashboard">
+        <span class="hide-menu">관리자 대시보드</span>
+      </a>
+    </li>
+
+    <li class="sidebar-item ${fn:contains(uri, '/admin/reports') ? 'selected' : ''}">
+      <a class="sidebar-link ${fn:contains(uri, '/admin/reports') ? 'active' : ''}"
+         href="${ctx}/admin/reports?page=1&sortOrder=desc">
+        <span class="hide-menu">신고 게시글 관리</span>
+      </a>
+    </li>
+
+  </ul>
+</nav>
 
       </div>
     </aside>
