@@ -149,7 +149,7 @@ public class MemberController {
                 response.addCookie(cookie);
             }
 
-            String location = "ADMIN".equals(data.getMemberRole()) ? "/adminPage" : "/mainPage";
+            String location = "ADMIN".equals(data.getMemberRole()) ? "/admindashboard" : "/mainPage";
 
             model.addAttribute("msg", "로그인 성공!");
             model.addAttribute("location", location);
@@ -319,8 +319,8 @@ public class MemberController {
     }
     @PostMapping("/member/profile")
     public String changeProfile(
-            @RequestParam(value = "newNickname", required = false) String newNickname,
-            @RequestParam(value = "newProfileImage", required = false) String newProfileImage, // 현재 로직에서는 token 기준이라 실사용 X
+            @RequestParam(value = "memberNickname", required = false) String memberNickname,
+            @RequestParam(value = "memberProfileImage", required = false) String newProfileImage, // 현재 로직에서는 token 기준이라 실사용 X
             @RequestParam(value = "temporaryProfileImageToken", required = false) String temporaryProfileImageToken,
             @RequestParam(value = "memberProfileColor", required = false) String memberProfileColor,
             @RequestParam(value = "memberNicknameColor", required = false) String memberNicknameColor,
@@ -335,11 +335,11 @@ public class MemberController {
         String role = (String) session.getAttribute("memberRole");
         boolean isAdmin = "ADMIN".equals(role);
 
-        String backPage = isAdmin ? "redirect:/adminPage" : "redirect:/member/mypage";
+        String backPage = isAdmin ? "redirect:/adminPage" : "redirect:/mypage";
 
         // =========================================================
         // 1) 요청값 정리 (빈문자열 -> null)
-        String newNick = trimToNull(newNickname);
+        String newNick = trimToNull(memberNickname);
         String reqProfileColor = trimToNull(memberProfileColor);
         String reqNicknameColor = trimToNull(memberNicknameColor);
         String token = trimToNull(temporaryProfileImageToken); // 이미지 변경 판단은 token 기준
