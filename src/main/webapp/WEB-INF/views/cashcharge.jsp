@@ -1,12 +1,14 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-
-<%-- ✅ 컨텍스트 경로: 정적 리소스에 공통 사용 --%>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
 
-<%-- ✅ CHANGED: 내부 라우팅/폼 action은 c:url로 생성 (컨텍스트 중복/인코딩 방지) --%>
 <c:url var="kakaoReadyUrl" value="/payment/kakaopay/ready" />
 <c:url var="mypageUrl" value="/member/mypage" />
+
+<%-- ✅ Toss 콜백 URL (컨트롤러에 이미 존재) --%>
+<c:url var="tossSuccessUrl" value="/payment/toss/success" />
+<c:url var="tossFailUrl" value="/payment/toss/fail" />
 
 <!DOCTYPE html>
 <html lang="ko">
@@ -17,11 +19,9 @@
 
 <link rel="icon" type="image/png" href="${ctx}/favicon.png">
 
-<!-- Google Font -->
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-<!-- CSS -->
 <link rel="stylesheet" href="${ctx}/css/bootstrap.min.css">
 <link rel="stylesheet" href="${ctx}/css/font-awesome.min.css">
 <link rel="stylesheet" href="${ctx}/css/style.css">
@@ -36,14 +36,19 @@
 
 .selected-amount { background:#fff; border-radius:30px; padding:14px 20px; font-weight:600; margin-bottom:30px; }
 
-.charge-btn-wrap { display:flex; gap:14px; margin-top:24px; }
+.charge-btn-wrap { display:flex; gap:14px; margin-top:24px; flex-wrap: wrap; }
 
-.btn-pay { flex:1; height:56px; background:#e53637; color:#fff; border:none; border-radius:28px; font-size:16px; font-weight:600; cursor:pointer; }
-.btn-pay:disabled { opacity:0.45; cursor:not-allowed; }
-
-.btn-cancel { flex:1; height:56px; background:#2a2a4a; color:#fff; border:1px solid #444; border-radius:28px; font-size:16px; cursor:pointer; }
-
+/* ✅ 카카오 버튼(기존) */
+.btn-pay { flex:1; min-width: 200px; height:56px; background:#e53637; color:#fff; border:none; border-radius:28px; font-size:16px; font-weight:600; cursor:pointer; }
 .btn-pay:hover { background:#ff4c4c; }
+
+/* ✅ 토스 버튼(추가) */
+.btn-toss { flex:1; min-width: 200px; height:56px; background:#2f80ed; color:#fff; border:none; border-radius:28px; font-size:16px; font-weight:600; cursor:pointer; }
+.btn-toss:hover { background:#1c6dd5; }
+
+.btn-pay:disabled, .btn-toss:disabled { opacity:0.45; cursor:not-allowed; }
+
+.btn-cancel { width:100%; height:56px; background:#2a2a4a; color:#fff; border:1px solid #444; border-radius:28px; font-size:16px; cursor:pointer; margin-top: 10px; }
 .btn-cancel:hover { background:#3a3a6a; }
 
 .header__right__icons .icon_search { display:none; }
@@ -60,7 +65,7 @@
       <div class="col-lg-12 text-center">
         <div class="normal__breadcrumb__text">
           <h2>캐시 충전</h2>
-          <p>카카오페이로 간편하게 캐시를 충전하세요.</p>
+          <p>원하는 결제 수단으로 간편하게 충전하세요.</p>
         </div>
       </div>
     </div>
@@ -86,17 +91,24 @@
             선택 금액 : <span id="selectedAmountText">0</span> 원
           </div>
 
-          <%-- ✅ CHANGED: action을 c:url 변수로 변경 --%>
           <form id="chargeForm" action="${kakaoReadyUrl}" method="post">
             <input type="hidden" name="selectCash" id="amountInput">
 
             <div class="charge-btn-wrap">
-              <button id="payBtn" type="submit" class="btn-pay" disabled>카카오페이로 결제하기</button>
+              <%-- ✅ 카카오: 기존 submit --%>
+              <button id="kakaoBtn" type="submit" class="btn-pay" disabled>카카오페이로 결제하기</button>
 
-              <%-- ✅ CHANGED: 취소 이동도 c:url 변수 사용 --%>
+              <%-- ✅ 토스: JS로 결제 요청 --%>
+              <button id="tossBtn" type="button" class="btn-toss" disabled>토스로 결제하기</button>
+
+              <%-- ✅ 취소 --%>
               <button type="button" class="btn-cancel" onclick="location.href='${mypageUrl}'">충전 취소</button>
             </div>
           </form>
+
+          <p style="margin-top:12px; color:#b7b7b7; font-size:12px;">
+            ※ 결제 수단을 선택하면 결제가 진행됩니다.
+          </p>
 
         </div>
 
@@ -108,11 +120,16 @@
 <%@ include file="/WEB-INF/common/footer.jsp"%>
 
 <script src="${ctx}/js/jquery-3.3.1.min.js"></script>
+
+<%-- ✅ TossPayments JS SDK (PC/웹 결제) --%>
+<script src="https://js.tosspayments.com/v1"></script>
+
 <script>
 $(function() {
 
   function setPayEnabled(enabled) {
-    $("#payBtn").prop("disabled", !enabled);
+    $("#kakaoBtn").prop("disabled", !enabled);
+    $("#tossBtn").prop("disabled", !enabled);
   }
 
   setPayEnabled(false);
@@ -142,6 +159,45 @@ $(function() {
       setPayEnabled(false);
       e.preventDefault();
     }
+  });
+
+  // =========================
+  // 토스 결제 버튼 클릭
+  // =========================
+  $("#tossBtn").on("click", function() {
+    const amountStr = $("#amountInput").val();
+    const amount = parseInt(amountStr, 10);
+
+    if (!amount || amount <= 0) {
+      alert("충전 금액을 선택해주세요.");
+      setPayEnabled(false);
+      return;
+    }
+
+    const clientKey = "<spring:eval expression='@environment.getProperty(\"toss.clientKey\")'/>"; // ← 컨트롤러에서 model.addAttribute("tossClientKey", "...")로 넣어주세요.
+
+    if (!clientKey || clientKey === "${tossClientKey}") {
+      alert("토스 클라이언트 키가 설정되지 않았습니다. (tossClientKey)");
+      return;
+    }
+
+    // orderId는 유니크해야 합니다.
+    const orderId = "CASH_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+
+    // 성공/실패 URL: 컨트롤러에 이미 있는 콜백으로 연결
+    const successUrl = window.location.origin + "${ctx}${tossSuccessUrl}";
+    const failUrl    = window.location.origin + "${ctx}${tossFailUrl}";
+
+    const tossPayments = TossPayments(clientKey);
+
+    tossPayments.requestPayment("토스페이", {
+      amount: amount,
+      orderId: orderId,
+      orderName: "캐시 충전 " + amount.toLocaleString() + "원",
+      successUrl: successUrl,
+      failUrl: failUrl
+      // customerName: "홍길동" // 필요하면 추가
+    });
   });
 
 });
