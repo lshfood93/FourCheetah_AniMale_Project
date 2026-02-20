@@ -18,7 +18,7 @@
 
   // =========================================================
   // JSP 전역 변수(계약)
-  // const ctx, boardId, isLogin, sessionMemberId, sessionMemberRole, isReported, isBanned
+  // const ctx, boardId, boardStatus, isLogin, sessionMemberId, sessionMemberRole, isReported, isBanned
   // =========================================================
 
   // =========================================================
@@ -28,7 +28,11 @@
     likeToggle: ctx + '/BoardLikeToggle',     // POST {boardId} -> JSON {result,isLiked,likeCnt,msg}
     likeMembers: ctx + '/LikeMemberList',     // GET  ?boardId= -> JSON {ok,users:[...],message}
     replyOrder: ctx + '/ReplyListOrder',      // GET  ?boardId=&condition= -> JSON Array
+<<<<<<< HEAD
     boardReport: ctx + '/report/board'       // POST {boardId, reasonCode, reasonDetail}
+=======
+    boardReport: ctx + '/report/board'        // POST {boardId, reasonCode} -> JSON {ok} or {fail}
+>>>>>>> a0e3aa3 (chore: sync develop and restore local work)
   };
 
   // =========================================================
@@ -68,10 +72,31 @@
   var $likeUsersEmpty = document.getElementById('likeUsersEmpty');
 
   // =========================================================
+  // ✅ NEW: 삭제된 게시글 여부 체크
+  // =========================================================
+  function isDeletedBoard() {
+    return (typeof boardStatus !== 'undefined' && boardStatus !== '정상');
+  }
+
+  // =========================================================
+  // ✅ NEW: 삭제된 게시글 안내 모달
+  // =========================================================
+  function alertDeletedBoard() {
+    if (window.jQuery) {
+      window.jQuery('#deletedBoardModal').modal('show');
+    } else {
+      alert('이미 삭제된 게시글입니다.');
+    }
+  }
+
+  // =========================================================
   // ✅ 제재회원 공통 안내
   // =========================================================
   function alertBanned(actionText) {
-    alert('제재회원은 ' + (actionText || '해당 기능') + '이(가) 제한됩니다.');
+    var $msg = document.getElementById('bannedModalMsg');
+    if ($msg) $msg.textContent = '제재 중인 계정은 ' + (actionText || '해당 기능') + '이(가) 제한됩니다.';
+    if (window.jQuery) window.jQuery('#bannedModal').modal('show');
+    else alert('제재 중인 계정은 ' + (actionText || '해당 기능') + '이(가) 제한됩니다.');
   }
 
   // =========================================================
@@ -204,6 +229,12 @@
     if (raw === '1') setLikeUI(true);
 
     $btnLike.addEventListener('click', function () {
+      // ✅ NEW: 삭제된 게시글 차단
+      if (isDeletedBoard()) {
+        alertDeletedBoard();
+        return;
+      }
+
       if (!isLogin) {
         alert('로그인 후 이용 가능합니다.');
         return;
@@ -287,6 +318,12 @@
     if (!btn) return;
 
     btn.addEventListener('click', function () {
+      // ✅ NEW: 삭제된 게시글 차단
+      if (isDeletedBoard()) {
+        alertDeletedBoard();
+        return;
+      }
+
       var url = API.likeMembers + '?boardId=' + encodeURIComponent(boardId);
 
       httpGetJson(url)
@@ -380,8 +417,12 @@
       ? (" style='color:" + escapeHtml(nickColor) + ";'")
       : '';
 
+    // ✅ NEW: 관리자 삭제 댓글 여부 (내용 치환 방식)
+    // ✅ CHANGED: startsWith로 비교 (관리자 삭제 후 내용 추가 수정된 경우도 커버)
+    var isAdminDeleted = (r.replyContent && r.replyContent.indexOf('관리자에 의해 삭제된 댓글입니다.') === 0);
+
     var actions = '';
-    if (!(typeof isBanned !== 'undefined' && isBanned) && (canEditReply(r) || canDeleteReply(r))) {
+    if (!isAdminDeleted && !(typeof isBanned !== 'undefined' && isBanned) && (canEditReply(r) || canDeleteReply(r))) {
       actions += "<div class='reply-actions-wrap'>";
       actions += "<div class='reply-actions'>";
       if (canEditReply(r)) actions += "<button type='button' class='btn-reply-edit'>수정</button>";
@@ -410,7 +451,10 @@
 
     // ✅ CHANGED: 댓글 프로필 레이아웃 확장(.reply-left/.reply-avatar-slot/.reply-meta-col)
     return (
-      "<div class='reply-item' data-reply-id='" + escapeHtml(r.replyId) + "'>" +
+      "<div class='reply-item'" +
+        " data-reply-id='" + escapeHtml(r.replyId) + "'" +
+        (isAdminDeleted ? " data-admin-deleted='1'" : "") +
+        ">" +
         "<div class='reply-top'>" +
           "<div class='reply-left'>" +
             "<div class='reply-avatar-slot'>" +
@@ -545,6 +589,13 @@
     // - 단, 프론트에서 1차 검증만 하고(비었으면 막기), 정상 값이면 submit 통과
     if ($replyForm) {
       $replyForm.addEventListener('submit', function (e) {
+        // ✅ NEW: 삭제된 게시글 차단
+        if (isDeletedBoard()) {
+          e.preventDefault();
+          alertDeletedBoard();
+          return;
+        }
+
         // 로그인/제재는 JSP UI로 1차 처리되어있지만, 방어적으로 체크
         if (!isLogin) {
           e.preventDefault();
@@ -584,14 +635,31 @@
 
         var replyId = item.getAttribute('data-reply-id');
 
+        var isReplyBtn =
+          target.classList.contains('btn-reply-del') ||
+          target.classList.contains('btn-reply-edit') ||
+          target.classList.contains('btn-reply-save') ||
+          target.classList.contains('btn-reply-cancel');
+
+        // ✅ NEW: 삭제된 게시글 차단
+        if (isDeletedBoard()) {
+          if (isReplyBtn) {
+            alertDeletedBoard();
+          }
+          return;
+        }
+
+        // ✅ NEW: 관리자 삭제 댓글 차단
+        if (item.getAttribute('data-admin-deleted') === '1') {
+          if (target.classList.contains('btn-reply-del') || target.classList.contains('btn-reply-edit')) {
+            alertDeletedBoard();
+          }
+          return;
+        }
+
         // 제재회원 차단
         if (typeof isBanned !== 'undefined' && isBanned) {
-          if (
-            target.classList.contains('btn-reply-del') ||
-            target.classList.contains('btn-reply-edit') ||
-            target.classList.contains('btn-reply-save') ||
-            target.classList.contains('btn-reply-cancel')
-          ) {
+          if (isReplyBtn) {
             alertBanned('댓글 수정/삭제');
           }
           return;
@@ -684,6 +752,12 @@
     }
 
     $btnReport.addEventListener('click', function () {
+      // ✅ NEW: 삭제된 게시글 차단
+      if (isDeletedBoard()) {
+        alertDeletedBoard();
+        return;
+      }
+
       if (!isLogin) {
         alert('로그인 후 이용 가능합니다.');
         return;
@@ -691,6 +765,7 @@
       if (window.jQuery) window.jQuery('#reportModal').modal('show');
     });
 
+<<<<<<< HEAD
 	$btnReportSubmit.addEventListener('click', function () {
 	  var reason = ($reportReason && $reportReason.value) ? String($reportReason.value) : 'ETC';
 	  var content = ($reportContent && $reportContent.value) ? String($reportContent.value).trim() : '';
@@ -716,6 +791,42 @@
 	      alert('신고 접수에 실패했습니다.');
 	    });
 	});
+=======
+    $btnReportSubmit.addEventListener('click', function () {
+      // ✅ CHANGED: 파라미터 맞춤 - reasonCode만 전송 (reportContent 제거)
+      var reasonCode = ($reportReason && $reportReason.value) ? String($reportReason.value) : 'ETC';
+
+      var fd = new FormData();
+      fd.append('boardId', boardId);
+      fd.append('reasonCode', reasonCode);
+
+      // ✅ CHANGED: 403 포함 모든 응답을 JSON으로 파싱 (제재 차단 메시지 표시)
+      fetch(API.boardReport, { method: 'POST', body: fd, credentials: 'same-origin' })
+        .then(function (res) { return res.json(); })
+        .then(function (json) {
+          if (window.jQuery) window.jQuery('#reportModal').modal('hide');
+          if ($reportContent) $reportContent.value = '';
+
+          var msg = (json && (json.ok || json.fail || json.message))
+            ? (json.ok || json.fail || json.message)
+            : '신고 처리 중 오류가 발생했습니다.';
+
+          var $msgEl = document.getElementById('reportResultMsg');
+          if ($msgEl) $msgEl.textContent = msg;
+          if (window.jQuery) window.jQuery('#reportResultModal').modal('show');
+
+          // 신고 성공 시 버튼 숨김
+          if (json && json.ok && $btnReport) $btnReport.style.display = 'none';
+        })
+        .catch(function (e) {
+          console.error(e);
+          if (window.jQuery) window.jQuery('#reportModal').modal('hide');
+          var $msgEl2 = document.getElementById('reportResultMsg');
+          if ($msgEl2) $msgEl2.textContent = '서버 통신 오류가 발생했습니다.';
+          if (window.jQuery) window.jQuery('#reportResultModal').modal('show');
+        });
+    });
+>>>>>>> a0e3aa3 (chore: sync develop and restore local work)
   }
 
   // =========================================================
@@ -751,6 +862,38 @@
   }
 
   // =========================================================
+  // ✅ NEW: 게시글 수정/삭제 차단 - 삭제된 게시글
+  // =========================================================
+  function lockDeletedBoardActions() {
+    if (!isDeletedBoard()) return;
+
+    document.addEventListener('click', function (e) {
+      var t = e.target;
+      if (!t) return;
+
+      var lockEl = t.closest ? t.closest('[data-deleted-lock="1"]') : null;
+      if (!lockEl) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      alertDeletedBoard();
+      return false;
+    }, true);
+
+    document.addEventListener('submit', function (e) {
+      var form = e.target;
+      if (!form) return;
+
+      if (form.querySelector && form.querySelector('[data-deleted-lock="1"]')) {
+        e.preventDefault();
+        e.stopPropagation();
+        alertDeletedBoard();
+        return false;
+      }
+    }, true);
+  }
+
+  // =========================================================
   // Init
   // =========================================================
   function init() {
@@ -762,6 +905,7 @@
 
     bindReplyEvents();
     lockPostManageIfBanned();
+    lockDeletedBoardActions(); // ✅ NEW
 
     loadReplies(getSelectedCondition()).catch(function (e) {
       console.error(e);

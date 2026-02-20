@@ -34,6 +34,9 @@
        value="${boardData.isEdited == 1 or boardData.isEdited == true or boardData.isEdited == '1'
                or (not empty updatedAt and updatedAt ne createdAt)}" />
 
+<%-- ✅ NEW: 삭제된 게시글 여부 --%>
+<c:set var="boardIsDeleted" value="${boardData.boardStatus ne '정상'}" />
+
 <!doctype html>
 <html lang="ko">
 <head>
@@ -121,20 +124,38 @@
             </a>
 
             <c:if test="${canManagePostUi}">
-              <a class="bd-btn"
-                 data-ban-lock="1"
-                 href="${ctx}/boardEditPage?boardId=${boardData.boardId}">
-                수정
-              </a>
+              <%-- ✅ CHANGED: 삭제된 게시글이면 수정 링크도 차단 --%>
+              <c:choose>
+                <c:when test="${boardIsDeleted}">
+                  <a class="bd-btn" data-deleted-lock="1" href="#">수정</a>
+                </c:when>
+                <c:otherwise>
+                  <a class="bd-btn"
+                     data-ban-lock="1"
+                     href="${ctx}/boardEditPage?boardId=${boardData.boardId}">
+                    수정
+                  </a>
+                </c:otherwise>
+              </c:choose>
 
-              <form action="${ctx}/boardDelete" method="post" style="display:inline;">
-                <input type="hidden" name="boardId" value="${boardData.boardId}" />
-                <button type="submit" class="bd-btn"
-                        data-ban-lock="1"
-                        onclick="return confirm('정말 삭제하시겠습니까?');">
-                  삭제
-                </button>
-              </form>
+              <%-- ✅ CHANGED: 삭제된 게시글이면 data-deleted-lock 추가, confirm 제거 --%>
+              <c:choose>
+                <c:when test="${boardIsDeleted}">
+                  <button type="button" class="bd-btn" data-deleted-lock="1">
+                    삭제
+                  </button>
+                </c:when>
+                <c:otherwise>
+                  <form action="${ctx}/boardDelete" method="post" style="display:inline;">
+                    <input type="hidden" name="boardId" value="${boardData.boardId}" />
+                    <button type="submit" class="bd-btn"
+                            data-ban-lock="1"
+                            onclick="return confirm('정말 삭제하시겠습니까?');">
+                      삭제
+                    </button>
+                  </form>
+                </c:otherwise>
+              </c:choose>
             </c:if>
 
             <c:if test="${canReportPost}">
@@ -253,9 +274,11 @@
         </div>
         <div class="modal-body">
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <%-- ✅ CHANGED: reasonCode 백엔드 validReasonCodes와 일치(OBSCENE 추가) --%>
             <select id="reportReason" style="flex:1; min-width:200px;">
               <option value="SPAM">스팸/도배</option>
               <option value="ABUSE">욕설/비방</option>
+              <option value="OBSCENE">음란/선정성</option>
               <option value="ILLEGAL">불법/유해</option>
               <option value="ETC">기타</option>
             </select>
@@ -302,10 +325,71 @@
     </div>
   </div>
 
+  <%-- ✅ NEW: 삭제된 게시글 안내 모달 --%>
+  <div class="modal fade" id="deletedBoardModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">안내</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          이미 삭제된 게시글입니다.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="bd-btn" data-dismiss="modal">확인</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%-- ✅ NEW: 제재 회원 안내 모달 --%>
+  <div class="modal fade" id="bannedModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">안내</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p id="bannedModalMsg"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="bd-btn" data-dismiss="modal">확인</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%-- ✅ NEW: 신고 결과 안내 모달 (성공/실패/중복 공통) --%>
+  <div class="modal fade" id="reportResultModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">안내</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p id="reportResultMsg"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="bd-btn" data-dismiss="modal">확인</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <%-- JS 전역 변수 --%>
   <script>
     const ctx = '${ctx}';
     const boardId = ${boardData.boardId};
+    const boardStatus = '${boardData.boardStatus}'; <%-- ✅ NEW --%>
     const isLogin = ${isLogin};
     const sessionMemberId = '${sessionMemberId}';
     const sessionMemberRole = '${sessionMemberRole}';
