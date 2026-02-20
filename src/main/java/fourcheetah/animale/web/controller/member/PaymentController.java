@@ -8,13 +8,14 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,6 +51,13 @@ public class PaymentController {
 
     @Value("${kakaopay.secret}")
     private String secretKey;
+    
+    @Value("${toss.clientKey}")
+    private String tossclientKey;
+    
+ //  [ADD]
+    @Autowired
+    private org.springframework.core.env.Environment env;
 
     private final MemberService memberService;
     
@@ -361,6 +369,98 @@ public class PaymentController {
     private int calcVat(int amount) {
         return (int) Math.round(amount / 11.0);
     }
+    
+    
+    
+ // [ADD] Toss 결제 시작(READY) 엔드포인트
+    @PostMapping("/payment/toss/prepare")
+    public ResponseEntity<Map<String, Object>> tossReady(
+    		 @RequestParam(value = "selectCash", required = false) Integer selectCash,
+    	        @RequestParam(value = "amount", required = false) Integer amount, CashChargeDTO dto,
+            HttpSession session
+    ) {
+        Integer memberId = (Integer) session.getAttribute("memberId");
+        if (memberId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                "ok", false,
+                "message", "로그인이 필요합니다."
+            ));
+        }
+
+        // [FIX] 어떤 이름으로 오든 금액 확정
+        Integer cashCharge = (selectCash != null) ? selectCash : amount;
+
+        // [FIX] 누락 방어 (여기서 예외 대신 400으로 처리)
+        if (cashCharge == null) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "ok", false,
+                    "message", "selectCash(또는 amount) 파라미터가 필요합니다."
+            ));
+        }
+        // 금액 화이트리스트
+        if (!(cashCharge == 1000 || cashCharge == 5000 || cashCharge == 10000 || cashCharge == 50000)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "ok", false,
+                "message", "허용되지 않은 충전 금액입니다."
+            ));
+        }
+
+        // 서버에서 orderId 생성(클라 생성 금지)
+        String orderId = "CASH_" + java.util.UUID.randomUUID();
+        String partnerUserId = String.valueOf(memberId);
+
+        // 콜백 URL 생성
+        String baseUrl = org.springframework.web.servlet.support.ServletUriComponentsBuilder
+                .fromCurrentContextPath()
+                .build()
+                .toUriString();
+
+        String successUrl = baseUrl + "/payment/toss/success";
+        String failUrl    = baseUrl + "/payment/toss/fail";
+
+        // DB: CASH_CHARGE INSERT (READY)
+       
+        // 서비스/DAO가 condition 체크하면 아래 라인 사용
+        // dto.setCondition("CHARGE_INSERT");
+
+        dto.setMemberId(memberId);
+        dto.setProvider("TOSSPAY");     // provider 통일
+        dto.setAmount(cashCharge);
+        dto.setCashAmount(cashCharge);  // 너 DB는 cash_amount 기준 집계라 이게 중요
+        dto.setStatus("READY");
+        dto.setPartnerOrderId(orderId);
+        dto.setApprovedAt(null);
+
+        boolean insOk = cashChargeService.insert(dto);
+        if (!insOk) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                "ok", false,
+                "message", "결제 준비 내역 저장 실패(CASH_CHARGE)"
+            ));
+        }
+
+        //  (선택) 세션에도 저장해두면 디버깅/추적 편함
+        session.setAttribute("toss_partner_order_id", orderId);
+        session.setAttribute("toss_partner_user_id", partnerUserId);
+        session.setAttribute("toss_total_amount", cashCharge);
+
+        // clientKey는 공개키라 내려줘도 됨(프론트에서 requestPayment에 필요)
+        // - application.properties: toss.clientKey=...
+        String clientKey = env.getProperty("toss.clientKey"); // ✅ env 주입 필요(아래 참고)
+
+        return ResponseEntity.ok(Map.of(
+            "ok", true,
+            "orderId", orderId,
+            "amount", cashCharge,
+            "orderName", "캐시 충전 " + String.format("%,d", cashCharge) + "원",
+            "successUrl", successUrl,
+            "failUrl", failUrl,
+            "clientKey", (clientKey == null ? "" : clientKey)
+        ));
+    }
+    
+    
+    
  // ==================== TossPayments 콜백 (임시) ====================
 
     /**
@@ -392,39 +492,32 @@ public class PaymentController {
         }
 
         try {
-            // TODO(운영): paymentKey/orderId/amount로 서버에서 confirm API 호출 후 성공일 때만 DB 반영
+            //  [CHANGED] 여기서 바로 memberService.update 하면 안 됨
+            boolean txOk = cashChargeService.approveTossTx(memberId, orderId, paymentKey, amount);
 
-            MemberDTO upd = new MemberDTO();
-            upd.setCondition("MEMBER_CASH_PLUS");
-            upd.setMemberId(memberId);
-            upd.setMemberPayCash(amount);
-
-            boolean ok = memberService.update(upd);
-            if (!ok) {
+            if (!txOk) {
                 model.addAttribute("payResult", "FAIL");
                 model.addAttribute("payMethod", "토스페이");
-                model.addAttribute("message", "캐시 충전 DB 반영 실패");
+                model.addAttribute("message", "결제 승인 확인 실패(토스 confirm)");
                 return "cashresult";
             }
 
+            // [CHANGED] 트랜잭션 성공 후에만 중복처리 방지 세션값 저장
+            session.setAttribute("toss_processed_order_id", orderId);
+
+            // 화면 출력용
             MemberDTO sel = new MemberDTO();
             sel.setCondition("MEMBER_MYPAGE");
             sel.setMemberId(memberId);
             MemberDTO memberData = memberService.selectOne(sel);
             int totalCash = (memberData == null) ? 0 : memberData.getMemberCash();
 
-            session.setAttribute("toss_processed_order_id", orderId);
-
-            // ✅ JSP에서 사용할 값들
             model.addAttribute("payResult", "SUCCESS");
             model.addAttribute("payMethod", "토스페이");
             model.addAttribute("totalAmount", String.format("%,d", amount));
             model.addAttribute("totalCash", String.format("%,d", totalCash));
-
-            // ✅ 승인 시각: 일단 서버 현재 시간으로 표시 (임시)
-            String approvedAt = LocalDateTime.now()
-                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            model.addAttribute("approvedAt", approvedAt);
+            model.addAttribute("approvedAt", java.time.LocalDateTime.now()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
             return "cashresult";
 
@@ -456,8 +549,12 @@ public class PaymentController {
         if (code != null && !code.isBlank()) msg = msg + " (" + code + ")";
         model.addAttribute("message", msg);
 
+     // [ADD] FAIL 콜백에서 READY -> FAIL 반영(선택)
         if (orderId != null && !orderId.isBlank()) {
-            session.removeAttribute("toss_processed_order_id");
+            CashChargeDTO dto = new CashChargeDTO();
+            dto.setCondition("CHARGE_FAIL_READY_BY_ORDER");
+            dto.setPartnerOrderId(orderId);
+            cashChargeService.update(dto);
         }
 
         return "cashresult";
