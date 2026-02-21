@@ -329,6 +329,22 @@
     });
   })();
 </script>
+<c:if test="${deletedBoardRedirect}">
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (window.Swal && typeof window.Swal.fire === 'function') {
+    window.Swal.fire({
+      icon: 'warning',
+      title: '삭제된 게시글입니다',
+      text: '신고 처리가 완료된 게시글은 조회할 수 없습니다.',
+      confirmButtonText: '확인'
+    });
+  } else {
+    alert('신고 처리가 완료된 게시글은 조회할 수 없습니다.');
+  }
+});
+</script>
+</c:if>
 
 </body>
 </html>
