@@ -756,5 +756,66 @@
   .board-detail-page .reply-content{
     margin-left:0;
   }
+  /* =========================
+   10) Deleted Post Guard (403 Modal)
+========================= */
+.board-detail-page .bd-btn.is-blocked,
+.board-detail-page .like-pill.is-blocked{
+  opacity: .55;
+  pointer-events: none;
+  filter: grayscale(.15);
+}
+
+.board-detail-page .deleted-guard-modal .modal-dialog{
+  max-width: 520px;
+}
+.board-detail-page .deleted-guard-modal .modal-content{
+  background: rgba(20,20,45,0.92);
+  color:#fff;
+  border:1px solid rgba(255,255,255,0.14);
+  border-radius:16px;
+}
+.board-detail-page .deleted-guard-modal .modal-header,
+.board-detail-page .deleted-guard-modal .modal-footer{
+  border-color: rgba(255,255,255,0.10);
+}
+.board-detail-page .deleted-guard-modal .modal-title{
+  font-weight: 900;
+}
+.board-detail-page .deleted-guard-modal .dg-text{
+  color: rgba(255,255,255,0.88);
+  line-height: 1.7;
+}
+/* =========================
+   FIX: 댓글 포커스 시 상단 버튼 덮임(z-index) 문제
+   - reply-card가 떠오르면서 bd-actions를 덮는 현상 방지
+========================= */
+
+/* 1) 버튼 영역을 확실히 위로 */
+.board-detail-page .bd-actions{
+  position: relative;
+  z-index: 200;
+}
+
+/* 2) 댓글 카드(및 내부 헤더)가 버튼 영역을 넘어 덮지 못하게 */
+.board-detail-page .reply-card{
+  position: relative;
+  z-index: 10; /* ✅ 기존 50 같은 값이 있으면 낮춰서 덮임 방지 */
+}
+
+/* reply-head는 드롭다운(nice-select) 때문에 z-index 높인 흔적이 있는데,
+   버튼 덮임 원인이 되므로 범위만 제한 */
+.board-detail-page .reply-head{
+  position: relative;
+  z-index: 20;
+}
+
+/* 3) 혹시 카드의 장식 레이어가 전체를 덮는다면 클릭/포커스 방해 제거 */
+.board-detail-page .bd-card::before,
+.board-detail-page .bd-card::after,
+.board-detail-page .reply-card::before,
+.board-detail-page .reply-card::after{
+  pointer-events: none;
+}
 }
 

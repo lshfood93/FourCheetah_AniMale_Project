@@ -105,6 +105,36 @@
 /* =========================
    프로필 이미지 로더 (기본)
    ========================= */
+   /* ✅ FIX: 프로필 로딩 오버레이가 아래로 내려가는 현상 강제 수정 */
+#profileWrap{
+  position: relative !important;  /* 오버레이 기준점 */
+}
+
+#profileWrap > .profile-loader{
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 50 !important;
+
+  /* 가운데 정렬 */
+  display: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+
+  /* 오버레이 느낌 */
+  background: rgba(11, 12, 42, .80) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+
+  /* 혹시 다른 스타일이 밀어내는 것 방지 */
+  margin: 0 !important;
+  transform: none !important;
+}
+
+#profileWrap.is-loading > .profile-loader{
+  display: flex !important;
+}
 .profile-img-wrap{
   width: 256px; height: 256px;
   margin: 0 auto 16px;

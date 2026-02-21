@@ -25,6 +25,35 @@
       display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
       overflow:hidden; max-width:560px;
     }
+
+    /* ✅ action alert (sanction info) */
+    #actionAlert{
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+    #actionAlert .aa-title{
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    #actionAlert .aa-meta{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    #actionAlert .aa-chip{
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      line-height: 1;
+      background: rgba(0,0,0,.06);
+    }
+    #actionAlert .aa-chip b{
+      font-weight: 800;
+    }
   </style>
 </head>
 
@@ -281,7 +310,7 @@
     // ✅ UX: 처리 의도 명확화
     const msg = (action === 'reject')
       ? '신고를 반려(패스) 처리하시겠습니까?\n- 반려 시 해당 신고는 처리완료로 내려가며(목록에서 제거), 이후 동일 게시글에 신고 재접수가 가능해야 합니다.'
-      : '신고를 승인(제재) 처리하시겠습니까?\n- 승인 시 게시글 삭제 + 작성자 제재(경고/정지 등)가 적용되어야 합니다.';
+      : '신고를 승인(제재) 처리하시겠습니까?\n- 승인 시 게시글 삭제 + 작성자 제재(경고/정지/영구정지)가 적용되어야 합니다.';
 
     if(!confirm(msg)) return;
 
@@ -293,7 +322,9 @@
       const data = await postAction(url, boardId);
 
       if(data.ok){
-        showActionAlert('success', data.ok);
+        // ✅ success: 문자열/객체 모두 처리 (객체면 누적/제재 표시)
+        showActionAlert('success', data);
+
         // 행 삭제 후, 페이지가 비어버리면 현재 페이지 재로딩
         tr.remove();
 
@@ -301,7 +332,6 @@
         const hasRow = tbody && tbody.querySelectorAll('tr[id^="row-"]').length > 0;
 
         if (!hasRow) {
-          // 현재 페이지가 비었으면 같은 페이지 다시 불러오되, 최소 1페이지 유지
           const nextPage = Math.max(1, currentPage);
           reloadReportList(nextPage, currentSort);
         }
@@ -314,20 +344,90 @@
     }
   });
 
-  // ✅ Bootstrap alert helper
-  function showActionAlert(type, message) {
+  // ✅ 누적횟수 → 제재 문구 매핑(프론트 계산)
+  function getSanctionLabelByCount(cnt){
+    const n = Number(cnt);
+    if (!Number.isFinite(n) || n <= 0) return null;
+
+    if (n >= 7) return '영구정지';
+    if (n >= 5) return '30일 정지';
+    if (n >= 3) return '7일 정지';
+    return '경고'; // 1~2
+  }
+
+  // ✅ alert helper (string + object 모두 지원)
+  function showActionAlert(type, payload) {
     const el = document.getElementById('actionAlert');
     if (!el) return;
 
     el.className = `alert alert-${type}`;
-    el.textContent = message;
     el.classList.remove('d-none');
 
-    // 3초 후 자동 숨김
+    // payload가 문자열이면 기존처럼 출력
+    if (typeof payload === 'string') {
+      el.textContent = payload;
+      autoHideAlert(el);
+      return;
+    }
+
+    // payload가 객체(JSON)면 확장 표시
+    const msg = payload.message || payload.ok || (type === 'success' ? '처리 완료' : '처리 실패');
+
+    // ✅ 백엔드 키가 뭐로 와도 최대한 잡기
+    const validCnt =
+      payload.validReportCount ??
+      payload.valid_report_count ??
+      payload.newCount ??
+      payload.count ??
+      payload.totalCount;
+
+    // 백에서 제재 타입을 내려주면 우선 사용, 없으면 프론트 계산
+    const sanctionType =
+      payload.sanctionType ??
+      payload.sanction_type ??
+      payload.sanction ??
+      getSanctionLabelByCount(validCnt);
+
+    const sanctionUntil =
+      payload.sanctionUntil ??
+      payload.sanction_until ??
+      payload.until ??
+      payload.endAt ??
+      payload.end_at;
+
+    const chips = [];
+
+    if (validCnt !== undefined && validCnt !== null && validCnt !== '') {
+      chips.push(`<span class="aa-chip"><b>누적</b> ${escapeHtml(String(validCnt))}회</span>`);
+    }
+    if (sanctionType) {
+      chips.push(`<span class="aa-chip"><b>제재</b> ${escapeHtml(String(sanctionType))}</span>`);
+    }
+    if (sanctionUntil) {
+      chips.push(`<span class="aa-chip"><b>기간</b> ~ ${escapeHtml(String(sanctionUntil))}</span>`);
+    }
+
+    el.innerHTML = `
+      <div class="aa-title">${type === 'success' ? '완료' : '안내'}</div>
+      <div>${escapeHtml(String(msg))}</div>
+      ${chips.length ? `<div class="aa-meta">${chips.join('')}</div>` : ''}
+    `;
+
+    autoHideAlert(el);
+  }
+
+  function autoHideAlert(el){
     window.clearTimeout(window.__adminReportAlertTimer);
     window.__adminReportAlertTimer = window.setTimeout(() => {
       el.classList.add('d-none');
-    }, 3000);
+    }, 5000);
+  }
+
+  // ✅ XSS 방지용
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, (m) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
   }
 </script>
 
