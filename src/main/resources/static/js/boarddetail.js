@@ -734,17 +734,45 @@
       fd.append('reasonCode', reason);
       fd.append('reasonDetail', content);
 
-      httpPostForm(API.boardReport, fd)
-        .then(function () {
-          alert('신고가 접수되었습니다.');
-          if ($reportContent) $reportContent.value = '';
-          if (window.jQuery) window.jQuery('#reportModal').modal('hide');
-          if ($btnReport) $btnReport.style.display = 'none';
-        })
-        .catch(function (e) {
-          console.error(e);
-          alert('신고 접수에 실패했습니다.');
-        });
+	  // ✅ 변경 코드 (SweetAlert2 적용 + fallback alert 포함)
+	  httpPostForm(API.boardReport, fd)
+	    .then(function () {
+	      // ✅ 먼저 신고 모달 닫기 (배경 겹침 방지)
+	      if (window.jQuery) window.jQuery('#reportModal').modal('hide');
+
+	      // ✅ 입력값 초기화
+	      if ($reportContent) $reportContent.value = '';
+
+	      // ✅ 신고 버튼 숨김 (현재 화면에서도 즉시 반영)
+	      if ($btnReport) $btnReport.style.display = 'none';
+
+	      // ✅ SweetAlert2 사용 (없으면 alert로 폴백)
+	      if (window.Swal && typeof window.Swal.fire === 'function') {
+	        return window.Swal.fire({
+	          icon: 'success',
+	          title: '신고 접수 완료',
+	          text: '신고가 정상적으로 접수되었습니다.',
+	          confirmButtonText: '확인'
+	        });
+	      } else {
+	        alert('신고가 접수되었습니다.');
+	      }
+	    })
+	    .catch(function (e) {
+	      console.error(e);
+
+	      // ✅ 실패도 SweetAlert2로 표시 (없으면 alert 폴백)
+	      if (window.Swal && typeof window.Swal.fire === 'function') {
+	        window.Swal.fire({
+	          icon: 'error',
+	          title: '신고 접수 실패',
+	          text: '신고 접수에 실패했습니다. 잠시 후 다시 시도해주세요.',
+	          confirmButtonText: '확인'
+	        });
+	      } else {
+	        alert('신고 접수에 실패했습니다.');
+	      }
+	    });
     });
   }
 
