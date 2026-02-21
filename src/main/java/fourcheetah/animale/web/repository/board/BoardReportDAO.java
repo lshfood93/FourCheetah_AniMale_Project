@@ -137,7 +137,22 @@ public class BoardReportDAO {
         "    ELSE DATE_ADD(NOW(), INTERVAL 1 DAY) " +
         "  END " +                                   // end_at
         "FROM board_report " +
-        "WHERE board_id = ? AND status = 'APPROVED' " +   // ✅ FIX: 2단계에서 이미 APPROVED로 변경됐으므로
+        "WHERE board_id = ? AND status = 'PENDING' " +
+        "LIMIT 1";
+
+    // 신고 상세 조회 (boardId로 단건 조회)
+    private static final String SELECT_REPORT_DETAIL =
+        "SELECT " +
+        "  br.board_id, " +
+        "  b.member_id AS board_writer_id, " +
+        "  b.board_title, " +
+        "  b.board_content, " +
+        "  COUNT(br.report_id) AS report_count, " +
+        "  MIN(br.created_at) AS created_at " +
+        "FROM board_report br " +
+        "JOIN board b ON br.board_id = b.board_id " +
+        "WHERE br.board_id = ? AND br.status = 'PENDING' " +
+        "GROUP BY br.board_id, b.member_id, b.board_title, b.board_content " +
         "LIMIT 1";
 
     // 알림 생성 (3회 이상)
@@ -198,6 +213,23 @@ public class BoardReportDAO {
     }
 
     /**
+     * 신고 상세 조회 (boardId 단건)
+     */
+    public BoardReportDTO selectReportDetail(int boardId) {
+        System.out.println("[DAO] 신고 상세 조회 - boardId=" + boardId);
+        try {
+            List<BoardReportDTO> result = jdbcTemplate.query(
+                SELECT_REPORT_DETAIL, BoardReportRowMapper, boardId
+            );
+            return result.isEmpty() ? null : result.get(0);
+        } catch (Exception e) {
+            System.out.println("[DAO 에러] 신고 상세 조회: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
      * 신고 목록 총 개수
      */
     public int getTotalCount() {
@@ -228,22 +260,6 @@ public class BoardReportDAO {
             return count != null && count > 0;
         } catch (Exception e) {
             System.out.println("[DAO 에러] 중복 신고 체크: " + e.getMessage());
-            return false;
-        }
-    }
-
-    // ✅ NEW: 현재 사용자가 해당 게시글을 PENDING 신고한 상태인지 체크 (신고버튼 비활성화용)
-    public boolean isReportedByMember(int boardId, int memberId) {
-        try {
-            Integer count = jdbcTemplate.queryForObject(
-                CHECK_DUPLICATE_REPORT,
-                Integer.class,
-                boardId,
-                memberId
-            );
-            return count != null && count > 0;
-        } catch (Exception e) {
-            System.out.println("[DAO 에러] isReportedByMember: " + e.getMessage());
             return false;
         }
     }
