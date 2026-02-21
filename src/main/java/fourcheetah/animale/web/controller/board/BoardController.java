@@ -234,7 +234,7 @@ public class BoardController {
         // ✅ NEW: 내가 신고한 게시글인지 (신고버튼 비활성화용)
         boolean isReported = false;
         if (memberId != null) {
-            isReported = boardReportDAO.isReportedByMember(boardId, memberId);
+        	isReported = boardReportDAO.isReportedByMember((int) boardId, (int) memberId);
         }
         model.addAttribute("isReported", isReported);
         System.out.println("[게시글 상세보기 로그] isReported=" + isReported);
