@@ -16,6 +16,7 @@ import fourcheetah.animale.web.dto.board.ReplyDTO;
 import fourcheetah.animale.web.service.board.BoardLikeService;
 import fourcheetah.animale.web.service.board.BoardService;
 import fourcheetah.animale.web.service.board.ReplyService;
+import fourcheetah.animale.web.repository.board.BoardReportDAO;
 import fourcheetah.animale.web.aop.SanctionCheck;
 import fourcheetah.animale.web.aop.DeletedBoardCheck;
 import jakarta.servlet.http.Cookie;
@@ -55,6 +56,9 @@ public class BoardController {
 
     @Autowired
     private BoardLikeService boardLikeService;
+
+    @Autowired
+    private BoardReportDAO boardReportDAO;  // ✅ NEW: 신고 여부 체크용
 
     // =========================================================
     // 1) 게시글 삭제 (POST /boardDelete)
@@ -193,6 +197,16 @@ public class BoardController {
             return message(model, "존재하지 않는 게시글입니다.", "/main");
         }
 
+        // ✅ NEW: 관리자 신고 승인으로 삭제된 게시글 - 목록으로 redirect + 모달 플래그
+        if ("내용삭제".equals(boardData.getBoardStatus())) {
+            System.out.println("[게시글 상세보기 로그] 내용삭제 게시글 접근 차단 - boardId=" + boardId);
+            if (session == null) session = request.getSession(true);
+            session.setAttribute("deletedBoardRedirect", true);
+            String category = boardData.getBoardCategory();
+            if (category == null || category.trim().isEmpty()) category = "ANIME";
+            return "redirect:/boardList?boardCategory=" + category;
+        }
+
         // 3) 좋아요 개수
         boardLikeDTO.setBoardId(boardId);
         boardLikeDTO.setCondition("BOARD_LIKE_COUNT");
@@ -216,7 +230,14 @@ public class BoardController {
         }
         
         model.addAttribute("isLiked", likedByMe);
-        
+
+        // ✅ NEW: 내가 신고한 게시글인지 (신고버튼 비활성화용)
+        boolean isReported = false;
+        if (memberId != null) {
+            isReported = boardReportDAO.isReportedByMember(boardId, memberId);
+        }
+        model.addAttribute("isReported", isReported);
+        System.out.println("[게시글 상세보기 로그] isReported=" + isReported);
 
         // 5) 댓글 목록
         replyDTO.setBoardId(boardId);
@@ -372,10 +393,18 @@ public class BoardController {
     public String boardList(
             BoardDTO boardDTO,
             BindingResult br,
+            HttpServletRequest request,
             Model model
     ) {
 
         model.addAttribute("activeMenu", "COMMUNITY");
+
+        // ✅ NEW: 삭제된 게시글 접근 redirect 플래그 처리 (board.jsp에서 모달 표시)
+        HttpSession session = request.getSession(false);
+        if (session != null && Boolean.TRUE.equals(session.getAttribute("deletedBoardRedirect"))) {
+            session.removeAttribute("deletedBoardRedirect");
+            model.addAttribute("deletedBoardRedirect", true);
+        }
 
         // 1) category 필수 검증
         String category = boardDTO.getBoardCategory();
