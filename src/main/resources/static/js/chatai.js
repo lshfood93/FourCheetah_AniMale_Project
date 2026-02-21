@@ -262,6 +262,123 @@ document.addEventListener('DOMContentLoaded', function () {
       quick.appendChild(btn);
     }
   }
+  
+  // =========================================================
+  // ✅ [추가] 서버 /open 응답 복원 유틸
+  // ---------------------------------------------------------
+  // 목적:
+  // - open 응답이 "새 대화"인지 "기존 대화 복원"인지 판별
+  // - chatHistory / lastRecommendedAnimes 를 화면에 재렌더
+  //
+  // 왜 필요한가?
+  // - 페이지 이동 시 JS 메모리 상태/DOM은 사라진다(정상)
+  // - 하지만 서버 세션에는 대화 상태가 남아 있을 수 있으므로
+  //   /open 응답을 기반으로 화면을 다시 그려야 한다.
+  // =========================================================
+
+  // ✅ 안전한 배열 변환
+  // - null/undefined/배열 아닌 값이 와도 빈 배열로 처리
+  function toArray(v) {
+    return Array.isArray(v) ? v : [];
+  }
+
+  // ✅ 히스토리 role 정규화
+  // - 백엔드 ChatMessage.role이 'assistant'일 수 있으므로
+  //   프론트 appendTextBubble('bot'|'user') 규칙으로 매핑한다.
+  function normalizeHistoryRole(role) {
+    var r = String(role || '').toLowerCase();
+
+    if (r === 'user') return 'user';
+    if (r === 'assistant') return 'bot';
+    if (r === 'bot') return 'bot';
+    if (r === 'system') return 'bot';
+
+    // 알 수 없는 role은 bot으로 처리(안전 폴백)
+    return 'bot';
+  }
+
+  // ✅ chatHistory 말풍선 복원
+  // 기대 스키마:
+  //   [{ role: 'user'|'assistant', content: '...' }, ...]
+  function restoreChatHistoryBubbles(historyList) {
+    var list = toArray(historyList);
+
+    for (var i = 0; i < list.length; i++) {
+      var item = list[i] || {};
+
+      var text = (item.content == null) ? '' : String(item.content);
+      text = text.replace(/\r\n/g, '\n').trim();
+
+      // 내용 없는 히스토리 항목은 스킵
+      if (!text) continue;
+
+      appendTextBubble(normalizeHistoryRole(item.role), text);
+    }
+  }
+
+  // ✅ /open 응답 기반 화면 구성 (초기/복원 분기)
+  // ---------------------------------------------------------
+  // 정책:
+  // 1) 항상 메시지 영역을 정리하고 quick chips는 다시 렌더
+  // 2) 복원 가능한 데이터가 있으면(chatHistory/lastRecommendedAnimes)
+  //    -> 복원 렌더
+  // 3) 아니면 기존처럼 환영 메시지 기반 초기 UI 렌더
+  //
+  // 참고:
+  // - resumed=true 가 기본 신호이지만,
+  //   방어적으로 history/recs 존재 여부도 함께 본다.
+  // =========================================================
+  function restoreOpenState(data) {
+    // 1) 기본 UI 골격 재정리(중복 append 방지)
+    clearMessagesKeepQuick();
+    renderQuickChips();
+
+    // 2) 추천 관련 상태 초기화(복원하면서 다시 세팅될 수 있음)
+    hasRecs = false;
+    hideActions();
+
+    // 3) placeholder 갱신(서버가 내려주면 반영)
+    if (data && data.initialPrompt && input) {
+      input.placeholder = data.initialPrompt;
+    }
+
+    // 4) 복원 데이터 추출(방어적으로 배열 처리)
+    var historyList = toArray(data && data.chatHistory);
+    var lastRecs = toArray(data && data.lastRecommendedAnimes);
+
+    // resumed=true 뿐 아니라 실제 복원 가능한 데이터 존재 여부도 함께 판단
+    var resumed = !!(data && data.resumed);
+    var hasRestorableData = resumed || historyList.length > 0 || lastRecs.length > 0;
+
+    // 5) 복원 분기
+    if (hasRestorableData) {
+      // (a) 텍스트 히스토리 복원
+      restoreChatHistoryBubbles(historyList);
+
+      // (b) 마지막 추천 카드 1세트 복원
+      //     appendRecommendations 내부에서:
+      //     - hasRecs = true
+      //     - showActions()
+      //     처리됨
+      if (lastRecs.length > 0) {
+        appendRecommendations(lastRecs);
+      } else {
+        // 추천 복원 데이터가 없으면 더추천 버튼은 숨김 유지
+        hasRecs = false;
+        hideActions();
+      }
+
+      // (c) 복원 데이터가 매우 비어있는 예외 케이스 폴백
+      if (historyList.length === 0 && lastRecs.length === 0) {
+        appendTextBubble('bot', (data && data.welcomeMessage) ? data.welcomeMessage : '안녕하세요. 무엇을 도와드릴까요?');
+      }
+
+      return;
+    }
+
+    // 6) 초기 진입 분기(기존 동작)
+    appendTextBubble('bot', (data && data.welcomeMessage) ? data.welcomeMessage : '안녕하세요. 무엇을 도와드릴까요?');
+  }
 
   // =========================================================
   // [RENDER] 추천 카드 렌더
@@ -428,6 +545,23 @@ document.addEventListener('DOMContentLoaded', function () {
   // - 서버 세션에서 대화 초기화/환영 메시지/힌트 제공
   // - 프론트는 quick chips 렌더 + hasRecs false + actions hidden으로 초기 상태 정리
   // =========================================================
+  // =========================================================
+  // ✅ [교체] [API] /open
+  // GET base + '/open'
+  // 기대 응답(복원 대응):
+  //   {
+  //     welcomeMessage: string (optional),
+  //     initialPrompt: string (optional),
+  //     resumed: boolean (optional),
+  //     chatHistory: array (optional),
+  //     moreCount: number (optional),
+  //     lastRecommendedAnimes: array (optional)
+  //   }
+  //
+  // 역할(변경점):
+  // - 기존: 항상 초기 UI 렌더
+  // - 변경: 서버 응답 기준으로 "초기/복원" 분기 렌더
+  // =========================================================
   function callOpen() {
     if (busy) return;
 
@@ -450,26 +584,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
           // HTTP 실패(4xx/5xx) 처리
           if (!res.ok) {
-            appendTextBubble('bot', pickServerMessage(data, '초기화에 실패했어요. 잠시 후 다시 시도해주세요.'));
+            appendTextBubble('bot', pickServerMessage(data, '초기화/복원에 실패했어요. 잠시 후 다시 시도해주세요.'));
             openedOnce = false;
             return;
           }
 
-          // 초기 UI 구성
-          renderQuickChips();
-
-          // 상태 초기화
-          hasRecs = false;
-          hideActions();
-
-          // 환영 문구 출력
-          var welcome = (data && data.welcomeMessage) ? data.welcomeMessage : '안녕하세요. 무엇을 도와드릴까요?';
-          appendTextBubble('bot', welcome);
-
-          // 입력 힌트(placeholder)
-          if (data && data.initialPrompt && input) {
-            input.placeholder = data.initialPrompt;
-          }
+          // ✅ [핵심 변경]
+          // /open 응답을 기반으로 "초기 진입" 또는 "복원 렌더"를 수행한다.
+          restoreOpenState(data);
         });
       })
       .catch(function () {

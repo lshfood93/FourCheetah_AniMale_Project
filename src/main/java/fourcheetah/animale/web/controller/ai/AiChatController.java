@@ -27,6 +27,7 @@ public class AiChatController {
     @ResponseBody
     @GetMapping("/open")
     public AiChatOpenResponse open(HttpSession session) {
+    	
     	 if (session == null) throw new ApiException(HttpStatus.UNAUTHORIZED, "NO_SESSION", "세션이 없습니다.");
         return aiChatService.open(session);
     }
