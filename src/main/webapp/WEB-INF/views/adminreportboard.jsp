@@ -50,15 +50,13 @@
             </a>
           </li>
 
-						<li
-							class="sidebar-item ${fn:contains(uri, '/admin/reports') ? 'selected' : ''}">
-							<a
-							class="sidebar-link ${fn:contains(uri, '/adminreportboard') ? 'active' : ''}"
-							href="${ctx}/adminreportboard"> <span class="hide-menu">신고
-									게시글 관리</span>
-						</a>
-						</li>
-					</ul>
+          <li class="sidebar-item ${fn:contains(uri, '/admin/reports') or fn:contains(uri, '/adminreportboard') ? 'selected' : ''}">
+            <a class="sidebar-link ${fn:contains(uri, '/admin/reports') or fn:contains(uri, '/adminreportboard') ? 'active' : ''}"
+               href="${ctx}/admin/reports">
+              <span class="hide-menu">신고 게시글 관리</span>
+            </a>
+          </li>
+        </ul>
       </nav>
     </div>
   </aside>
@@ -82,6 +80,9 @@
           </div>
 
           <p class="text-muted mb-3">제목 / 내용 클릭 시 게시글 상세로 이동합니다.</p>
+
+          <!-- ✅ 처리 결과 메시지 (AJAX) -->
+          <div id="actionAlert" class="alert d-none" role="alert"></div>
 
           <!-- ✅ 테이블 교체 대상 -->
           <div class="table-responsive" id="reportTableWrap">
@@ -277,9 +278,10 @@
     const boardId = btn.dataset.boardId;
     const tr = btn.closest('tr');
 
+    // ✅ UX: 처리 의도 명확화
     const msg = (action === 'reject')
-      ? '신고를 반려하시겠습니까?'
-      : '신고를 승인(제재)하시겠습니까?';
+      ? '신고를 반려(패스) 처리하시겠습니까?\n- 반려 시 해당 신고는 처리완료로 내려가며(목록에서 제거), 이후 동일 게시글에 신고 재접수가 가능해야 합니다.'
+      : '신고를 승인(제재) 처리하시겠습니까?\n- 승인 시 게시글 삭제 + 작성자 제재(경고/정지 등)가 적용되어야 합니다.';
 
     if(!confirm(msg)) return;
 
@@ -291,6 +293,7 @@
       const data = await postAction(url, boardId);
 
       if(data.ok){
+        showActionAlert('success', data.ok);
         // 행 삭제 후, 페이지가 비어버리면 현재 페이지 재로딩
         tr.remove();
 
@@ -303,13 +306,29 @@
           reloadReportList(nextPage, currentSort);
         }
       } else {
-        alert(data.fail || '처리 실패');
+        showActionAlert('danger', (data.fail || '처리 실패'));
       }
     } catch (err) {
       console.error(err);
-      alert('서버 통신 오류');
+      showActionAlert('danger', '서버 통신 오류');
     }
   });
+
+  // ✅ Bootstrap alert helper
+  function showActionAlert(type, message) {
+    const el = document.getElementById('actionAlert');
+    if (!el) return;
+
+    el.className = `alert alert-${type}`;
+    el.textContent = message;
+    el.classList.remove('d-none');
+
+    // 3초 후 자동 숨김
+    window.clearTimeout(window.__adminReportAlertTimer);
+    window.__adminReportAlertTimer = window.setTimeout(() => {
+      el.classList.add('d-none');
+    }, 3000);
+  }
 </script>
 
 </body>
