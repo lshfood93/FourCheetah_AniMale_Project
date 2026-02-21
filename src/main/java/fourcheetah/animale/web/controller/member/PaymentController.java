@@ -214,21 +214,7 @@ public class PaymentController {
                 return "cashresult";
             }
 
-            // =========================================================
-            // 1) MEMBER 캐시 증가
-            // =========================================================
-            MemberDTO upd = new MemberDTO();
-            upd.setCondition("MEMBER_CASH_PLUS");
-            upd.setMemberId(memberId);
-            upd.setMemberPayCash(approvedTotal);
-
-            boolean ok = memberService.update(upd);
-            if (!ok) {
-                model.addAttribute("payResult", "FAIL");
-                model.addAttribute("message", "캐시 충전 DB 반영 실패");
-                return "cashresult";
-            }
-
+       
             // =========================================================
             // 2) approved_at 파싱 (LocalDateTime)
             // =========================================================
