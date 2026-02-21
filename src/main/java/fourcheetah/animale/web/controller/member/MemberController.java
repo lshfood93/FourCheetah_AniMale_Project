@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,7 +28,7 @@ import jakarta.servlet.http.HttpSession;
 
 /**
  * 회원 컨트롤러 (로그인/가입/프로필/비밀번호/탈퇴)
- * 
+ *
  * 통합 이전:
  * - LoginController
  * - LogoutController
@@ -56,6 +57,10 @@ public class MemberController {
 
     private static final String PASSWORD_REGEX = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()_+=-]).{8,16}$";
 
+    // 제재 날짜 포맷터
+    private static final DateTimeFormatter SANCTION_DATE_FORMATTER =
+        DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 HH시 mm분");
+
     public MemberController(
             MemberService memberService,
             WithdrawRepository withdrawRepository
@@ -81,10 +86,8 @@ public class MemberController {
     ) {
         HttpSession existingSession = request.getSession(false);
         if (existingSession != null && existingSession.getAttribute("memberId") != null) {
-
             String role = (String) existingSession.getAttribute("memberRole");
             String goPage = "ADMIN".equals(role) ? "/adminPage" : "/myPage";
-
             model.addAttribute("msg", "이미 로그인되어 있습니다.");
             model.addAttribute("location", goPage);
             return "message";
@@ -102,39 +105,51 @@ public class MemberController {
             session.setAttribute("memberRole", data.getMemberRole());
             session.setAttribute("memberProfileImage", data.getMemberProfileImage());
             session.setAttribute("memberEmail", data.getMemberEmail());
-            
+
             // 제재 정보 조회 (member_warning 테이블에서)
-         // 제재 정보 조회 (member_warning 테이블에서)
             MemberWarningDTO warningInfo = memberService.selectActiveWarning(data.getMemberId());
 
             if (warningInfo != null) {
                 String warningType = warningInfo.getWarningType();
-                
+
                 System.out.println("[로그인] 제재 정보 발견: " + warningType);
-                
-                // BAN (영구정지) 체크
+
+                // BAN (영구정지) → 로그인 차단
                 if ("BAN".equals(warningType)) {
                     session.invalidate();
                     model.addAttribute("msg", "영구 정지된 계정입니다. 관리자에게 문의하세요.");
                     model.addAttribute("location", "/login");
                     return "message";
                 }
-                
-                // SUSPEND (정지) 체크
+
+                // SUSPEND_7D / SUSPEND_30D (기간 정지 - 누적 3회: 7일, 5회: 30일)
                 if ("SUSPEND_7D".equals(warningType) || "SUSPEND_30D".equals(warningType)) {
                     session.setAttribute("memberStatus", warningType);
                     session.setAttribute("showSanctionModal", true);
-                    
-                    // 날짜 포맷팅
-                    String endAtStr = warningInfo.getEndAt() == null ? 
-                                     "영구 정지" : 
-                                     warningInfo.getEndAt().toString();
-                    
+                    session.setAttribute("sanctionType", warningType);
+
+                    // 날짜 포맷팅: ISO → 한국어 형식
+                    String endAtStr = warningInfo.getEndAt() == null ?
+                                     "미정" :
+                                     warningInfo.getEndAt().format(SANCTION_DATE_FORMATTER);
+
                     session.setAttribute("sanctionEndAt", endAtStr);
                     session.setAttribute("sanctionReason", warningInfo.getReason());
-                    
+
                     System.out.println("[로그인] 정지 상태 - 제재 모달 표시");
                 }
+
+                // WARNING (경고 1, 2, 4회 - 기능 제한 없음, 안내만 표시)
+                if ("WARNING".equals(warningType)) {
+                    session.setAttribute("memberStatus", "WARNING");
+                    session.setAttribute("showSanctionModal", true);
+                    session.setAttribute("sanctionType", "WARNING");
+                    session.setAttribute("sanctionEndAt", "해당 없음");
+                    session.setAttribute("sanctionReason", warningInfo.getReason());
+
+                    System.out.println("[로그인] 경고 상태 - 제재 모달 표시");
+                }
+
             } else {
                 // 제재 없음 = 정상
                 session.setAttribute("memberStatus", "ACTIVE");
@@ -182,7 +197,7 @@ public class MemberController {
 
         return "redirect:/mainPage";
     }
-    
+
     /**
      * 제재 모달 닫기 (세션 플래그 제거)
      */
@@ -190,14 +205,15 @@ public class MemberController {
     @ResponseBody
     public Map<String, Object> clearSanctionModal(HttpSession session) {
         System.out.println("[MemberController] 제재 모달 플래그 제거");
-        
+
         if (session != null) {
             session.removeAttribute("showSanctionModal");
+            session.removeAttribute("sanctionType");
         }
-        
+
         Map<String, Object> response = new HashMap<>();
         response.put("result", "OK");
-        
+
         return response;
     }
 
@@ -287,21 +303,19 @@ public class MemberController {
         if (session == null || session.getAttribute("memberId") == null) {
             return "redirect:/login";
         }
-        
-        // 회원 정보 조회
+
         Integer memberId = (Integer) session.getAttribute("memberId");
-        
+
         MemberDTO dto = new MemberDTO();
         dto.setCondition("MEMBER_MYPAGE");
         dto.setMemberId(memberId);
-        
+
         MemberDTO member = memberService.selectOne(dto);
-        
+
         model.addAttribute("memberData", member);
-        
+
         return "mypage";
     }
-
 
     // ==================== 프로필 변경 ====================
 
@@ -317,10 +331,11 @@ public class MemberController {
     public String legacyChangeProfile() {
         return "redirect:/changeprofile";
     }
+
     @PostMapping("/member/profile")
     public String changeProfile(
             @RequestParam(value = "memberNickname", required = false) String memberNickname,
-            @RequestParam(value = "memberProfileImage", required = false) String newProfileImage, // 현재 로직에서는 token 기준이라 실사용 X
+            @RequestParam(value = "memberProfileImage", required = false) String newProfileImage,
             @RequestParam(value = "temporaryProfileImageToken", required = false) String temporaryProfileImageToken,
             @RequestParam(value = "memberProfileColor", required = false) String memberProfileColor,
             @RequestParam(value = "memberNicknameColor", required = false) String memberNicknameColor,
@@ -337,14 +352,11 @@ public class MemberController {
 
         String backPage = isAdmin ? "redirect:/adminPage" : "redirect:/mypage";
 
-        // =========================================================
-        // 1) 요청값 정리 (빈문자열 -> null)
         String newNick = trimToNull(memberNickname);
         String reqProfileColor = trimToNull(memberProfileColor);
         String reqNicknameColor = trimToNull(memberNicknameColor);
-        String token = trimToNull(temporaryProfileImageToken); // 이미지 변경 판단은 token 기준
+        String token = trimToNull(temporaryProfileImageToken);
 
-        // (추천) 색상값 검증 (#RRGGBB)
         if (reqProfileColor != null && !isValidHexColor(reqProfileColor)) {
             session.setAttribute("msg", "프로필 테두리 색상 값이 올바르지 않습니다. (#RRGGBB)");
             return backPage;
@@ -354,8 +366,6 @@ public class MemberController {
             return backPage;
         }
 
-        // =========================================================
-        // 2) 현재 회원 정보 조회 (⭐ MEMBER_MYPAGE로!)
         MemberDTO curQ = new MemberDTO();
         curQ.setCondition("MEMBER_MYPAGE");
         curQ.setMemberId(memberId);
@@ -366,29 +376,22 @@ public class MemberController {
             return backPage;
         }
 
-        // =========================================================
-        // 3) 변경 여부 판단 (DB 기준)
         boolean nickChanged = (newNick != null && !newNick.equals(cur.getMemberNickname()));
         boolean imgChanged = (token != null && !token.equals(cur.getMemberProfileImage()));
-
         boolean profileColorChanged = (reqProfileColor != null &&
                 (cur.getMemberProfileColor() == null || !reqProfileColor.equals(cur.getMemberProfileColor())));
-
         boolean nicknameColorChanged = (reqNicknameColor != null &&
                 (cur.getMemberNicknameColor() == null || !reqNicknameColor.equals(cur.getMemberNicknameColor())));
 
-        // ✅ 색상도 포함해서 "변경사항 없음" 처리
         if (!nickChanged && !imgChanged && !profileColorChanged && !nicknameColorChanged) {
             session.setAttribute("msg", "변경된 내용이 없습니다.");
             return backPage;
         }
 
-        // =========================================================
-        // 4) 비용 계산 (원하면 숫자만 바꾸면 됨)
         final int NICK_COST = 300;
         final int IMG_COST = 500;
-        final int BORDER_COLOR_COST = 200;   // 예: 100
-        final int NICK_COLOR_COST = 200;     // 예: 100
+        final int BORDER_COLOR_COST = 200;
+        final int NICK_COLOR_COST = 200;
 
         int needCash = 0;
         if (!isAdmin) {
@@ -403,8 +406,6 @@ public class MemberController {
             }
         }
 
-        // =========================================================
-        // 5) 닉네임 변경 시 중복 체크
         if (nickChanged) {
             MemberDTO dup = new MemberDTO();
             dup.setCondition("JOIN_NICKNAME");
@@ -418,8 +419,6 @@ public class MemberController {
             }
         }
 
-        // =========================================================
-        // 6) 이미지 변경 시 파일 이동 (token 기준)
         if (imgChanged) {
             try {
                 Path tempFile = Paths.get(profileTempDir, token);
@@ -439,20 +438,17 @@ public class MemberController {
             }
         }
 
-        // =========================================================
-        // 7) 업데이트 (⭐ INFORM_UPDATE로 통일)
         MemberDTO up = new MemberDTO();
         up.setMemberId(memberId);
         up.setCondition(isAdmin ? "ADMIN_MEMBER_INFORM_UPDATE" : "MEMBER_INFORM_UPDATE");
 
-        // 변경된 값만 세팅, 나머지는 null -> COALESCE로 기존값 유지
         up.setMemberNickname(nickChanged ? newNick : null);
         up.setMemberProfileImage(imgChanged ? "/uploads/profile/" + token : null);
         up.setMemberProfileColor(profileColorChanged ? reqProfileColor : null);
         up.setMemberNicknameColor(nicknameColorChanged ? reqNicknameColor : null);
 
         if (!isAdmin) {
-            up.setMemberPayCash(needCash); // UPDATE_MEMBER_INFORM에서 cash 차감 + cash>=pay 검증
+            up.setMemberPayCash(needCash);
         }
 
         boolean ok = memberService.update(up);
@@ -463,8 +459,6 @@ public class MemberController {
             return backPage;
         }
 
-        // =========================================================
-        // 8) 세션 최신화 (⭐ MEMBER_MYPAGE로 다시 조회)
         MemberDTO after = memberService.selectOne(curQ);
         if (after != null) {
             session.setAttribute("memberNickName", after.getMemberNickname());
@@ -481,9 +475,6 @@ public class MemberController {
         return backPage;
     }
 
-    // =========================================================
-    // 컨트롤러 클래스 안에 같이 추가
-
     private String trimToNull(String s) {
         if (s == null) return null;
         String t = s.trim();
@@ -494,7 +485,6 @@ public class MemberController {
         return color != null && color.matches("^#([0-9a-fA-F]{6})$");
     }
 
-    
     // ==================== 비밀번호 변경 ====================
 
     @GetMapping("/changePasswordPage")
