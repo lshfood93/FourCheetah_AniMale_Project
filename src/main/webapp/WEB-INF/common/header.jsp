@@ -23,6 +23,7 @@
 <c:if test="${activeMenu eq 'NEWS'}">
    <c:set var="newsCls" value="active" />
 </c:if>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
 .header-profile-icon{
   font-size: 18px;
