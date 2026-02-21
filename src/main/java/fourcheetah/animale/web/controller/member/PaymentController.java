@@ -135,6 +135,14 @@ public class PaymentController {
              model.addAttribute("message", "결제 준비 내역 저장 실패(CASH_CHARGE)");
              return "cashresult";
          }
+         
+      // [ADD] 카카오 READY 중복 호출 방지 락
+         if (session.getAttribute("KAKAO_READY_LOCK") != null) {
+             model.addAttribute("payResult", "FAIL");
+             model.addAttribute("message", "결제가 이미 진행 중입니다. 잠시 후 다시 시도해주세요.");
+             return "cashresult";
+         }
+         session.setAttribute("KAKAO_READY_LOCK", true);
 
             
             
@@ -142,6 +150,7 @@ public class PaymentController {
             session.setAttribute("kakaopay_partner_order_id", partnerOrderId);
             session.setAttribute("kakaopay_partner_user_id", partnerUserId);
             session.setAttribute("kakaopay_total_amount", cashCharge);
+            session.removeAttribute("KAKAO_READY_LOCK");
 
             return "redirect:" + nextRedirectPcUrl;
 
@@ -205,21 +214,7 @@ public class PaymentController {
                 return "cashresult";
             }
 
-            // =========================================================
-            // 1) MEMBER 캐시 증가
-            // =========================================================
-            MemberDTO upd = new MemberDTO();
-            upd.setCondition("MEMBER_CASH_PLUS");
-            upd.setMemberId(memberId);
-            upd.setMemberPayCash(approvedTotal);
-
-            boolean ok = memberService.update(upd);
-            if (!ok) {
-                model.addAttribute("payResult", "FAIL");
-                model.addAttribute("message", "캐시 충전 DB 반영 실패");
-                return "cashresult";
-            }
-
+       
             // =========================================================
             // 2) approved_at 파싱 (LocalDateTime)
             // =========================================================
@@ -295,18 +290,20 @@ public class PaymentController {
     // ==================== 카카오페이 콜백 ====================
 
     @GetMapping("/payment/kakaopay/cancel")
-    public String cancel(Model model) {
+    public String cancel(Model model,  HttpSession session) {
         model.addAttribute("payResult", "FAIL");
         model.addAttribute("payMethod", "카카오페이");
         model.addAttribute("message", "결제가 취소되었습니다.");
+        session.removeAttribute("KAKAO_READY_LOCK");
         return "cashresult";
     }
 
     @GetMapping("/payment/kakaopay/fail")
-    public String fail(Model model) {
+    public String fail(Model model,  HttpSession session) {
         model.addAttribute("payResult", "FAIL");
         model.addAttribute("payMethod", "카카오페이");
         model.addAttribute("message", "결제에 실패했습니다.");
+        session.removeAttribute("KAKAO_READY_LOCK");
         return "cashresult";
     }
 
@@ -431,6 +428,9 @@ public class PaymentController {
         dto.setPartnerOrderId(orderId);
         dto.setApprovedAt(null);
 
+        
+        
+        
         boolean insOk = cashChargeService.insert(dto);
         if (!insOk) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
@@ -549,12 +549,25 @@ public class PaymentController {
         if (code != null && !code.isBlank()) msg = msg + " (" + code + ")";
         model.addAttribute("message", msg);
 
-     // [ADD] FAIL 콜백에서 READY -> FAIL 반영(선택)
-        if (orderId != null && !orderId.isBlank()) {
-            CashChargeDTO dto = new CashChargeDTO();
-            dto.setCondition("CHARGE_FAIL_READY_BY_ORDER");
-            dto.setPartnerOrderId(orderId);
-            cashChargeService.update(dto);
+
+        // ================================
+        // [ADD] READY -> CANCEL/FAIL 상태 반영
+        // ================================
+        Integer memberId = (Integer) session.getAttribute("memberId");
+        if (memberId != null && orderId != null && !orderId.isBlank()) {
+
+            boolean isCancel = "PAY_PROCESS_CANCELED".equalsIgnoreCase(code)
+                            || "USER_CANCEL".equalsIgnoreCase(code); // 환경에 따라 다를 수 있어 대비
+
+            if (isCancel) {
+                cashChargeService.cancelReadyTx(memberId, orderId, "TOSSPAY"); // 아래 서비스 메서드 추가
+            } else {
+                cashChargeService.failReadyTx(memberId, orderId, "TOSSPAY");   // 아래 서비스 메서드 추가
+            }
+
+            // 세션 잔재 제거 (중복/교차 결제 방지)
+            session.removeAttribute("toss_pending_order_id");
+            session.removeAttribute("toss_processed_order_id");
         }
 
         return "cashresult";
