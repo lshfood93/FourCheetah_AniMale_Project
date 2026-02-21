@@ -348,6 +348,47 @@
   text-decoration:underline;
 }
 
+/* ✅ CHANGED: 제재회원 안내 문구 가시성 강화 */
+.board-detail-page .ban-hint{
+  margin-bottom:12px;
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid rgba(255, 110, 140, 0.35);
+  background: linear-gradient(135deg,
+    rgba(255, 70, 95, 0.18),
+    rgba(255, 255, 255, 0.04));
+  color: rgba(255, 235, 240, 0.96);   /* ✅ 검은 배경에서 잘 보이게 밝게 */
+  font-weight:800;
+  line-height:1.6;
+  box-shadow: 0 8px 20px rgba(255, 70, 95, 0.12);
+}
+
+/* ✅ CHANGED: 제재 상태 댓글 폼(비활성) 가시성 보정 */
+.board-detail-page .reply-form.is-banned textarea{
+  background: rgba(0,0,0,0.28);
+  border-color: rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.88);
+  cursor: not-allowed;
+}
+
+/* ✅ CHANGED: disabled textarea는 브라우저 기본 흐림 때문에 글자가 안 보일 수 있어 강제 보정 */
+.board-detail-page .reply-form.is-banned textarea:disabled{
+  opacity: 1; /* ✅ 기본 disabled opacity 제거 */
+  color: rgba(255,255,255,0.88);
+  -webkit-text-fill-color: rgba(255,255,255,0.88); /* ✅ 크롬 계열 대응 */
+}
+
+.board-detail-page .reply-form.is-banned textarea::placeholder{
+  color: rgba(255,255,255,0.68);
+}
+
+.board-detail-page .reply-form.is-banned .bd-btn[disabled]{
+  opacity: .72;
+  color: rgba(255,255,255,0.92) !important;
+  border-color: rgba(255,255,255,0.18);
+}
+
+
 /* Reply Form */
 .board-detail-page .reply-form{
   display:flex;
@@ -716,3 +757,4 @@
     margin-left:0;
   }
 }
+

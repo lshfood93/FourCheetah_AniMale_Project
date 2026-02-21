@@ -212,14 +212,8 @@
 	    return;
 	  }
 
-	  // ✅ CHANGED: 제재회원은 좋아요 차단(요청 자체를 안 보냄)
-	  if (typeof isBanned !== 'undefined' && isBanned) {
-	    openBanActionModal(
-	      '제재회원은 좋아요를 누를 수 없습니다.<br/>현재는 조회만 가능합니다.',
-	      '제재회원은 좋아요를 누를 수 없습니다. 현재는 조회만 가능합니다.'
-	    );
-	    return;
-	  }
+	  // ✅ CHANGED: 제재회원도 좋아요는 허용
+	  // (신고/댓글/게시글 수정삭제 차단은 다른 로직에서 그대로 유지됨)
 
 	  var bid = $btnLike.getAttribute('data-board-id') || boardId;
 
