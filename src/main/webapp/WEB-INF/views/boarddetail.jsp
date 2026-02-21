@@ -29,8 +29,7 @@
 <c:set var="canManagePostUi"
        value="${canManagePost and (not isBannedFlag)}" />
 
-<c:set var="isReportedFlag"
-       value="${isReported == 1}" />
+<c:set var="isReportedFlag" value="${boardData.isReported == 1}" />
 
 <%-- ✅ CHANGED: 작성자 권한이 ADMIN이면 신고 버튼 숨김 --%>
 <c:set var="writerIsAdmin"
@@ -83,7 +82,7 @@
 
             <%-- ✅ CHANGED: 수정된 글이면 작성일 대신 수정일만 표시 --%>
             <c:choose>
-              <c:when test="${boardIsEdited and not empty updatedAt}">
+              <c:when test="${isEdited and not empty updatedAt}">
                 <span class="meta-chip">
                   <i class="fa fa-pencil"></i>
                   수정일 <c:out value="${updatedAt}" />
@@ -212,7 +211,7 @@
 
           <c:when test="${isLogin and isBannedFlag}">
             <div class="ban-hint">
-              제재회원은 댓글 작성/수정/삭제 및 게시글 수정/삭제가 제한됩니다.
+              제재회원은 댓글 작성/수정/삭제 및 게시글 작성/수정/삭제가 제한됩니다.
             </div>
 
             <form id="replyForm" class="reply-form is-banned" onsubmit="return false;">
