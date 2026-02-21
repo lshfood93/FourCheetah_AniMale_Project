@@ -19,6 +19,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import fourcheetah.animale.web.dto.member.MemberDTO;
 import fourcheetah.animale.web.dto.member.MemberWarningDTO;
+import fourcheetah.animale.web.repository.member.MemberWarningDAO;
 import fourcheetah.animale.web.repository.member.WithdrawRepository;
 import fourcheetah.animale.web.service.member.MemberService;
 import jakarta.servlet.http.Cookie;
@@ -43,6 +44,7 @@ public class MemberController {
 
     private final MemberService memberService;
     private final WithdrawRepository withdrawRepository;
+    private final MemberWarningDAO memberWarningDAO;  // ✅ NEW: WARNING notified 업데이트용
 
     @Value("${app.upload.profile-temp-dir}")
     private String profileTempDir;
@@ -63,10 +65,12 @@ public class MemberController {
 
     public MemberController(
             MemberService memberService,
-            WithdrawRepository withdrawRepository
+            WithdrawRepository withdrawRepository,
+            MemberWarningDAO memberWarningDAO
     ) {
         this.memberService = memberService;
         this.withdrawRepository = withdrawRepository;
+        this.memberWarningDAO = memberWarningDAO;
     }
 
     // ==================== 로그인 ====================
@@ -122,7 +126,7 @@ public class MemberController {
                     return "message";
                 }
 
-                // SUSPEND_7D / SUSPEND_30D (기간 정지 - 누적 3회: 7일, 5회: 30일)
+                // SUSPEND_7D / SUSPEND_30D - 매 로그인 세션마다 1회 모달 표시
                 if ("SUSPEND_7D".equals(warningType) || "SUSPEND_30D".equals(warningType)) {
                     session.setAttribute("memberStatus", warningType);
                     session.setAttribute("showSanctionModal", true);
@@ -136,18 +140,25 @@ public class MemberController {
                     session.setAttribute("sanctionEndAt", endAtStr);
                     session.setAttribute("sanctionReason", warningInfo.getReason());
 
-                    System.out.println("[로그인] 정지 상태 - 제재 모달 표시");
+                    System.out.println("[로그인] 정지 상태 - 세션당 1회 모달 표시");
                 }
 
-                // WARNING (경고 1, 2, 4회 - 기능 제한 없음, 안내만 표시)
-                if ("WARNING".equals(warningType)) {
+                // WARNING / WARNING_NEW (경고 1~2회 - 기능 제한 없음)
+                // WARNING_NEW: 제재 처리 후 최초 로그인 → 모달 표시 + WARNING으로 업데이트
+                // WARNING: 이미 확인 완료 → 모달 생략
+                if ("WARNING_NEW".equals(warningType) || "WARNING".equals(warningType)) {
                     session.setAttribute("memberStatus", "WARNING");
-                    session.setAttribute("showSanctionModal", true);
                     session.setAttribute("sanctionType", "WARNING");
-                    session.setAttribute("sanctionEndAt", "해당 없음");
                     session.setAttribute("sanctionReason", warningInfo.getReason());
 
-                    System.out.println("[로그인] 경고 상태 - 제재 모달 표시");
+                    if ("WARNING_NEW".equals(warningType)) {
+                        // ✅ 최초 확인: 모달 표시 + WARNING으로 업데이트
+                        session.setAttribute("showSanctionModal", true);
+                        memberWarningDAO.updateWarningConfirmed(warningInfo.getWarningId());
+                        System.out.println("[로그인] WARNING_NEW - 최초 모달 표시, WARNING으로 업데이트");
+                    } else {
+                        System.out.println("[로그인] WARNING - 이미 확인됨, 모달 생략");
+                    }
                 }
 
             } else {

@@ -153,4 +153,23 @@ public class MemberWarningDAO {
             return 0;
         }
     }
+
+    /**
+     * ✅ NEW: WARNING_NEW → WARNING 업데이트 (최초 로그인 모달 확인 처리)
+     * warning_type = 'WARNING_NEW' 인 레코드를 'WARNING' 으로 변경
+     *
+     * @param warningId 경고 ID
+     */
+    public void updateWarningConfirmed(int warningId) {
+        System.out.println("[MemberWarningDAO] updateWarningConfirmed 실행 - warningId=" + warningId);
+
+        String sql = "UPDATE member_warning SET warning_type = 'WARNING' WHERE warning_id = ? AND warning_type = 'WARNING_NEW'";
+
+        try {
+            int rows = jdbcTemplate.update(sql, warningId);
+            System.out.println("[MemberWarningDAO] updateWarningConfirmed 완료 - rows=" + rows);
+        } catch (Exception e) {
+            System.out.println("[MemberWarningDAO] updateWarningConfirmed 실패 - " + e.getMessage());
+        }
+    }
 }
