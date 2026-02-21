@@ -26,7 +26,6 @@
       overflow:hidden; max-width:560px;
     }
 
-    /* ✅ action alert (sanction info) */
     #actionAlert{
       border-radius: 14px;
       padding: 12px 14px;
@@ -34,25 +33,6 @@
     #actionAlert .aa-title{
       font-weight: 800;
       margin-bottom: 6px;
-    }
-    #actionAlert .aa-meta{
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 8px;
-    }
-    #actionAlert .aa-chip{
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      line-height: 1;
-      background: rgba(0,0,0,.06);
-    }
-    #actionAlert .aa-chip b{
-      font-weight: 800;
     }
   </style>
 </head>
@@ -110,7 +90,7 @@
 
           <p class="text-muted mb-3">제목 / 내용 클릭 시 게시글 상세로 이동합니다.</p>
 
-          <!-- ✅ 처리 결과 메시지 (AJAX) -->
+          <!-- ✅ 처리 결과 메시지 -->
           <div id="actionAlert" class="alert d-none" role="alert"></div>
 
           <!-- ✅ 테이블 교체 대상 -->
@@ -134,8 +114,12 @@
                         <c:param name="boardId" value="${r.boardId}" />
                       </c:url>
 
+                      <!-- ✅ DTO에 값이 없을 수 있으니 안전 처리 -->
+                      <c:set var="writerName" value="${empty r.boardWriterNickname ? '-' : r.boardWriterNickname}" />
+                      <c:set var="rawContent" value="${empty r.boardContent ? '' : r.boardContent}" />
+
                       <tr id="row-${r.boardId}">
-                        <td><c:out value="${r.boardWriterNickname}" /></td>
+                        <td><c:out value="${writerName}" /></td>
 
                         <td>
                           <a href="${detailUrl}" class="fw-semibold text-decoration-none">
@@ -150,8 +134,8 @@
                         </td>
 
                         <td>
-                          <a href="${detailUrl}" class="text-muted text-decoration-none truncate-2">
-                            <c:out value="${r.boardContent}" />
+                          <a href="${detailUrl}" class="text-muted text-decoration-none truncate-2 report-content">
+                            <c:out value="${rawContent}" />
                           </a>
                         </td>
 
@@ -193,26 +177,17 @@
                 <ul class="pagination mb-0">
 
                   <li class="page-item ${(currentPage <= 1) ? 'disabled' : ''}">
-                    <a class="page-link" href="#"
-                       data-page="${currentPage-1}">
-                      이전
-                    </a>
+                    <a class="page-link" href="#" data-page="${currentPage-1}">이전</a>
                   </li>
 
                   <c:forEach var="p" begin="${startPage}" end="${endPage}">
                     <li class="page-item ${(p == currentPage) ? 'active' : ''}">
-                      <a class="page-link" href="#"
-                         data-page="${p}">
-                        ${p}
-                      </a>
+                      <a class="page-link" href="#" data-page="${p}">${p}</a>
                     </li>
                   </c:forEach>
 
                   <li class="page-item ${(currentPage >= totalPages) ? 'disabled' : ''}">
-                    <a class="page-link" href="#"
-                       data-page="${currentPage+1}">
-                      다음
-                    </a>
+                    <a class="page-link" href="#" data-page="${currentPage+1}">다음</a>
                   </li>
 
                 </ul>
@@ -237,19 +212,52 @@
   let currentPage = ${empty currentPage ? 1 : currentPage};
   let currentSort = '${empty sortOrder ? "desc" : sortOrder}';
 
-  // ✅ 승인/반려 POST
   async function postAction(url, boardId) {
     const res = await fetch(url, {
       method: 'POST',
       headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
-      body: new URLSearchParams({ boardId })
+      body: new URLSearchParams({ boardId: boardId })
     });
     return res.json();
   }
 
-  // ✅ 목록 GET (URL 이동 X)
+  function showActionAlert(type, message) {
+    const el = document.getElementById('actionAlert');
+    if (!el) return;
+
+    el.className = 'alert alert-' + type;
+    el.classList.remove('d-none');
+    el.innerHTML = '<div class="aa-title">' + (type === 'success' ? '완료' : '실패') + '</div>'
+                 + '<div>' + escapeHtml(String(message || '')) + '</div>';
+
+    window.clearTimeout(window.__adminReportAlertTimer);
+    window.__adminReportAlertTimer = window.setTimeout(() => {
+      el.classList.add('d-none');
+    }, 5000);
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, (m) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
+  }
+
+  function stripHtmlTagsFromReportContent(){
+    document.querySelectorAll('#reportTableWrap .report-content').forEach(el => {
+      const t = el.textContent || '';
+      el.textContent = t
+        .replace(/<\s*br\s*\/?\s*>/gi, ' ')
+        .replace(/<\s*\/\s*p\s*>/gi, ' ')
+        .replace(/<\s*p\b[^>]*>/gi, ' ')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/<[^>]*>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    });
+  }
+
   async function reloadReportList(page, sortOrder) {
-    const url = `${ctx}/admin/reports?page=${page}&sortOrder=${sortOrder}`;
+    const url = ctx + '/admin/reports?page=' + page + '&sortOrder=' + sortOrder;
 
     const res = await fetch(url, {
       method: 'GET',
@@ -272,25 +280,22 @@
     currentPage = page;
     currentSort = sortOrder;
 
-    // ✅ select UI 동기화
     const sel = document.querySelector('#sortSelect');
     if (sel) sel.value = sortOrder;
+
+    stripHtmlTagsFromReportContent();
   }
 
-  // ✅ 정렬 변경
   function changeSort(sortOrder) {
     reloadReportList(1, sortOrder);
   }
 
-  // ✅ 클릭 이벤트 (페이지네이션 + 승인/반려)
   document.addEventListener('click', async (e) => {
-    // 1) 페이지네이션 (비동기)
+    // 페이지네이션
     const pageA = e.target.closest('a[data-page]');
     if (pageA) {
       e.preventDefault();
-
-      // disabled면 무시
-      if (pageA.closest('.page-item')?.classList.contains('disabled')) return;
+      if (pageA.closest('.page-item') && pageA.closest('.page-item').classList.contains('disabled')) return;
 
       const page = parseInt(pageA.dataset.page, 10);
       if (!Number.isFinite(page) || page < 1) return;
@@ -299,7 +304,7 @@
       return;
     }
 
-    // 2) 승인/반려 (비동기)
+    // 승인/반려
     const btn = e.target.closest('[data-action]');
     if(!btn) return;
 
@@ -307,128 +312,46 @@
     const boardId = btn.dataset.boardId;
     const tr = btn.closest('tr');
 
-    // ✅ UX: 처리 의도 명확화
-    const msg = (action === 'reject')
-      ? '신고를 반려(패스) 처리하시겠습니까?\n- 반려 시 해당 신고는 처리완료로 내려가며(목록에서 제거), 이후 동일 게시글에 신고 재접수가 가능해야 합니다.'
-      : '신고를 승인(제재) 처리하시겠습니까?\n- 승인 시 게시글 삭제 + 작성자 제재(경고/정지/영구정지)가 적용되어야 합니다.';
+    const confirmMsg = (action === 'reject')
+      ? '신고를 반려(패스) 처리하시겠습니까?'
+      : '신고를 승인(제재) 처리하시겠습니까?';
 
-    if(!confirm(msg)) return;
+    if(!confirm(confirmMsg)) return;
 
     try {
       const url = (action === 'reject')
-        ? `${ctx}/admin/reports/reject`
-        : `${ctx}/admin/reports/approve`;
+        ? (ctx + '/admin/reports/reject')
+        : (ctx + '/admin/reports/approve');
 
       const data = await postAction(url, boardId);
 
-      if(data.ok){
-        // ✅ success: 문자열/객체 모두 처리 (객체면 누적/제재 표시)
-        showActionAlert('success', data);
+      // ✅ 컨트롤러 응답 포맷에 맞춘 성공/실패 판정
+      // 성공: data.ok 존재(문자열)
+      // 실패: data.fail 존재(문자열)
+      if (data && data.ok) {
+        showActionAlert('success', data.ok);
 
-        // 행 삭제 후, 페이지가 비어버리면 현재 페이지 재로딩
-        tr.remove();
+        // 성공이면 행 제거
+        if (tr) tr.remove();
 
+        // 행이 다 사라지면 현재 페이지 재로딩
         const tbody = document.querySelector('#reportTableWrap tbody');
         const hasRow = tbody && tbody.querySelectorAll('tr[id^="row-"]').length > 0;
+        if (!hasRow) reloadReportList(Math.max(1, currentPage), currentSort);
 
-        if (!hasRow) {
-          const nextPage = Math.max(1, currentPage);
-          reloadReportList(nextPage, currentSort);
-        }
       } else {
-        showActionAlert('danger', (data.fail || '처리 실패'));
+        showActionAlert('danger', (data && data.fail) ? data.fail : '처리 실패');
       }
+
     } catch (err) {
       console.error(err);
       showActionAlert('danger', '서버 통신 오류');
     }
   });
 
-  // ✅ 누적횟수 → 제재 문구 매핑(프론트 계산)
-  function getSanctionLabelByCount(cnt){
-    const n = Number(cnt);
-    if (!Number.isFinite(n) || n <= 0) return null;
-
-    if (n >= 7) return '영구정지';
-    if (n >= 5) return '30일 정지';
-    if (n >= 3) return '7일 정지';
-    return '경고'; // 1~2
-  }
-
-  // ✅ alert helper (string + object 모두 지원)
-  function showActionAlert(type, payload) {
-    const el = document.getElementById('actionAlert');
-    if (!el) return;
-
-    el.className = `alert alert-${type}`;
-    el.classList.remove('d-none');
-
-    // payload가 문자열이면 기존처럼 출력
-    if (typeof payload === 'string') {
-      el.textContent = payload;
-      autoHideAlert(el);
-      return;
-    }
-
-    // payload가 객체(JSON)면 확장 표시
-    const msg = payload.message || payload.ok || (type === 'success' ? '처리 완료' : '처리 실패');
-
-    // ✅ 백엔드 키가 뭐로 와도 최대한 잡기
-    const validCnt =
-      payload.validReportCount ??
-      payload.valid_report_count ??
-      payload.newCount ??
-      payload.count ??
-      payload.totalCount;
-
-    // 백에서 제재 타입을 내려주면 우선 사용, 없으면 프론트 계산
-    const sanctionType =
-      payload.sanctionType ??
-      payload.sanction_type ??
-      payload.sanction ??
-      getSanctionLabelByCount(validCnt);
-
-    const sanctionUntil =
-      payload.sanctionUntil ??
-      payload.sanction_until ??
-      payload.until ??
-      payload.endAt ??
-      payload.end_at;
-
-    const chips = [];
-
-    if (validCnt !== undefined && validCnt !== null && validCnt !== '') {
-      chips.push(`<span class="aa-chip"><b>누적</b> ${escapeHtml(String(validCnt))}회</span>`);
-    }
-    if (sanctionType) {
-      chips.push(`<span class="aa-chip"><b>제재</b> ${escapeHtml(String(sanctionType))}</span>`);
-    }
-    if (sanctionUntil) {
-      chips.push(`<span class="aa-chip"><b>기간</b> ~ ${escapeHtml(String(sanctionUntil))}</span>`);
-    }
-
-    el.innerHTML = `
-      <div class="aa-title">${type === 'success' ? '완료' : '안내'}</div>
-      <div>${escapeHtml(String(msg))}</div>
-      ${chips.length ? `<div class="aa-meta">${chips.join('')}</div>` : ''}
-    `;
-
-    autoHideAlert(el);
-  }
-
-  function autoHideAlert(el){
-    window.clearTimeout(window.__adminReportAlertTimer);
-    window.__adminReportAlertTimer = window.setTimeout(() => {
-      el.classList.add('d-none');
-    }, 5000);
-  }
-
-  // ✅ XSS 방지용
-  function escapeHtml(str) {
-    return str.replace(/[&<>"']/g, (m) => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-  }
+  document.addEventListener('DOMContentLoaded', () => {
+    stripHtmlTagsFromReportContent();
+  });
 </script>
 
 </body>
