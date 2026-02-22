@@ -197,9 +197,15 @@ public class NewsController {
             return "message";
         }
         
-     //  추가
-        newsData.setNewsContent(htmlSanitizer.sanitizeNewsHtml(newsData.getNewsContent()));
+  
 
+
+        //  추가
+        newsData.setNewsTitle(htmlSanitizer.sanitizePlainText(newsData.getNewsTitle()));
+        newsData.setNewsContent(htmlSanitizer.sanitizeNewsHtml(newsData.getNewsContent()));
+        newsData.setNewsThumbnailUrl(htmlSanitizer.sanitizeImageUrl(newsData.getNewsThumbnailUrl()));
+        newsData.setNewsImageUrl(htmlSanitizer.sanitizeImageUrl(newsData.getNewsImageUrl()));
+        
         // 3) Model에 데이터 추가
         model.addAttribute("newsData", newsData);
         model.addAttribute("page", page);
@@ -280,48 +286,46 @@ public class NewsController {
         // 3) 입력값 검증
         Integer animeId = dto.getAnimeId();
 
-        // ✅ [변경] 제목은 일반 텍스트 normalize 적용 (제어문자 제거 + trim)
-        String newsTitle = htmlSanitizer.normalizePlainText(dto.getNewsTitle());
-
-        // ✅ [유지] 본문은 리치텍스트이므로 trim만 적용 후 sanitize
-        String newsContent = (dto.getNewsContent() == null) ? "" : dto.getNewsContent().trim();
+        String rawNewsTitle = (dto.getNewsTitle() == null) ? "" : dto.getNewsTitle().trim();
+        String rawNewsContent = (dto.getNewsContent() == null) ? "" : dto.getNewsContent().trim();
 
         // 제목 검증
-        if (newsTitle.isEmpty()) {
+        if (rawNewsTitle.isEmpty()) {
             model.addAttribute("msg", "제목은 필수입니다.");
             model.addAttribute("location", "/newsWrite");
             return "message";
         }
-        if (newsTitle.length() > 255) {
+        if (rawNewsTitle.length() > 255) {
             model.addAttribute("msg", "제목은 255자 이내로 작성해주세요.");
             model.addAttribute("location", "/newsWrite");
             return "message";
         }
 
         // 내용 검증 (원본 기준)
-        if (newsContent.isEmpty()) {
+        if (rawNewsContent.isEmpty()) {
             model.addAttribute("msg", "내용은 필수입니다.");
             model.addAttribute("location", "/newsWrite");
             return "message";
         }
-        if (newsContent.length() > 100000) {
+        if (rawNewsContent.length() > 100000) {
             model.addAttribute("msg", "내용이 너무 깁니다.");
             model.addAttribute("location", "/newsWrite");
             return "message";
         }
 
-        // ✅ [핵심] 서버측 HTML Sanitizing
-        String safeNewsContent = htmlSanitizer.sanitizeNewsHtml(newsContent);
-        if (safeNewsContent == null || safeNewsContent.trim().isEmpty()) {
-            model.addAttribute("msg", "내용이 올바르지 않습니다.");
+        //  [핵심] 서버측 HTML Sanitizing
+        String newsTitle = htmlSanitizer.sanitizePlainText(rawNewsTitle);
+        if (newsTitle.isEmpty()) {
+            model.addAttribute("msg", "제목은 필수입니다.");
             model.addAttribute("location", "/newsWrite");
             return "message";
         }
-
+        
+        
         // (보조) 문자열 기반 차단 - sanitize가 핵심 방어, 이건 보조 유지
-        String lowerContent = newsContent.toLowerCase();
-        if (lowerContent.contains("<script") || lowerContent.contains("javascript:")) {
-            model.addAttribute("msg", "허용되지 않는 내용이 포함되어 있습니다.");
+        String newsContent = htmlSanitizer.sanitizeNewsHtml(rawNewsContent);
+        if (newsContent.isEmpty()) {
+            model.addAttribute("msg", "내용은 필수입니다.");
             model.addAttribute("location", "/newsWrite");
             return "message";
         }
@@ -337,13 +341,13 @@ public class NewsController {
         try {
             String thumbnailUrl = saveFile(thumbFile, "/upload/newsThumb/", request);
 
-            // ✅ [유지] sanitize된 HTML 기준으로 첫 이미지 추출 (더 안전/일관적)
-            String newsImageUrl = extractFirstImgSrc(safeNewsContent);
+            //  [유지] sanitize된 HTML 기준으로 첫 이미지 추출 (더 안전/일관적)
+            String newsImageUrl = htmlSanitizer.sanitizeImageUrl(extractFirstImgSrc(newsContent));
 
             NewsDTO insertDTO = new NewsDTO();
             insertDTO.setAnimeId(animeId);
-            insertDTO.setNewsTitle(newsTitle);             // ✅ normalize된 제목 저장
-            insertDTO.setNewsContent(safeNewsContent);     // ✅ sanitize된 본문 저장
+            insertDTO.setNewsTitle(newsTitle);             //  normalize된 제목 저장
+            insertDTO.setNewsContent(newsContent);     //  sanitize된 본문 저장
             insertDTO.setNewsThumbnailUrl(thumbnailUrl);
             insertDTO.setNewsImageUrl(newsImageUrl);
             insertDTO.setCondition("NEWS_INSERT");
@@ -431,9 +435,10 @@ public class NewsController {
         // ✅ [추가] 수정 화면 진입 시에도 본문 sanitize
         // - 레거시 데이터/이상 HTML이 textarea로 그대로 내려가는 것 방지
         // - boardEditPage에서 한 방식과 동일한 방어
-        newsData.setNewsContent(
-                htmlSanitizer.sanitizeNewsHtml(newsData.getNewsContent())
-        );
+        newsData.setNewsTitle(htmlSanitizer.sanitizePlainText(newsData.getNewsTitle()));
+        newsData.setNewsContent(htmlSanitizer.sanitizeNewsHtml(newsData.getNewsContent()));
+        newsData.setNewsThumbnailUrl(htmlSanitizer.sanitizeImageUrl(newsData.getNewsThumbnailUrl()));
+        newsData.setNewsImageUrl(htmlSanitizer.sanitizeImageUrl(newsData.getNewsImageUrl()));
 
         // 5) 수정 페이지 이동
         model.addAttribute("type", "NEWS");
@@ -487,52 +492,51 @@ public class NewsController {
             return "message";
         }
 
-        // 4) 입력값 검증
-        // ✅ [변경] 제목은 일반 텍스트 normalize 적용
-        String newsTitle = htmlSanitizer.normalizePlainText(dto.getNewsTitle());
-
-        // ✅ [유지] 본문은 리치텍스트이므로 trim 후 sanitize
-        String newsContent = (dto.getNewsContent() == null) ? "" : dto.getNewsContent().trim();
+        String rawNewsTitle = (dto.getNewsTitle() == null) ? "" : dto.getNewsTitle().trim();
+        String rawNewsContent = (dto.getNewsContent() == null) ? "" : dto.getNewsContent().trim();
 
         // 제목 검증
-        if (newsTitle.isEmpty()) {
+        if (rawNewsTitle.isEmpty()) {
             model.addAttribute("msg", "제목은 필수입니다.");
             model.addAttribute("location", "/newsEdit?newsId=" + newsId);
             return "message";
         }
-        if (newsTitle.length() > 255) {
+        if (rawNewsTitle.length() > 255) {
             model.addAttribute("msg", "제목은 255자 이내로 작성해주세요.");
             model.addAttribute("location", "/newsEdit?newsId=" + newsId);
             return "message";
         }
 
         // 내용 검증
-        if (newsContent.isEmpty()) {
+        if (rawNewsContent.isEmpty()) {
             model.addAttribute("msg", "내용은 필수입니다.");
             model.addAttribute("location", "/newsEdit?newsId=" + newsId);
             return "message";
         }
-        if (newsContent.length() > 100000) {
+        if (rawNewsContent.length() > 100000) {
             model.addAttribute("msg", "내용이 너무 깁니다.");
             model.addAttribute("location", "/newsEdit?newsId=" + newsId);
             return "message";
         }
 
-        // ✅ [핵심] 서버측 HTML Sanitizing
-        String safeNewsContent = htmlSanitizer.sanitizeNewsHtml(newsContent);
-        if (safeNewsContent == null || safeNewsContent.trim().isEmpty()) {
-            model.addAttribute("msg", "내용이 올바르지 않습니다.");
+        //  [핵심] 서버측 HTML Sanitizing
+        String newsTitle = htmlSanitizer.sanitizePlainText(rawNewsTitle);
+        String newsContent = htmlSanitizer.sanitizeNewsHtml(rawNewsContent);
+
+        if (newsTitle.isEmpty()) {
+            model.addAttribute("msg", "제목은 필수입니다.");
             model.addAttribute("location", "/newsEdit?newsId=" + newsId);
             return "message";
         }
 
-        // (보조) 문자열 기반 차단
-        String lowerContent = newsContent.toLowerCase();
-        if (lowerContent.contains("<script") || lowerContent.contains("javascript:")) {
-            model.addAttribute("msg", "허용되지 않는 내용이 포함되어 있습니다.");
+        if (newsContent.isEmpty()) {
+            model.addAttribute("msg", "내용은 필수입니다.");
             model.addAttribute("location", "/newsEdit?newsId=" + newsId);
             return "message";
         }
+        
+        existingThumbUrl = htmlSanitizer.sanitizeImageUrl(existingThumbUrl);
+        existingImageUrl = htmlSanitizer.sanitizeImageUrl(existingImageUrl);
 
         // 5) 파일 업로드 + DB 업데이트
         try {
@@ -550,7 +554,7 @@ public class NewsController {
 
             // 이미지 URL이 없으면 content에서 추출 (sanitize 결과 기준)
             if (newsImageUrl == null || newsImageUrl.isEmpty()) {
-                newsImageUrl = extractFirstImgSrc(safeNewsContent);
+            	newsImageUrl = htmlSanitizer.sanitizeImageUrl(extractFirstImgSrc(newsContent));
             }
 
             // DB 업데이트
@@ -558,7 +562,7 @@ public class NewsController {
             updateDTO.setNewsId(newsId);
             updateDTO.setAnimeId(dto.getAnimeId());
             updateDTO.setNewsTitle(newsTitle);             // ✅ normalize된 제목 저장
-            updateDTO.setNewsContent(safeNewsContent);     // ✅ sanitize된 본문 저장
+            updateDTO.setNewsContent(newsContent);     // ✅ sanitize된 본문 저장
             updateDTO.setNewsThumbnailUrl(thumbnailUrl);
             updateDTO.setNewsImageUrl(newsImageUrl);
             updateDTO.setCondition("NEWS_UPDATE");
@@ -653,6 +657,24 @@ public class NewsController {
         if (originalFilename != null && originalFilename.contains(".")) {
             extension = originalFilename.substring(originalFilename.lastIndexOf("."));
         }
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("업로드 파일이 없습니다.");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
+            throw new IllegalArgumentException("이미지 파일만 업로드 가능합니다.");
+        }
+        
+        if (originalFilename == null || originalFilename.trim().isEmpty()) {
+            throw new IllegalArgumentException("파일명이 올바르지 않습니다.");
+        }
+        
+        String extLower = extension.toLowerCase();
+        if (!extLower.equals(".jpg") && !extLower.equals(".jpeg") && !extLower.equals(".png")) {
+            throw new IllegalArgumentException("허용되지 않은 확장자입니다. (jpg/jpeg/png)");
+        }
+        
 
         // UUID 기반 파일명 생성
         String savedName = UUID.randomUUID().toString() + extension;

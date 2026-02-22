@@ -7,6 +7,8 @@ import java.nio.file.StandardCopyOption;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import fourcheetah.animale.web.common.HtmlSanitizer;
 import fourcheetah.animale.web.dto.member.MemberDTO;
 import fourcheetah.animale.web.dto.member.MemberWarningDTO;
 import fourcheetah.animale.web.repository.member.MemberWarningDAO;
@@ -51,6 +54,9 @@ public class MemberController {
 
     @Value("${app.upload.profile-dir}")
     private String profileDir;
+    
+    @Autowired
+    private HtmlSanitizer htmlSanitizer;
 
     private static final String SESSION_JOIN_EMAIL = "joinEmail";
     private static final String SESSION_JOIN_EMAIL_VERIFIED = "joinEmailVerified";
@@ -251,7 +257,30 @@ public class MemberController {
         boolean joinEmailVerified = Boolean.TRUE.equals(session.getAttribute(SESSION_JOIN_EMAIL_VERIFIED));
         String verifiedEmail = (String) session.getAttribute(SESSION_JOIN_EMAIL);
 
+     // 입력값 정리 (XSS/태그 제거 + trim)
+        String safeMemberName = htmlSanitizer.sanitizePlainText(memberDTO.getMemberName());
+        String safeNickname = htmlSanitizer.sanitizePlainText(memberDTO.getMemberNickname());
         String formEmail = memberDTO.getMemberEmail().trim();
+        String formPassword = memberDTO.getMemberPassword().trim();
+
+        // 형식 검증 (로그인ID / 닉네임)
+        if (!htmlSanitizer.isSafeLoginId(safeMemberName)) {
+            session.setAttribute("joinError", "INVALID_MEMBER_NAME");
+            return "redirect:/joinPage";
+        }
+
+        if (!htmlSanitizer.isSafeNickname(safeNickname)) {
+            session.setAttribute("joinError", "INVALID_NICKNAME");
+            return "redirect:/joinPage";
+        }
+
+        // 비밀번호 형식 검증 (기존 regex 재사용)
+        if (!formPassword.matches(PASSWORD_REGEX)) {
+            session.setAttribute("joinError", "INVALID_PASSWORD_FORMAT");
+            return "redirect:/joinPage";
+        }
+        
+        
 
         System.out.println("[JOIN] verified=" + joinEmailVerified
                 + ", verifiedEmail=" + verifiedEmail
@@ -279,10 +308,10 @@ public class MemberController {
 
         MemberDTO joinDTO = new MemberDTO();
         joinDTO.setCondition("MEMBER_JOIN");
-        joinDTO.setMemberName(memberDTO.getMemberName().trim());
-        joinDTO.setMemberNickname(memberDTO.getMemberNickname().trim());
+        joinDTO.setMemberName(safeMemberName);
+        joinDTO.setMemberNickname(safeNickname);
         joinDTO.setMemberEmail(formEmail);
-        joinDTO.setMemberPassword(memberDTO.getMemberPassword().trim());
+        joinDTO.setMemberPassword(formPassword);
         joinDTO.setMemberProfileImage(null);
 
         try {
@@ -364,16 +393,29 @@ public class MemberController {
         String backPage = isAdmin ? "redirect:/adminPage" : "redirect:/mypage";
 
         String newNick = trimToNull(memberNickname);
+        if (newNick != null) {
+            newNick = htmlSanitizer.sanitizePlainText(newNick);
+            if (newNick.isEmpty()) {
+                newNick = null;
+            }
+        }
+
         String reqProfileColor = trimToNull(memberProfileColor);
         String reqNicknameColor = trimToNull(memberNicknameColor);
         String token = trimToNull(temporaryProfileImageToken);
-
+        
         if (reqProfileColor != null && !isValidHexColor(reqProfileColor)) {
             session.setAttribute("msg", "프로필 테두리 색상 값이 올바르지 않습니다. (#RRGGBB)");
             return backPage;
         }
+        
         if (reqNicknameColor != null && !isValidHexColor(reqNicknameColor)) {
             session.setAttribute("msg", "닉네임 색상 값이 올바르지 않습니다. (#RRGGBB)");
+            return backPage;
+        }
+        
+        if (newNick != null && !htmlSanitizer.isSafeNickname(newNick)) {
+            session.setAttribute("msg", "닉네임 형식이 올바르지 않습니다. (2~20자, 한글/영문/숫자/공백/._-)");
             return backPage;
         }
 
@@ -432,14 +474,31 @@ public class MemberController {
 
         if (imgChanged) {
             try {
-                Path tempFile = Paths.get(profileTempDir, token);
-                if (!Files.exists(tempFile)) {
+                // 토큰 형식 검증 (m{memberId}_{32hex}.{ext})
+                if (!htmlSanitizer.isValidProfileTempToken(token)) {
+                    session.setAttribute("msg", "프로필 임시 파일 토큰 형식이 올바르지 않습니다.");
+                    return backPage;
+                }
+
+                Path baseTempDir = Paths.get(profileTempDir).toAbsolutePath().normalize();
+                Path baseProfileDir = Paths.get(profileDir).toAbsolutePath().normalize();
+
+                Path tempFile = baseTempDir.resolve(token).normalize();
+                Path targetFile = baseProfileDir.resolve(token).normalize();
+
+                // baseDir 하위 경로인지 확인 (path traversal 방지)
+                if (!htmlSanitizer.isUnderBaseDir(baseTempDir, tempFile)
+                        || !htmlSanitizer.isUnderBaseDir(baseProfileDir, targetFile)) {
+                    session.setAttribute("msg", "잘못된 파일 경로 요청입니다.");
+                    return backPage;
+                }
+
+                if (!Files.exists(tempFile) || !Files.isRegularFile(tempFile)) {
                     session.setAttribute("msg", "프로필 임시 파일이 없습니다. 다시 업로드해주세요.");
                     return backPage;
                 }
 
-                Path targetFile = Paths.get(profileDir, token);
-                Files.createDirectories(targetFile.getParent());
+                Files.createDirectories(baseProfileDir);
                 Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
 
             } catch (Exception e) {
@@ -495,6 +554,8 @@ public class MemberController {
     private boolean isValidHexColor(String color) {
         return color != null && color.matches("^#([0-9a-fA-F]{6})$");
     }
+    
+    
 
     // ==================== 비밀번호 변경 ====================
 

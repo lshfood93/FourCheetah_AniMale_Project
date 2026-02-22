@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import fourcheetah.animale.web.aop.DeletedBoardCheck;
 import fourcheetah.animale.web.aop.SanctionCheck;
+import fourcheetah.animale.web.common.HtmlSanitizer;
 import fourcheetah.animale.web.dto.board.BoardDTO;
 import fourcheetah.animale.web.dto.board.BoardLikeDTO;
 import fourcheetah.animale.web.dto.board.ReplyDTO;
@@ -36,6 +37,9 @@ public class BoardApiController {
 
     @Autowired
     private ReplyService replyService;
+    
+    @Autowired
+	private HtmlSanitizer htmlSanitizer; // XSS Sanitizer 클래스
 
     // =========================================================
     // 1) 좋아요 토글 API (POST /BoardLikeToggle)
@@ -208,6 +212,11 @@ public class BoardApiController {
 
         List<ReplyDTO> replyList = replyService.selectAll(replyDTO);
         if (replyList == null) replyList = Collections.emptyList();
+        
+        for (ReplyDTO r : replyList) {
+            r.setReplyContent(htmlSanitizer.sanitizePlainText(r.getReplyContent()));
+            r.setWriterNickname(htmlSanitizer.sanitizePlainText(r.getWriterNickname()));
+        }
 
         System.out.println("[댓글 정렬 API 로그] 댓글 조회 완료 count=" + replyList.size());
 

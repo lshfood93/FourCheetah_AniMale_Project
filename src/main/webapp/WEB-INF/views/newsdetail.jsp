@@ -685,7 +685,7 @@
 							style="<c:if test='${not empty coverSrc}'>background-image:url('<c:out value='${coverSrc}'/>');</c:if>">
 							<div class="news-cover__content">
 								<div class="news-cover__meta">News - No.${newsData.newsId}</div>
-								<h1 class="news-cover__title">${newsData.newsTitle}</h1>
+								<h1 class="news-cover__title"><c:out value="${newsData.newsTitle}" /></h1>
 							</div>
 						</div>
 
@@ -738,9 +738,9 @@
 
 											<c:if test="${not empty aThumbSrc}">
 												<a href="${ctx}/animeDetail?animeId=${newsData.animeId}">
-													<img src="${aThumbSrc}" alt="관련 애니 썸네일"
-														style="width: 64px; height: 64px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .12);"
-														onerror="this.style.display='none';">
+												<img src="<c:out value='${aThumbSrc}'/>" alt="관련 애니 썸네일"
+													style="width: 64px; height: 64px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .12);"
+													onerror="this.style.display='none';">
 												</a>
 											</c:if>
 										</div>

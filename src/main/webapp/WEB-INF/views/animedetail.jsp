@@ -285,7 +285,7 @@
               <div class="action-wrap">
 
                 <c:if test="${fn:toUpperCase(sessionScope.memberRole) eq 'ADMIN'}">
-                  <a href="${ctx}/animeEditPage?animeId=${animeData.animeId}" class="ad-btn ad-btn--primary">
+                  <a href="${ctx}/animeEdit?animeId=${animeData.animeId}" class="ad-btn ad-btn--primary">
                     <i class="fa fa-pencil"></i> 수정
                   </a>
 
