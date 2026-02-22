@@ -146,13 +146,12 @@
                                     data-action="reject" data-board-id="${r.boardId}">
                               <i class="ti ti-x"></i>
                             </button>
-
-                            <button class="btn btn-sm btn-outline-dark"
-                                    type="button" title="신고 처리"
-                                    data-action="approve" data-board-id="${r.boardId}">
-                              <i class="ti ti-check"></i>
-                            </button>
-                          </div>
+								<button class="btn btn-sm btn-outline-dark" type="button"
+									title="신고 처리" data-action="approve"
+									data-board-id="${r.boardId}" data-disabled="true">
+									<i class="ti ti-check"></i>
+								</button>
+							</div>
                         </td>
                       </tr>
                     </c:forEach>
@@ -309,6 +308,13 @@
     if(!btn) return;
 
     const action = btn.dataset.action;     // reject | approve
+    if (action === 'approve' && btn.dataset.disabled === 'true') {
+    	  showActionAlert(
+    	    'danger',
+    	    '승인(삭제/제재) 처리 실패 원인: DB board_status 컬럼 제약으로 "내용삭제" 값 업데이트가 거부됩니다. (백엔드/DB에서 board_status 허용값/길이 수정 필요) 현재는 반려만 사용해 주세요.'
+    	  );
+    	  return;
+    	}
     const boardId = btn.dataset.boardId;
     const tr = btn.closest('tr');
 
