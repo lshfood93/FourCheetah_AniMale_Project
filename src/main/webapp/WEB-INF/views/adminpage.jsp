@@ -13,12 +13,12 @@
 <!-- 게시글 관리는 category 없으면 튕기니까 현재 존재하는 ANIME만 강제 링크 -->
 <c:set var="urlBoardManageAnime" value="${ctx}/boardList?boardCategory=ANIME"/>
 
-<!-- ✅ 로그인 체크: @GetMapping('/login') 기준으로 /login으로 이동 -->
+<!-- 로그인 체크: @GetMapping('/login') 기준으로 /login으로 이동 -->
 <c:if test="${empty sessionScope.memberId}">
   <c:redirect url="${ctx}/login" />
 </c:if>
 
-<!-- ✅ 관리자 체크 -->
+<!-- 관리자 체크 -->
 <c:if test="${empty sessionScope.memberRole or sessionScope.memberRole ne 'ADMIN'}">
   <c:redirect url="${ctx}/mainPage" />
 </c:if>
@@ -47,6 +47,9 @@
 <link rel="stylesheet" href="${ctx}/css/bootstrap.min.css">
 <link rel="stylesheet" href="${ctx}/css/font-awesome.min.css">
 <link rel="stylesheet" href="${ctx}/css/style.css">
+
+<!-- [FIX] SweetAlert2 CDN 추가 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
 /* 타이틀/레이아웃 */
@@ -105,7 +108,7 @@
 /* =========================
    프로필 이미지 로더 (기본)
    ========================= */
-   /* ✅ FIX: 프로필 로딩 오버레이가 아래로 내려가는 현상 강제 수정 */
+   /* FIX: 프로필 로딩 오버레이가 아래로 내려가는 현상 강제 수정 */
 #profileWrap{
   position: relative !important;  /* 오버레이 기준점 */
 }
@@ -448,7 +451,7 @@ body.mypage-editing .mypage-right-card{
   background-clip: text;
   color: transparent !important;
 
-  /* ✅ 고정 */
+  /* 고정 */
   background-size: 100% 100%;
   background-position: 50% 50%;
 }
@@ -469,14 +472,14 @@ body.mypage-editing .mypage-right-card{
     var(--rb1),var(--rb2),var(--rb3),var(--rb4),var(--rb5),var(--rb6),var(--rb7),var(--rb1));
   z-index: 0;
 
-  /* ✅ 회전/움직임 제거 */
+  /* 회전/움직임 제거 */
   transform: none;
   animation: none;
 }
 
 .rainbow-border > *{ position: relative; z-index: 2; }
 
-/* ✅ 프로필은 “전용” 테두리로 처리 (overflow hidden 때문에 안 보이던 문제 해결) */
+/* 프로필은 "전용" 테두리로 처리 (overflow hidden 때문에 안 보이던 문제 해결) */
 #profileWrap.rainbow-border{
   overflow: visible !important;   /* 테두리 보이게 */
   padding: 3px;                  /* 테두리 두께 */
@@ -493,7 +496,7 @@ body.mypage-editing .mypage-right-card{
   background: rgba(11,12,42,.92);
   z-index: 1;
 }
-/* 이미지가 테두리 위에 “덮어씌우는” 문제 방지: img를 안쪽 카드 레이어 위로 */
+/* 이미지가 테두리 위에 "덮어씌우는" 문제 방지: img를 안쪽 카드 레이어 위로 */
 #profileWrap.rainbow-border img{
   position: relative;
   z-index: 2;
@@ -542,7 +545,7 @@ body.mypage-editing .mypage-right-card{
   color: rgba(255,255,255,0.90);
   line-height: 52px;
 }
-/* ✅ 닉네임 줄(박스/바탕)은 레인보우 금지: 글자만 */
+/* 닉네임 줄(박스/바탕)은 레인보우 금지: 글자만 */
 #nicknamePill.rainbow-border,
 #nicknamePill.rainbow-border::before,
 #nicknamePill.rainbow-border::after{
@@ -555,7 +558,7 @@ body.mypage-editing .mypage-right-card{
 </head>
 
 <body>
-  <!-- ✅ 관리자 페이지에서는 사람 버튼을 대시보드로 보내기 -->
+  <!-- 관리자 페이지에서는 사람 버튼을 대시보드로 보내기 -->
   <c:set var="profileHref" value="/admindashboard" />
 
   <%@ include file="/WEB-INF/common/header.jsp" %>
@@ -663,10 +666,10 @@ body.mypage-editing .mypage-right-card{
                 </button>
               </li>
 
+              <!-- [FIX] 로그아웃: onclick confirm → type="button" id="logoutBtn" + SweetAlert2 -->
               <li>
-                <form action="${ctx}/logout" method="get" style="margin: 0;">
-                  <button type="submit" class="menu-btn danger"
-                          onclick="return confirm('로그아웃 하시겠습니까?');">
+                <form action="${ctx}/logout" method="get" style="margin: 0;" id="logoutForm">
+                  <button type="button" class="menu-btn danger" id="logoutBtn">
                     <i class="fa fa-sign-out"></i><span>로그아웃</span>
                   </button>
                 </form>
@@ -684,9 +687,11 @@ body.mypage-editing .mypage-right-card{
               <input type="hidden" id="temporaryProfileImageToken"
                      name="temporaryProfileImageToken" value="" />
 
-              <!-- 컨트롤러 붙이면 이 두 값(DB/세션에서 내려주기) -->
-              <input type="hidden" id="adminNickDecoStyle" name="adminNickDecoStyle" value="NONE" />
-              <input type="hidden" id="adminProfileDecoStyle" name="adminProfileDecoStyle" value="NONE" />
+              <!-- [FIX] DB 값으로 초기화 (localStorage 대신 DB가 소스오브트루스) -->
+              <input type="hidden" id="adminNickDecoStyle" name="adminNickDecoStyle"
+                     value="${memberData.memberNicknameColor eq 'RAINBOW' ? 'RAINBOW' : 'NONE'}" />
+              <input type="hidden" id="adminProfileDecoStyle" name="adminProfileDecoStyle"
+                     value="${memberData.memberProfileColor eq 'RAINBOW' ? 'RAINBOW' : 'NONE'}" />
 
               <div class="split-pill">
                 <div class="split-label">
@@ -737,7 +742,9 @@ body.mypage-editing .mypage-right-card{
                   <div class="split-value" style="position:relative;">
                     <span id="nicknameText"><c:out value="${memberData.memberNickname}" /></span>
 
-                    <input type="text" id="nicknameInput" value="<c:out value='${memberData.memberNickname}'/>" readonly
+                    <!-- [FIX] name="memberNickname" 추가 - 누락으로 인해 서버에 값이 전송 안 됐던 문제 해결 -->
+                    <input type="text" id="nicknameInput" name="memberNickname"
+                           value="<c:out value='${memberData.memberNickname}'/>" readonly
                            style="position:absolute; inset:0; opacity:0; pointer-events:none;">
                   </div>
                 </div>
@@ -916,7 +923,7 @@ body.mypage-editing .mypage-right-card{
         $("#temporaryProfileImageToken").val("");
         $("#profileInput").val("");
 
-        // ✅ 꾸미기도 원상복구(로컬 저장값이 있으면 그 값으로 다시 렌더링됨)
+        // 꾸미기도 원상복구
         if (typeof window.__adminDecoResetToBase === "function") {
           window.__adminDecoResetToBase();
         }
@@ -1021,7 +1028,7 @@ body.mypage-editing .mypage-right-card{
       if (!file) return;
 
       if (!file.type || !file.type.startsWith("image/")) {
-        alert("이미지 파일만 선택할 수 있습니다.");
+        Swal.fire({ icon: "warning", title: "이미지 파일만 선택할 수 있습니다.", confirmButtonColor: "#e53637" });
         $(this).val("");
         return;
       }
@@ -1040,7 +1047,7 @@ body.mypage-editing .mypage-right-card{
         dataType: "json",
         success: function(res) {
           if (!res || res.result !== "SUCCESS") {
-            alert((res && res.errorMessage) ? res.errorMessage : "업로드에 실패했습니다.");
+            Swal.fire({ icon: "error", title: "업로드 실패", text: (res && res.errorMessage) ? res.errorMessage : "업로드에 실패했습니다.", confirmButtonColor: "#e53637" });
             $("#profileInput").val("");
             $("#profileWrap").removeClass("is-loading");
             return;
@@ -1055,7 +1062,7 @@ body.mypage-editing .mypage-right-card{
           updateSaveButton();
         },
         error: function(xhr) {
-          alert("프로필 업로드 실패(" + xhr.status + "). 다시 시도해주세요.");
+          Swal.fire({ icon: "error", title: "업로드 실패", text: "프로필 업로드 실패(" + xhr.status + "). 다시 시도해주세요.", confirmButtonColor: "#e53637" });
           $("#profileInput").val("");
           $("#profileWrap").removeClass("is-loading");
         }
@@ -1064,26 +1071,23 @@ body.mypage-editing .mypage-right-card{
 
     /* =========================
        ADMIN 무료 꾸미기(레인보우)
-       - 즉시 editMode 진입
-       - 저장버튼 즉시 활성화
-       - 수정완료 누르면 localStorage에 저장 → 새로고침/시간 지나도 유지
+       - [FIX] localStorage 제거 → DB가 소스오브트루스
+       - 페이지 로드 시 hidden input 초기값 = DB값 (JSP에서 이미 세팅됨)
+       - baseNick/baseProf = 페이지 로드 시 hidden input 값
        ========================= */
     (function(){
-      const STORAGE_KEY = "ANIMALE_ADMIN_DECO_V2";
-
       const $btnNick = $("#btnNickDeco");
       const $btnProf = $("#btnProfileDeco");
 
       const $nickText = $("#nicknameText");
-      const $nickPill = $("#nicknamePill");
       const $profile  = $("#profileWrap");
 
       const $hNick = $("#adminNickDecoStyle");    // NONE|RAINBOW
       const $hProf = $("#adminProfileDecoStyle"); // NONE|RAINBOW
 
-      // 기준값(“변경 감지”)
-      let baseNick = "NONE";
-      let baseProf = "NONE";
+      // [FIX] 기준값을 DB에서 로드된 hidden input 값으로 설정
+      let baseNick = $hNick.val() || "NONE";
+      let baseProf = $hProf.val() || "NONE";
 
       function enterEditModeIfNeeded(){
         if (editMode) return;
@@ -1098,30 +1102,9 @@ body.mypage-editing .mypage-right-card{
         $("#nickCheckBtn").removeClass("disabled-btn");
         $("#profileBtnLabel").removeClass("disabled-btn");
 
-        // 기존 규칙 유지
         nicknameChecked = false;
         $("#nickCheckBtn").text("중복 확인");
         $("#nicknameMsg").text("");
-      }
-
-      function loadSaved(){
-        try{
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (!raw) return null;
-          return JSON.parse(raw);
-        }catch(e){
-          return null;
-        }
-      }
-
-      function persist(){
-        try{
-          localStorage.setItem(STORAGE_KEY, JSON.stringify({
-            nick: $hNick.val(),
-            prof: $hProf.val(),
-            savedAt: Date.now()
-          }));
-        }catch(e){}
       }
 
       function render(){
@@ -1131,7 +1114,7 @@ body.mypage-editing .mypage-right-card{
         $nickText.toggleClass("rainbow-text", nickOn);
         $btnNick.toggleClass("is-on", nickOn);
 
-        // ✅ 프로필은 테두리만
+        // 프로필은 테두리만
         $profile.toggleClass("rainbow-border", profOn);
         $btnProf.toggleClass("is-on", profOn);
       }
@@ -1148,21 +1131,10 @@ body.mypage-editing .mypage-right-card{
         render();
       };
 
-      // 1) 로컬 저장값 로드 → hidden 반영
-      const saved = loadSaved();
-      if (saved){
-        if (saved.nick) $hNick.val(saved.nick);
-        if (saved.prof) $hProf.val(saved.prof);
-      }
-
-      // 2) 기준값 확정(로드 직후)
-      baseNick = $hNick.val() || "NONE";
-      baseProf = $hProf.val() || "NONE";
-
-      // 3) 첫 렌더
+      // [FIX] 페이지 로드 시 DB 값 기반으로 첫 렌더
       render();
 
-      // 4) 버튼 클릭: 즉시 editMode + 토글 + 저장버튼 활성화
+      // 버튼 클릭: 즉시 editMode + 토글 + 저장버튼 활성화
       $btnNick.on("click", function(){
         enterEditModeIfNeeded();
         $hNick.val(($hNick.val() === "RAINBOW") ? "NONE" : "RAINBOW");
@@ -1177,26 +1149,51 @@ body.mypage-editing .mypage-right-card{
         updateSaveButton();
       });
 
-      // 5) ✅ 저장 시점은 saveBtn 핸들러에서 “반드시 먼저 persist()” 하도록(중요)
-      window.__adminDecoPersistNow = function(){
-        persist();
+      // [FIX] 저장 완료 후 baseNick/baseProf 갱신 (localStorage 제거)
+      window.__adminDecoCommit = function(){
         baseNick = $hNick.val() || "NONE";
         baseProf = $hProf.val() || "NONE";
       };
     })();
 
-    /* ✅ 저장 버튼: localStorage 저장 → 그 다음 submit (순서가 핵심) */
+    /* [FIX] 저장 버튼: confirm() → SweetAlert2 모달 */
     $("#saveBtn").off("click").on("click", function() {
       if ($(this).hasClass("disabled-btn")) return;
-      if (!confirm("수정을 완료할까요?")) return;
 
-      // ✅ 먼저 꾸미기 상태 저장(이게 없어서 원복됐던 것)
-      if (typeof window.__adminDecoPersistNow === "function") {
-        window.__adminDecoPersistNow();
-      }
+      Swal.fire({
+        title: "수정을 완료할까요?",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "확인",
+        cancelButtonText: "취소",
+        confirmButtonColor: "#e53637"
+      }).then(function(result) {
+        if (!result.isConfirmed) return;
 
-      $("#saveBtn").addClass("disabled-btn");
-      $("#mypageForm").submit();
+        // baseNick/baseProf 갱신 후 submit
+        if (typeof window.__adminDecoCommit === "function") {
+          window.__adminDecoCommit();
+        }
+
+        $("#saveBtn").addClass("disabled-btn");
+        $("#mypageForm").submit();
+      });
+    });
+
+    /* [FIX] 로그아웃 버튼: confirm() → SweetAlert2 모달 */
+    $("#logoutBtn").on("click", function() {
+      Swal.fire({
+        title: "로그아웃 하시겠습니까?",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "확인",
+        cancelButtonText: "취소",
+        confirmButtonColor: "#e53637"
+      }).then(function(result) {
+        if (result.isConfirmed) {
+          $("#logoutForm").submit();
+        }
+      });
     });
 
     updateSaveButton();
