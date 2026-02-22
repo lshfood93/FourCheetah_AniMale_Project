@@ -418,12 +418,24 @@ public class BoardController {
 	// 5) 게시판 리스트 (GET /boardList)
 	@GetMapping("/boardList")
 	public String boardList(
-			BoardDTO boardDTO,
-			BindingResult br,
-			Model model
-			) {
+	        BoardDTO boardDTO,
+	        BindingResult br,
+	        HttpServletRequest request,
+	        Model model
+	        ) {
 
-		model.addAttribute("activeMenu", "COMMUNITY");
+	    model.addAttribute("activeMenu", "COMMUNITY");
+
+	    // ✅ 추가: 삭제된 게시글 접근 플래그 읽고 즉시 제거
+	    HttpSession session = request.getSession(false);
+	    if (session != null) {
+	        Object deletedFlag = session.getAttribute("deletedBoardRedirect");
+	        if (deletedFlag != null) {
+	            model.addAttribute("deletedBoardRedirect", true);
+	            session.removeAttribute("deletedBoardRedirect"); // ← 읽은 즉시 삭제
+	        }
+	    }
+
 
 		// 1) category 필수 검증
 		String category = boardDTO.getBoardCategory();

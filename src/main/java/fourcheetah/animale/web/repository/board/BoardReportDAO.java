@@ -161,12 +161,12 @@ public class BoardReportDAO {
         "GROUP BY br.board_id, b.member_id, m.member_nickname, b.board_title, b.board_content " +
         "LIMIT 1";
 
-    // 알림 생성 (3회 이상)
+    // ✅ 수정: 1회부터 무조건 notice_pending = 'Y' 세팅 (조건 제거)
     private static final String UPDATE_MEMBER_NOTICE =
         "UPDATE member " +
         "SET notice_pending = 'Y', " +
         "    notice_message = CONCAT('신고 누적 ', valid_report_count, '회. 주의하세요.') " +
-        "WHERE member_id = ? AND valid_report_count >= 3";
+        "WHERE member_id = ?";
 
     /* =========================
        RowMapper
@@ -284,7 +284,7 @@ public class BoardReportDAO {
      * 2. 신고 승인
      * 3. 작성자 경고 +1
      * 4. member_warning 테이블에 제재 기록
-     * 5. 알림 생성 (3회 이상)
+     * 5. 알림 생성 (1회부터 무조건)
      */
     @Transactional
     public boolean approveReport(int boardId, int boardWriterId, int handledBy) {
@@ -347,12 +347,9 @@ public class BoardReportDAO {
             int rows3 = jdbcTemplate.update(UPDATE_MEMBER_WARNING, boardWriterId);
             System.out.println("[DAO] 작성자 경고 +1 - rows=" + rows3);
 
-            // 7. 알림 생성 (3회 이상)
-
-            if (newCount >= 3) {
-                int rows5 = jdbcTemplate.update(UPDATE_MEMBER_NOTICE, boardWriterId);
-                System.out.println("[DAO] 알림 생성 - rows=" + rows5);
-            }
+            // ✅ 수정: 1회부터 무조건 알림 생성 (기존 >= 3 조건 제거)
+            int rows5 = jdbcTemplate.update(UPDATE_MEMBER_NOTICE, boardWriterId);
+            System.out.println("[DAO] 알림 생성 - rows=" + rows5);
 
             System.out.println("[DAO] 신고 승인 트랜잭션 완료");
 
