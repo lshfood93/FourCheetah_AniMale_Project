@@ -197,6 +197,16 @@ public class BoardController {
             return message(model, "존재하지 않는 게시글입니다.", "/main");
         }
 
+        // ✅ 신고 승인으로 삭제된 게시글 접근 차단 → 목록으로 redirect
+        if ("내용삭제".equals(boardData.getBoardStatus())) {
+            System.out.println("[게시글 상세보기 로그] 내용삭제 게시글 접근 차단 - boardId=" + boardId);
+            if (session == null) session = request.getSession(true);
+            session.setAttribute("deletedBoardRedirect", true);
+            String category = boardData.getBoardCategory();
+            if (category == null || category.trim().isEmpty()) category = "ANIME";
+            return "redirect:/boardList?boardCategory=" + category;
+        }
+
         // 3) 좋아요 개수
         boardLikeDTO.setBoardId(boardId);
         boardLikeDTO.setCondition("BOARD_LIKE_COUNT");
@@ -226,7 +236,7 @@ public class BoardController {
         if (memberId != null) {
             isReported = boardReportDAO.isReportedByMember((int) boardId, (int) memberId);
         }
-        boardData.setIsReported(isReported ? 1 : 0); // ✅ boardData DTO에도 세팅 (JSP에서 boardData.isReported 참조)
+        boardData.setIsReported(isReported ? 1 : 0);
         model.addAttribute("isReported", isReported);
         System.out.println("[게시글 상세보기 로그] isReported=" + isReported);
 
