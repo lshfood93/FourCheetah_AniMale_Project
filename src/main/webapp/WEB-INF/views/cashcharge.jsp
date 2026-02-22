@@ -11,7 +11,7 @@
 <c:url var="tossSuccessUrl" value="/payment/toss/success" />
 <c:url var="tossFailUrl" value="/payment/toss/fail" />
 
-<%-- ✅ 서버에서 orderId 발급받는 준비(prepare) API (추가 필요) --%>
+<%-- ✅ 서버에서 orderId 발급받는 준비(prepare) API --%>
 <c:url var="tossPrepareUrl" value="/payment/toss/prepare" />
 
 <!DOCTYPE html>
@@ -47,8 +47,8 @@
   flex:1;
   min-width: 200px;
   height:56px;
-  background:#FEE500;          /* 카카오 노랑 */
-  color:#000;                  /* 검정 글씨 */
+  background:#FEE500;
+  color:#000;
   border:none;
   border-radius:28px;
   font-size:16px;
@@ -56,7 +56,7 @@
   cursor:pointer;
 }
 .btn-pay:hover{
-  background:#FFD500;          /* 살짝 진한 노랑 */
+  background:#FFD500;
 }
 
 /* 토스 버튼 */
@@ -139,22 +139,34 @@ $(function() {
 
   const clientKey = "<spring:eval expression='@environment.getProperty(\"toss.clientKey\")'/>";
 
+  /* ===== 금액 초기화 (토스 취소 / 뒤로가기 / 에러 공통 사용) ===== */
+  function resetAmount() {
+    $(".charge-amounts button").removeClass("active");
+    $("#amountInput").val("");
+    $("#selectedAmountText").text("0");
+    $("#kakaoBtn").prop("disabled", true);
+    $("#tossBtn").prop("disabled", true);
+    $("#cancelBtn").prop("disabled", false);
+  }
+
   function setPayEnabled(enabled) {
     $("#kakaoBtn").prop("disabled", !enabled);
     $("#tossBtn").prop("disabled", !enabled);
   }
 
   function lockButtons(lock) {
-    // 결제 중 중복 클릭 방지용
     $("#kakaoBtn").prop("disabled", lock);
     $("#tossBtn").prop("disabled", lock);
     $("#cancelBtn").prop("disabled", lock);
   }
 
+  /* 초기: 결제 버튼 비활성 */
   setPayEnabled(false);
 
+  /* ===== 금액 선택 ===== */
   $(".charge-amounts button").click(function() {
     if ($(this).hasClass("active")) {
+      /* 이미 선택된 버튼 다시 클릭 → 해제 */
       $(this).removeClass("active");
       $("#amountInput").val("");
       $("#selectedAmountText").text("0");
@@ -171,6 +183,7 @@ $(function() {
     setPayEnabled(true);
   });
 
+  /* ===== 카카오페이 폼 submit ===== */
   $("#chargeForm").on("submit", function(e) {
     const v = $("#amountInput").val();
     if (!v || parseInt(v, 10) <= 0) {
@@ -179,22 +192,16 @@ $(function() {
       e.preventDefault();
       return;
     }
-    // 카카오 결제 진행 중 잠금 (선택)
     lockButtons(true);
   });
 
-  // =========================
-  // ✅ 토스 결제 버튼 클릭
-  // - orderId는 절대 프론트에서 만들지 않음
-  // - 서버 /payment/toss/prepare 에서 발급받아 사용
-  // =========================
+  /* ===== 토스 결제 버튼 클릭 ===== */
   $("#tossBtn").on("click", function() {
     const amountStr = $("#amountInput").val();
     const amount = parseInt(amountStr, 10);
 
     if (!amount || amount <= 0) {
       alert("충전 금액을 선택해주세요.");
-      setPayEnabled(false);
       return;
     }
 
@@ -205,7 +212,7 @@ $(function() {
 
     lockButtons(true);
 
-    // ✅ 1) 서버에 prepare 호출해서 orderId 발급 + 세션에 pending 저장
+    /* 1) 서버에서 orderId 발급 */
     $.ajax({
       url: "${ctx}${tossPrepareUrl}",
       type: "POST",
@@ -216,8 +223,7 @@ $(function() {
 
         if (!orderId) {
           alert("토스 결제 준비 응답이 올바르지 않습니다.(orderId 없음)");
-          lockButtons(false);
-          setPayEnabled(true);
+          resetAmount();
           return;
         }
 
@@ -226,28 +232,37 @@ $(function() {
 
         const tossPayments = TossPayments(clientKey);
 
-        // ✅ 2) 결제 요청
+        /* 2) 결제 요청 - 취소(X) 시 catch로 넘어옴 */
         tossPayments.requestPayment("토스페이", {
           amount: amount,
           orderId: orderId,
           orderName: "캐시 충전 " + amount.toLocaleString() + "원",
           successUrl: successUrl,
           failUrl: failUrl
+        }).catch(function(err) {
+          /* 사용자가 결제창 X 눌러서 취소한 경우 → 금액 초기화 */
+          resetAmount();
         });
       },
       error: function(xhr) {
-        // 서버가 결제 준비를 거절하면(비로그인/금액불가/세션문제) 여기로 옴
         let msg = "토스 결제 준비 실패";
         try {
           if (xhr.responseText) msg += ": " + xhr.responseText;
         } catch(e) {}
         alert(msg);
-
-        lockButtons(false);
-        // 금액이 유지되고 있으니 다시 선택할 필요는 없음
-        setPayEnabled(true);
+        resetAmount();
       }
     });
+  });
+
+  /* ===== 뒤로가기(bfcache) 복원 시 초기화 ===== */
+  /* 카카오 결제 페이지로 이동 후 뒤로가기로 돌아오면
+     lockButtons(true) 상태가 그대로 복원되어 cancelBtn이 disabled됨
+     → pageshow + e.persisted 로 감지해서 초기화 */
+  window.addEventListener("pageshow", function(e) {
+    if (e.persisted) {
+      resetAmount();
+    }
   });
 
 });

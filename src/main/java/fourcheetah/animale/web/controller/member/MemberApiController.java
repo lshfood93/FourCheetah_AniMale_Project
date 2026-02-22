@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import fourcheetah.animale.web.dto.member.MemberDTO;
+import fourcheetah.animale.web.dto.member.MemberWarningDTO;
 import fourcheetah.animale.web.repository.member.MemberDupCheckRepository;
 import fourcheetah.animale.web.service.member.EmailService;
 import fourcheetah.animale.web.service.member.MemberService;
@@ -135,7 +136,17 @@ public class MemberApiController {
             result.put("exists", false);
             result.put("message", "존재하지 않는 아이디입니다.");
         } else {
-            result.put("exists", true);
+        	
+        	 MemberWarningDTO warningInfo = memberService.selectActiveWarning(memberData.getMemberId());
+        	    if (warningInfo != null && "BAN".equals(warningInfo.getWarningType())) {
+        	        result.put("success", true);
+        	        result.put("exists", false);
+        	        result.put("banned", true);
+        	        result.put("message", "영구 정지된 계정입니다. 비밀번호를 재설정할 수 없습니다.");
+        	        return ResponseEntity.ok(result);
+        	    }
+        	    
+        	result.put("exists", true);
             result.put("memberId", memberData.getMemberId());
             result.put("memberEmail", memberData.getMemberEmail());
         }

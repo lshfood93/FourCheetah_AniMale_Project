@@ -111,10 +111,6 @@ public class FileController {
             String safeOriginal = Paths.get(original).getFileName().toString();
             String ext = getExt(safeOriginal); // 기존 헬퍼 재사용 (jpg / png 형태)
             
-            int dot = original.lastIndexOf('.');
-            if (dot >= 0) {
-                ext = original.substring(dot).toLowerCase();
-            }
 
             if (ext.isEmpty() || !ALLOWED_EXTENSION.contains(ext)) {
                 res.put("result", "FAIL");
@@ -133,6 +129,8 @@ public class FileController {
                 res.put("errorMessage", "잘못된 저장 경로입니다.");
                 return res;
             }
+            
+            file.transferTo(savePath.toFile());
 
             String ctx = request.getContextPath();
             String url = ctx + "/uploads/profile_temp/" + token;
