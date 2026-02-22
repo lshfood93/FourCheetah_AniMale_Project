@@ -44,14 +44,14 @@ public class MemberDAO {
 			+ "AND member_role IN ('ACTIVE','ADMIN')";
 
 	private static final String SELECT_MEMBER_LOGIN = "SELECT " + " member_id             AS MEMBER_ID, "
-			+ " member_name           AS MEMBER_NAME, " + " member_password       AS MEMBER_PASSWORD, "
-			+ " member_nickname       AS MEMBER_NICKNAME, " + " member_cash           AS MEMBER_CASH, "
-			+ " member_role           AS MEMBER_ROLE, " + " member_profile_image  AS MEMBER_PROFILE_IMAGE, "
-			+ " member_email          AS MEMBER_EMAIL, " + " valid_report_count    AS VALID_REPORT_COUNT, "
-			+ " last_warning_at       AS LAST_WARNING_AT, " + " notice_pending        AS NOTICE_PENDING, "
-			+ " notice_message        AS NOTICE_MESSAGE, " + " member_profile_color  AS MEMBER_PROFILE_COLOR, "
-			+ " member_nickname_color AS MEMBER_NICKNAME_COLOR " + "FROM MEMBER " + "WHERE member_name = ? "
-			+ "AND member_password = ? " + "AND member_role IN ('ACTIVE','ADMIN')";
+	        + " member_name           AS MEMBER_NAME, " + " member_password       AS MEMBER_PASSWORD, "
+	        + " member_nickname       AS MEMBER_NICKNAME, " + " member_cash           AS MEMBER_CASH, "
+	        + " member_role           AS MEMBER_ROLE, " + " member_profile_image  AS MEMBER_PROFILE_IMAGE, "
+	        + " member_email          AS MEMBER_EMAIL, " + " valid_report_count    AS VALID_REPORT_COUNT, "
+	        + " last_warning_at       AS LAST_WARNING_AT, " + " notice_pending        AS NOTICE_PENDING, "
+	        + " notice_message        AS NOTICE_MESSAGE, " + " member_profile_color  AS MEMBER_PROFILE_COLOR, "
+	        + " member_nickname_color AS MEMBER_NICKNAME_COLOR " + "FROM MEMBER " + "WHERE member_name = ? "
+	        + "AND member_role IN ('ACTIVE','ADMIN')";
 
 	private static final String SELECT_MEMBER_MYPAGE = "SELECT " + " member_id             AS MEMBER_ID, "
 			+ " member_name           AS MEMBER_NAME, " + " member_password       AS MEMBER_PASSWORD, "
@@ -72,8 +72,8 @@ public class MemberDAO {
 			+ " member_nickname_color AS MEMBER_NICKNAME_COLOR " + "FROM MEMBER " + "WHERE member_id = ? "
 			+ "AND member_role = 'ADMIN'";
 
-	private static final String SELECT_PASSWORD_CHECK = "SELECT member_id AS MEMBER_ID " + "FROM MEMBER "
-			+ "WHERE member_id = ? AND member_password = ?";
+	private static final String SELECT_PASSWORD_CHECK = "SELECT member_id AS MEMBER_ID, member_password AS MEMBER_PASSWORD "
+	        + "FROM MEMBER " + "WHERE member_id = ?";
 
 	private static final String SELECT_FIND_ID = "SELECT member_id AS MEMBER_ID " + "FROM MEMBER "
 			+ "WHERE member_name = ?";
@@ -177,6 +177,14 @@ public class MemberDAO {
 		data.setMemberId(rs.getInt("MEMBER_ID"));
 		return data;
 	};
+	
+	// CHANGED: 비밀번호 검증용 (member_id + member_password만 조회)
+	private static final RowMapper<MemberDTO> ID_PASSWORD_ROW_MAPPER = (rs, rowNum) -> {
+	    MemberDTO data = new MemberDTO();
+	    data.setMemberId(rs.getInt("MEMBER_ID"));
+	    data.setMemberPassword(rs.getString("MEMBER_PASSWORD"));
+	    return data;
+	};
 
 	private static final RowMapper<MemberDTO> FULL_ROW_MAPPER = (rs, rowNum) -> {
 		MemberDTO data = new MemberDTO();
@@ -275,8 +283,9 @@ public class MemberDAO {
 			}
 
 			if ("MEMBER_LOGIN".equals(condition)) {
-				return jdbcTemplate.queryForObject(SELECT_MEMBER_LOGIN, FULL_ROW_MAPPER, dto.getMemberName(),
-						dto.getMemberPassword());
+			    // 비밀번호 비교는 Service에서 matches()로 처리
+			    // DAO는 사용자 조회만 담당
+			    return jdbcTemplate.queryForObject(SELECT_MEMBER_LOGIN, FULL_ROW_MAPPER, dto.getMemberName());
 			}
 
 			if ("MEMBER_MYPAGE".equals(condition)) {
@@ -288,8 +297,9 @@ public class MemberDAO {
 			}
 
 			if ("MEMBER_PASSWORD_CHECK".equals(condition)) {
-				return jdbcTemplate.queryForObject(SELECT_PASSWORD_CHECK, ID_ONLY_ROW_MAPPER, dto.getMemberId(),
-						dto.getMemberPassword());
+			    // 비밀번호 비교는 Service에서 matches()로 처리
+			    // DAO는 저장된 비밀번호(해시) 조회만 담당
+			    return jdbcTemplate.queryForObject(SELECT_PASSWORD_CHECK, ID_PASSWORD_ROW_MAPPER, dto.getMemberId());
 			}
 
 			if ("MEMBER_FIND_ID".equals(condition)) {

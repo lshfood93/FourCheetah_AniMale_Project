@@ -81,6 +81,12 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jdbc</artifactId>
 		</dependency>
+		
+		<dependency>
+   			<groupId>org.springframework.security</groupId>
+ 			<artifactId>spring-security-crypto</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>commons-dbcp</groupId>
 			<artifactId>commons-dbcp</artifactId>
@@ -123,10 +129,10 @@
    			<version>1.17.2</version>
 		</dependency>
 
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-aop</artifactId>
-</dependency>
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+ 		    <artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
 
 	</dependencies>
 
