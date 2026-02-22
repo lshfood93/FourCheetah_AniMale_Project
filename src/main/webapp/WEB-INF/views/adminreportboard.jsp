@@ -20,6 +20,8 @@
   <link rel="stylesheet" href="${ctx}/css/styles.min.css" />
   <link rel="stylesheet" href="${ctx}/css/admincustom.css" />
 
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
   <style>
     .truncate-2{
       display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
@@ -34,8 +36,47 @@
       font-weight: 800;
       margin-bottom: 6px;
     }
+
+    /* 로딩 오버레이 */
+    .admin-loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .admin-loading-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 28px 32px;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+      min-width: 160px;
+    }
+    .admin-spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(13, 110, 253, 0.2);
+      border-top-color: #0d6efd;
+      border-radius: 50%;
+      animation: admin-spin 0.8s linear infinite;
+    }
+    @keyframes admin-spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    .admin-loading-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: #333;
+      letter-spacing: -0.2px;
+    }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body class="admin-dashboard">
@@ -81,7 +122,6 @@
           <div class="d-flex align-items-center justify-content-between mb-3">
             <h5 class="card-title mb-0">신고 게시글 관리</h5>
 
-            <!-- ✅ 정렬: URL 이동 X (비동기) -->
             <select id="sortSelect" class="form-select" style="max-width: 180px;"
                     onchange="changeSort(this.value)">
               <option value="desc" ${sortOrder == 'desc' ? 'selected' : ''}>최신순</option>
@@ -91,10 +131,8 @@
 
           <p class="text-muted mb-3">제목 / 내용 클릭 시 게시글 상세로 이동합니다.</p>
 
-          <!-- ✅ 처리 결과 메시지 -->
           <div id="actionAlert" class="alert d-none" role="alert"></div>
 
-          <!-- ✅ 테이블 교체 대상 -->
           <div class="table-responsive" id="reportTableWrap">
             <table class="table align-middle">
               <thead>
@@ -115,7 +153,6 @@
                         <c:param name="boardId" value="${r.boardId}" />
                       </c:url>
 
-                      <!-- ✅ DTO에 값이 없을 수 있으니 안전 처리 -->
                       <c:set var="writerName" value="${empty r.boardWriterNickname ? '-' : r.boardWriterNickname}" />
                       <c:set var="rawContent" value="${empty r.boardContent ? '' : r.boardContent}" />
 
@@ -147,12 +184,13 @@
                                     data-action="reject" data-board-id="${r.boardId}">
                               <i class="ti ti-x"></i>
                             </button>
-								<button class="btn btn-sm btn-outline-dark" type="button"
-									title="신고 처리" data-action="approve"
-									data-board-id="${r.boardId}" data-disabled="true">
-									<i class="ti ti-check"></i>
-								</button>
-							</div>
+
+                            <button class="btn btn-sm btn-outline-dark"
+                                    type="button" title="신고 처리"
+                                    data-action="approve" data-board-id="${r.boardId}">
+                              <i class="ti ti-check"></i>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     </c:forEach>
@@ -170,7 +208,6 @@
             </table>
           </div>
 
-          <!-- ✅ 페이지네이션 교체 대상 -->
           <div id="reportPagingWrap">
             <c:if test="${not empty totalPages and totalPages > 0}">
               <nav class="d-flex justify-content-center mt-4">
@@ -201,6 +238,13 @@
   </div>
 </div>
 
+<div id="loadingOverlay" class="admin-loading-overlay" style="display:none;">
+  <div class="admin-loading-card">
+    <div class="admin-spinner"></div>
+    <div id="loadingText" class="admin-loading-text">처리 중...</div>
+  </div>
+</div>
+
 <script src="${ctx}/libs/jquery/dist/jquery.min.js"></script>
 <script src="${ctx}/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 <script src="${ctx}/js/sidebarmenu.js"></script>
@@ -208,65 +252,107 @@
 <script src="${ctx}/libs/simplebar/dist/simplebar.js"></script>
 
 <script>
-  const ctx = '${ctx}';
-  let currentPage = ${empty currentPage ? 1 : currentPage};
-  let currentSort = '${empty sortOrder ? "desc" : sortOrder}';
+  var ctx = '${ctx}';
+  var currentPage = ${empty currentPage ? 1 : currentPage};
+  var currentSort = '${empty sortOrder ? "desc" : sortOrder}';
 
-  async function postAction(url, boardId) {
-    const res = await fetch(url, {
+  /* ===== 로딩 오버레이 ===== */
+  function showLoading(text) {
+    document.getElementById('loadingText').textContent = text || '처리 중...';
+    document.getElementById('loadingOverlay').style.display = 'flex';
+  }
+  function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+  }
+
+  /* ===== 알림 (SweetAlert2 우선, fallback은 alert DIV) ===== */
+  function showActionAlert(type, message) {
+    var icon = (type === 'success') ? 'success'
+             : (type === 'warning') ? 'warning'
+             : (type === 'info')    ? 'info'
+             : 'error';
+
+    if (window.Swal && typeof window.Swal.fire === 'function') {
+      window.Swal.fire({
+        position: 'top',
+        icon: icon,
+        title: (icon === 'success') ? '완료' : '알림',
+        text: String(message || ''),
+        confirmButtonText: '확인',
+        allowOutsideClick: false
+      });
+      return;
+    }
+
+    var el = document.getElementById('actionAlert');
+    if (!el) return;
+    el.className = 'alert alert-' + type;
+    el.classList.remove('d-none');
+    el.innerHTML =
+        '<div class="aa-title">' + (type === 'success' ? '완료' : '실패') + '</div>'
+      + '<div>' + escapeHtml(String(message || '')) + '</div>';
+
+    window.clearTimeout(window.__adminReportAlertTimer);
+    window.__adminReportAlertTimer = window.setTimeout(function() {
+      el.classList.add('d-none');
+    }, 5000);
+  }
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, function(m) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+    });
+  }
+
+  /* ===== POST 요청 ===== */
+  function postAction(url, boardId) {
+    return fetch(url, {
       method: 'POST',
       headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
       body: new URLSearchParams({ boardId: boardId })
-    });
-    return res.json();
+    }).then(function(res) { return res.json(); });
   }
 
-  function showActionAlert(type, message) {
-	  // type: 'success' | 'danger' | etc
-	  // SweetAlert2 기준으로 매핑
-	  const icon = (type === 'success') ? 'success'
-	             : (type === 'warning') ? 'warning'
-	             : (type === 'info')    ? 'info'
-	             : 'error';
+  /* ===== 목록 새로고침 ===== */
+  function reloadReportList(page, sortOrder) {
+    var safePage = parseInt(page, 10);
+    if (!Number.isFinite(safePage) || safePage < 1) safePage = 1;
 
-	  // ✅ Swal 있으면 통일(메시지.jsp와 동일 계열)
-	  if (window.Swal && typeof window.Swal.fire === 'function') {
-	    window.Swal.fire({
-	      position: "top",
-	      icon: icon,
-	      title: (icon === 'success') ? "완료" : "알림",
-	      text: String(message || ''),
-	      confirmButtonText: "확인",
-	      allowOutsideClick: false
-	    });
-	    return;
-	  }
+    var url = ctx + '/admin/reports?page=' + safePage + '&sortOrder=' + sortOrder;
 
-	  // ✅ 혹시 Swal이 없을 때만 기존 alert DIV fallback
-	  const el = document.getElementById('actionAlert');
-	  if (!el) return;
+    return fetch(url, {
+      method: 'GET',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(res) { return res.text(); })
+    .then(function(html) {
+      var doc = new DOMParser().parseFromString(html, 'text/html');
 
-	  el.className = 'alert alert-' + type;
-	  el.classList.remove('d-none');
-	  el.innerHTML =
-	      '<div class="aa-title">' + (type === 'success' ? '완료' : '실패') + '</div>'
-	    + '<div>' + escapeHtml(String(message || '')) + '</div>';
+      var newTableWrap = doc.querySelector('#reportTableWrap');
+      var newPagingWrap = doc.querySelector('#reportPagingWrap');
 
-	  window.clearTimeout(window.__adminReportAlertTimer);
-	  window.__adminReportAlertTimer = window.setTimeout(() => {
-	    el.classList.add('d-none');
-	  }, 5000);
-	}
+      if (newTableWrap) document.querySelector('#reportTableWrap').innerHTML = newTableWrap.innerHTML;
+      if (newPagingWrap) document.querySelector('#reportPagingWrap').innerHTML = newPagingWrap.innerHTML;
 
-  function escapeHtml(str) {
-    return str.replace(/[&<>"']/g, (m) => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
+      currentPage = safePage;
+      currentSort = sortOrder;
+
+      var sel = document.querySelector('#sortSelect');
+      if (sel) sel.value = sortOrder;
+
+      stripHtmlTagsFromReportContent();
+    })
+    .catch(function(err) { console.error('[reloadReportList]', err); });
   }
 
-  function stripHtmlTagsFromReportContent(){
-    document.querySelectorAll('#reportTableWrap .report-content').forEach(el => {
-      const t = el.textContent || '';
+  function changeSort(sortOrder) {
+    reloadReportList(1, sortOrder);
+  }
+
+  /* ===== HTML 태그 제거 ===== */
+  function stripHtmlTagsFromReportContent() {
+    document.querySelectorAll('#reportTableWrap .report-content').forEach(function(el) {
+      var t = el.textContent || '';
       el.textContent = t
         .replace(/<\s*br\s*\/?\s*>/gi, ' ')
         .replace(/<\s*\/\s*p\s*>/gi, ' ')
@@ -278,122 +364,84 @@
     });
   }
 
-  async function reloadReportList(page, sortOrder) {
-    const url = ctx + '/admin/reports?page=' + page + '&sortOrder=' + sortOrder;
-
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    });
-
-    const html = await res.text();
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-
-    const newTableWrap = doc.querySelector('#reportTableWrap');
-    const newPagingWrap = doc.querySelector('#reportPagingWrap');
-
-    if (newTableWrap) {
-      document.querySelector('#reportTableWrap').innerHTML = newTableWrap.innerHTML;
-    }
-    if (newPagingWrap) {
-      document.querySelector('#reportPagingWrap').innerHTML = newPagingWrap.innerHTML;
-    }
-
-    currentPage = page;
-    currentSort = sortOrder;
-
-    const sel = document.querySelector('#sortSelect');
-    if (sel) sel.value = sortOrder;
-
-    stripHtmlTagsFromReportContent();
-  }
-
-  function changeSort(sortOrder) {
-    reloadReportList(1, sortOrder);
-  }
-
-  document.addEventListener('click', async (e) => {
+  /* ===== 클릭 이벤트 (페이지네이션 + 승인/반려) ===== */
+  document.addEventListener('click', function(e) {
     // 페이지네이션
-    const pageA = e.target.closest('a[data-page]');
+    var pageA = e.target.closest('a[data-page]');
     if (pageA) {
       e.preventDefault();
       if (pageA.closest('.page-item') && pageA.closest('.page-item').classList.contains('disabled')) return;
-
-      const page = parseInt(pageA.dataset.page, 10);
+      var page = parseInt(pageA.dataset.page, 10);
       if (!Number.isFinite(page) || page < 1) return;
-
       reloadReportList(page, currentSort);
       return;
     }
 
     // 승인/반려
-    const btn = e.target.closest('[data-action]');
-    if(!btn) return;
+    var btn = e.target.closest('[data-action]');
+    if (!btn) return;
 
-    const action = btn.dataset.action;     // reject | approve
-    if (action === 'approve' && btn.dataset.disabled === 'true') {
-    	  showActionAlert(
-    	    'danger',
-    	    '승인(삭제/제재) 처리 실패 원인: DB board_status 컬럼 제약으로 "내용삭제" 값 업데이트가 거부됩니다. (백엔드/DB에서 board_status 허용값/길이 수정 필요) 현재는 반려만 사용해 주세요.'
-    	  );
-    	  return;
-    	}
-    const boardId = btn.dataset.boardId;
-    const tr = btn.closest('tr');
+    var action = btn.dataset.action;
+    var boardId = btn.dataset.boardId;
+    var tr = btn.closest('tr');
 
-    const confirmMsg = (action === 'reject')
-    ? '신고를 반려(패스) 처리하시겠습니까?'
-    : '신고를 승인(제재) 처리하시겠습니까?';
+    var confirmMsg = (action === 'reject')
+      ? '신고를 반려(패스) 처리하시겠습니까?'
+      : '신고를 승인(제재) 처리하시겠습니까?';
 
-  // ✅ confirm도 Swal로 통일
-  if (window.Swal && typeof window.Swal.fire === 'function') {
-    const resConfirm = await window.Swal.fire({
-      icon: "question",
-      title: "확인",
-      text: confirmMsg,
-      showCancelButton: true,
-      confirmButtonText: "확인",
-      cancelButtonText: "취소",
-      allowOutsideClick: false
-    });
+    var loadingMsg = (action === 'reject') ? '반려 처리 중...' : '승인 처리 중...';
 
-    if (!resConfirm.isConfirmed) return;
-  } else {
-    if (!confirm(confirmMsg)) return;
-  }
-
-    try {
-      const url = (action === 'reject')
-        ? (ctx + '/admin/reports/reject')
-        : (ctx + '/admin/reports/approve');
-
-      const data = await postAction(url, boardId);
-
-      // ✅ 컨트롤러 응답 포맷에 맞춘 성공/실패 판정
-      // 성공: data.ok 존재(문자열)
-      // 실패: data.fail 존재(문자열)
-      if (data && data.ok) {
-        showActionAlert('success', data.ok);
-
-        // 성공이면 행 제거
-        if (tr) tr.remove();
-
-        // 행이 다 사라지면 현재 페이지 재로딩
-        const tbody = document.querySelector('#reportTableWrap tbody');
-        const hasRow = tbody && tbody.querySelectorAll('tr[id^="row-"]').length > 0;
-        if (!hasRow) reloadReportList(Math.max(1, currentPage), currentSort);
-
-      } else {
-        showActionAlert('danger', (data && data.fail) ? data.fail : '처리 실패');
-      }
-
-    } catch (err) {
-      console.error(err);
-      showActionAlert('danger', '서버 통신 오류');
+    // Swal confirm
+    if (window.Swal && typeof window.Swal.fire === 'function') {
+      window.Swal.fire({
+        icon: 'question',
+        title: '확인',
+        text: confirmMsg,
+        showCancelButton: true,
+        confirmButtonText: '확인',
+        cancelButtonText: '취소',
+        allowOutsideClick: false
+      }).then(function(result) {
+        if (!result.isConfirmed) return;
+        doAction(action, boardId, tr, loadingMsg);
+      });
+    } else {
+      if (!confirm(confirmMsg)) return;
+      doAction(action, boardId, tr, loadingMsg);
     }
   });
 
-  document.addEventListener('DOMContentLoaded', () => {
+  function doAction(action, boardId, tr, loadingMsg) {
+    showLoading(loadingMsg);
+
+    var url = (action === 'reject')
+      ? ctx + '/admin/reports/reject'
+      : ctx + '/admin/reports/approve';
+
+    postAction(url, boardId)
+      .then(function(data) {
+        hideLoading();
+
+        if (data && data.ok) {
+          showActionAlert('success', data.ok);
+          if (tr) tr.remove();
+
+          var tbody = document.querySelector('#reportTableWrap tbody');
+          var hasRow = tbody && tbody.querySelectorAll('tr[id^="row-"]').length > 0;
+          if (!hasRow) reloadReportList(Math.max(1, currentPage), currentSort);
+
+        } else {
+          showActionAlert('danger', (data && data.fail) ? data.fail : '처리 실패');
+        }
+      })
+      .catch(function(err) {
+        hideLoading();
+        console.error(err);
+        showActionAlert('danger', '서버 통신 오류');
+      });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
     stripHtmlTagsFromReportContent();
   });
 </script>
