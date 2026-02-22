@@ -26,16 +26,14 @@ public class BoardReportDAO {
         "SELECT " +
         "  br.board_id, " +
         "  b.member_id AS board_writer_id, " +
-        "  COALESCE(m.member_nickname, '(탈퇴회원)') AS board_writer_nickname, " +
         "  b.board_title, " +
         "  b.board_content, " +
         "  COUNT(br.report_id) AS report_count, " +
         "  MIN(br.created_at) AS created_at " +
         "FROM board_report br " +
         "JOIN board b ON br.board_id = b.board_id " +
-        "LEFT JOIN member m ON b.member_id = m.member_id " +
         "WHERE br.status = 'PENDING' " +
-        "GROUP BY br.board_id, b.member_id, m.member_nickname, b.board_title, b.board_content " +
+        "GROUP BY br.board_id, b.member_id, b.board_title, b.board_content " +
         "ORDER BY created_at ASC " +
         "LIMIT ? OFFSET ?";
 
@@ -44,16 +42,14 @@ public class BoardReportDAO {
         "SELECT " +
         "  br.board_id, " +
         "  b.member_id AS board_writer_id, " +
-        "  COALESCE(m.member_nickname, '(탈퇴회원)') AS board_writer_nickname, " +
         "  b.board_title, " +
         "  b.board_content, " +
         "  COUNT(br.report_id) AS report_count, " +
         "  MIN(br.created_at) AS created_at " +
         "FROM board_report br " +
         "JOIN board b ON br.board_id = b.board_id " +
-        "LEFT JOIN member m ON b.member_id = m.member_id " +
         "WHERE br.status = 'PENDING' " +
-        "GROUP BY br.board_id, b.member_id, m.member_nickname, b.board_title, b.board_content " +
+        "GROUP BY br.board_id, b.member_id, b.board_title, b.board_content " +
         "ORDER BY created_at DESC " +
         "LIMIT ? OFFSET ?";
 
@@ -63,7 +59,7 @@ public class BoardReportDAO {
         "FROM board_report br " +
         "WHERE br.status = 'PENDING'";
 
-    // ✅ status 무관 체크 → 반려(REJECTED) 후에도 재신고 불가
+    // 중복 신고 체크
     private static final String CHECK_DUPLICATE_REPORT =
         "SELECT COUNT(*) " +
         "FROM board_report " +
@@ -122,22 +118,22 @@ public class BoardReportDAO {
         "  ?, " +                                    // issued_by (관리자)
         "  report_id, " +                            // source_report_id
         "  CASE " +
-        "    WHEN ? >= 7 THEN 'BAN' " +
-        "    WHEN ? >= 5 THEN 'SUSPEND_30D' " +
-        "    WHEN ? >= 3 THEN 'SUSPEND_7D' " +
-        "    ELSE 'WARNING_NEW' " +
-        "  END, " +                                  // warning_type (AdminReportServiceImpl 기준과 동일하게 맞춤)
+        "    WHEN ? >= 6 THEN 'BAN' " +
+        "    WHEN ? = 5 THEN 'SUSPEND_30D' " +
+        "    WHEN ? = 3 THEN 'SUSPEND_7D' " +
+        "    ELSE 'WARNING' " +
+        "  END, " +                                  // warning_type
         "  CASE " +
-        "    WHEN ? >= 7 THEN '신고 누적 7회 이상 - 영구 정지' " +
-        "    WHEN ? >= 5 THEN '신고 누적 5~6회 - 30일 정지' " +
-        "    WHEN ? >= 3 THEN '신고 누적 3~4회 - 7일 정지' " +
-        "    ELSE '게시글 신고 승인 - 경고' " +
+        "    WHEN ? >= 6 THEN '신고 누적 6회 이상 - 영구 정지' " +
+        "    WHEN ? = 5 THEN '신고 누적 5회 - 30일 정지' " +
+        "    WHEN ? = 3 THEN '신고 누적 3회 - 7일 정지' " +
+        "    ELSE '게시글 신고 승인' " +
         "  END, " +                                  // reason
         "  NOW(), " +                                // start_at
         "  CASE " +
-        "    WHEN ? >= 7 THEN NULL " +
-        "    WHEN ? >= 5 THEN DATE_ADD(NOW(), INTERVAL 30 DAY) " +
-        "    WHEN ? >= 3 THEN DATE_ADD(NOW(), INTERVAL 7 DAY) " +
+        "    WHEN ? >= 6 THEN NULL " +
+        "    WHEN ? = 5 THEN DATE_ADD(NOW(), INTERVAL 30 DAY) " +
+        "    WHEN ? = 3 THEN DATE_ADD(NOW(), INTERVAL 7 DAY) " +
         "    ELSE DATE_ADD(NOW(), INTERVAL 1 DAY) " +
         "  END " +                                   // end_at
         "FROM board_report " +
@@ -149,16 +145,14 @@ public class BoardReportDAO {
         "SELECT " +
         "  br.board_id, " +
         "  b.member_id AS board_writer_id, " +
-        "  COALESCE(m.member_nickname, '(탈퇴회원)') AS board_writer_nickname, " +
         "  b.board_title, " +
         "  b.board_content, " +
         "  COUNT(br.report_id) AS report_count, " +
         "  MIN(br.created_at) AS created_at " +
         "FROM board_report br " +
         "JOIN board b ON br.board_id = b.board_id " +
-        "LEFT JOIN member m ON b.member_id = m.member_id " +
         "WHERE br.board_id = ? AND br.status = 'PENDING' " +
-        "GROUP BY br.board_id, b.member_id, m.member_nickname, b.board_title, b.board_content " +
+        "GROUP BY br.board_id, b.member_id, b.board_title, b.board_content " +
         "LIMIT 1";
 
     // 알림 생성 (3회 이상)
@@ -176,7 +170,6 @@ public class BoardReportDAO {
         BoardReportDTO dto = new BoardReportDTO();
         dto.setBoardId(rs.getInt("board_id"));
         dto.setBoardWriterId(rs.getInt("board_writer_id"));
-        dto.setBoardWriterNickname(rs.getString("board_writer_nickname")); // ✅ 닉네임 추가
         dto.setBoardTitle(rs.getString("board_title"));
         dto.setBoardContent(rs.getString("board_content"));
         dto.setReportCount(rs.getInt("report_count"));
@@ -216,23 +209,6 @@ public class BoardReportDAO {
             System.out.println("[DAO 에러] 신고 목록 조회: " + e.getMessage());
             e.printStackTrace();
             return List.of();
-        }
-    }
-
-    /**
-     * 신고 상세 조회 (boardId 단건)
-     */
-    public BoardReportDTO selectReportDetail(int boardId) {
-        System.out.println("[DAO] 신고 상세 조회 - boardId=" + boardId);
-        try {
-            List<BoardReportDTO> result = jdbcTemplate.query(
-                SELECT_REPORT_DETAIL, BoardReportRowMapper, boardId
-            );
-            return result.isEmpty() ? null : result.get(0);
-        } catch (Exception e) {
-            System.out.println("[DAO 에러] 신고 상세 조회: " + e.getMessage());
-            e.printStackTrace();
-            return null;
         }
     }
 
@@ -297,12 +273,11 @@ public class BoardReportDAO {
 
     /**
      * 신고 승인 (트랜잭션)
-     * 1. 현재 신고 횟수 조회
-     * 2. 게시글 상태 변경
-     * ✅ FIX: 3. INSERT_MEMBER_WARNING 먼저 실행 (board_report WHERE status='PENDING' 참조)
-     * 4. 신고 APPROVED 처리 (PENDING → APPROVED, INSERT_MEMBER_WARNING 이후)
-     * 5. 작성자 경고 +1
-     * 6. 알림 생성 (3회 이상)
+     * 1. 게시글 상태 변경
+     * 2. 신고 승인
+     * 3. 작성자 경고 +1
+     * 4. member_warning 테이블에 제재 기록
+     * 5. 알림 생성 (3회 이상)
      */
     @Transactional
     public boolean approveReport(int boardId, int boardWriterId, int handledBy) {
@@ -326,27 +301,27 @@ public class BoardReportDAO {
             int rows1 = jdbcTemplate.update(UPDATE_BOARD_DELETE, boardId);
             System.out.println("[DAO] 게시글 상태 변경 - rows=" + rows1);
 
-            // ✅ FIX: INSERT_MEMBER_WARNING이 board_report WHERE status='PENDING'을 FROM으로 참조하므로
+            // ✅ FIX: INSERT_MEMBER_WARNING이 board_report WHERE status='PENDING'을 참조하므로
             //         UPDATE_REPORT_APPROVE(PENDING→APPROVED) 보다 반드시 먼저 실행해야 함
             // 3. member_warning 테이블에 제재 기록 (PENDING 상태 참조)
             int rows4 = jdbcTemplate.update(
                 INSERT_MEMBER_WARNING,
                 boardWriterId,      // member_id
                 handledBy,          // issued_by
-                newCount,           // warning_type 판단 (>= 7)
-                newCount,           // warning_type 판단 (>= 5)
-                newCount,           // warning_type 판단 (>= 3)
-                newCount,           // reason 판단 (>= 7)
-                newCount,           // reason 판단 (>= 5)
-                newCount,           // reason 판단 (>= 3)
-                newCount,           // end_at 판단 (>= 7)
-                newCount,           // end_at 판단 (>= 5)
-                newCount,           // end_at 판단 (>= 3)
+                newCount,           // warning_type 판단 (>= 6)
+                newCount,           // warning_type 판단 (== 5)
+                newCount,           // warning_type 판단 (== 3)
+                newCount,           // reason 판단 (>= 6)
+                newCount,           // reason 판단 (== 5)
+                newCount,           // reason 판단 (== 3)
+                newCount,           // end_at 판단 (>= 6)
+                newCount,           // end_at 판단 (== 5)
+                newCount,           // end_at 판단 (== 3)
                 boardId             // source_report_id 조회용
             );
             System.out.println("[DAO] 제재 기록 생성 - rows=" + rows4);
 
-            // 4. 신고 승인 (해당 게시글의 모든 PENDING 신고) - INSERT_MEMBER_WARNING 이후 실행
+            // 4. 신고 승인 (PENDING → APPROVED) - INSERT_MEMBER_WARNING 이후 실행
             int rows2 = jdbcTemplate.update(UPDATE_REPORT_APPROVE, handledBy, boardId);
             System.out.println("[DAO] 신고 승인 - rows=" + rows2);
 
@@ -386,6 +361,23 @@ public class BoardReportDAO {
             System.out.println("[DAO 에러] 신고 반려: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("신고 반려 처리 실패", e);
+        }
+    }
+
+    /**
+     * 신고 상세 조회 (boardId 단건)
+     */
+    public BoardReportDTO selectReportDetail(int boardId) {
+        System.out.println("[DAO] 신고 상세 조회 - boardId=" + boardId);
+        try {
+            List<BoardReportDTO> result = jdbcTemplate.query(
+                SELECT_REPORT_DETAIL, BoardReportRowMapper, boardId
+            );
+            return result.isEmpty() ? null : result.get(0);
+        } catch (Exception e) {
+            System.out.println("[DAO 에러] 신고 상세 조회: " + e.getMessage());
+            e.printStackTrace();
+            return null;
         }
     }
 
