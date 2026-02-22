@@ -560,11 +560,11 @@ body.mypage-editing .mypage-right-card{
 
   <%@ include file="/WEB-INF/common/header.jsp" %>
 
-  <c:if test="${not empty msg}">
-    <div class="container" style="margin-top: 18px;">
-      <div class="alert alert-warning" style="border-radius: 14px;">${msg}</div>
-    </div>
-  </c:if>
+	<c:if test="${not empty msg}">
+	  <div class="container" style="margin-top: 18px;">
+	    <div class="alert alert-warning" style="border-radius: 14px;"><c:out value="${msg}" /></div>
+	  </div>
+	</c:if>
 
   <div class="container mypage-title">
     <h1 class="mypage-title__h1">관리자 페이지</h1>
@@ -581,17 +581,17 @@ body.mypage-editing .mypage-right-card{
             <div class="profile-img-wrap is-loading" id="profileWrap">
               <c:choose>
                 <c:when test="${not empty memberData.memberProfileImage}">
-                  <img id="profilePreview" alt="프로필 이미지"
-                       data-real-src="${ctx}${memberData.memberProfileImage}"
-                       data-initial-src="${ctx}${memberData.memberProfileImage}"
-                       data-default-src="${ctx}/img/profile-default.jpg"
-                       src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
+				<img id="profilePreview" alt="프로필 이미지"
+				     data-real-src="<c:out value='${ctx}${memberData.memberProfileImage}'/>"
+				     data-initial-src="<c:out value='${ctx}${memberData.memberProfileImage}'/>"
+				     data-default-src="<c:out value='${ctx}/img/profile-default.jpg'/>"
+				     src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
                 </c:when>
                 <c:otherwise>
-                  <img id="profilePreview" alt="프로필 이미지"
-                       data-initial-src="${ctx}/img/profile-default.jpg"
-                       data-default-src="${ctx}/img/profile-default.jpg"
-                       src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
+				<img id="profilePreview" alt="프로필 이미지"
+				     data-initial-src="<c:out value='${ctx}/img/profile-default.jpg'/>"
+				     data-default-src="<c:out value='${ctx}/img/profile-default.jpg'/>"
+				     src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
                 </c:otherwise>
               </c:choose>
 
@@ -696,7 +696,7 @@ body.mypage-editing .mypage-right-card{
                   <span class="split-text">아이디</span>
                 </div>
                 <div class="split-value">
-                  <input type="text" value="${memberData.memberName}" readonly>
+                  <input type="text" value="<c:out value='${memberData.memberName}'/>" readonly>
                 </div>
               </div>
 
@@ -708,7 +708,7 @@ body.mypage-editing .mypage-right-card{
                   <span class="split-text">이메일</span>
                 </div>
                 <div class="split-value">
-                  <input type="email" value="${memberData.memberEmail}" readonly>
+                  <input type="email" value="<c:out value='${memberData.memberEmail}'/>" readonly>
                 </div>
               </div>
 
@@ -735,10 +735,9 @@ body.mypage-editing .mypage-right-card{
                   </div>
 
                   <div class="split-value" style="position:relative;">
-                    <span id="nicknameText">${memberData.memberNickname}</span>
+                    <span id="nicknameText"><c:out value="${memberData.memberNickname}" /></span>
 
-                    <input id="nicknameInput" name="memberNickname" type="text"
-                           value="${memberData.memberNickname}" readonly
+                    <input type="text" id="nicknameInput" value="<c:out value='${memberData.memberNickname}'/>" readonly
                            style="position:absolute; inset:0; opacity:0; pointer-events:none;">
                   </div>
                 </div>
