@@ -29,6 +29,8 @@
 <link rel="stylesheet" href="${ctx}/css/style.css">
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<%-- ✅ BAN 안내 모달용 SweetAlert2 --%>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
 /* 헤더 아이콘 숨김 (비로그인 페이지용) */
@@ -220,21 +222,18 @@ a[href$="/logout"] { display:none !important; }
 <script>
 $(function () {
 
-  /* =========================================================
-     ✅ CHANGED: ctx 문자열 결합 대신 c:url 결과를 JS에 주입
-     ========================================================= */
-  const URL_MEMBER_LOOKUP = "${urlMemberLookup}";
-  const URL_SEND_CODE = "${urlSendCode}";
-  const URL_VERIFY_CODE = "${urlVerifyCode}";
+  var URL_MEMBER_LOOKUP = "${urlMemberLookup}";
+  var URL_SEND_CODE     = "${urlSendCode}";
+  var URL_VERIFY_CODE   = "${urlVerifyCode}";
 
-  let resendTimer = null;
-  let resendLeft = 0;
-  let resendEnableAt = 0;
+  var resendTimer  = null;
+  var resendLeft   = 0;
+  var resendEnableAt = 0;
 
-  let idChecked = false;
-  let verified = false;
+  var idChecked = false;
+  var verified  = false;
 
-  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+=-]).{8,16}$/;
+  var passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+=-]).{8,16}$/;
 
   // 초기 UI
   $("#authArea").hide();
@@ -254,20 +253,32 @@ $(function () {
     $el.text("").removeClass("error success");
   }
 
-  function setRowState(rowId, state){ // "ok" | "bad" | "loading" | "clear"
-    const $row = $("#" + rowId);
+  function setRowState(rowId, state) {
+    var $row = $("#" + rowId);
     $row.removeClass("is-ok is-bad is-loading");
-    if(state === "ok") $row.addClass("is-ok");
-    if(state === "bad") $row.addClass("is-bad");
-    if(state === "loading") $row.addClass("is-loading");
+    if (state === "ok")      $row.addClass("is-ok");
+    if (state === "bad")     $row.addClass("is-bad");
+    if (state === "loading") $row.addClass("is-loading");
   }
 
-  function showLoading(text){
+  function showLoading(text) {
     $("#loadingText").text(text || "처리 중...");
     $("#loadingOverlay").show();
   }
-  function hideLoading(){
+  function hideLoading() {
     $("#loadingOverlay").hide();
+  }
+
+  // ✅ BAN 안내 모달
+  function showBanModal(message) {
+    Swal.fire({
+      icon: "error",
+      title: "접근 불가",
+      text: message || "영구 정지된 계정입니다. 비밀번호를 재설정할 수 없습니다.",
+      confirmButtonText: "확인",
+      confirmButtonColor: "#e53637",
+      allowOutsideClick: false
+    });
   }
 
   function resetAuthUI() {
@@ -301,12 +312,12 @@ $(function () {
     clearInterval(resendTimer);
     resendLeft = seconds;
 
-    resendEnableAt = Date.now() + 5000; // 5초 뒤 재요청 가능
+    resendEnableAt = Date.now() + 5000;
     $("#resendBtn").prop("disabled", true);
 
-    const render = () => {
-      const m = Math.floor(resendLeft / 60);
-      const s = resendLeft % 60;
+    var render = function() {
+      var m = Math.floor(resendLeft / 60);
+      var s = resendLeft % 60;
       $("#timer").text(String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0"));
     };
 
@@ -330,7 +341,7 @@ $(function () {
 
   $("#memberName").on("input", function () {
     idChecked = false;
-    verified = false;
+    verified  = false;
 
     $("#sendBtn").prop("disabled", true).text("인증번호 발송");
     $("#memberEmail").val("");
@@ -346,7 +357,7 @@ $(function () {
 
   // 1) 아이디 확인
   $("#memberNameCheckBtn").click(function () {
-    const memberName = $("#memberName").val().trim();
+    var memberName = $("#memberName").val().trim();
     if (!memberName) {
       showMsg($("#memberNameMsg"), "아이디를 입력해주세요.", false);
       setRowState("rowMember", "bad");
@@ -357,7 +368,7 @@ $(function () {
     setRowState("rowMember", "loading");
 
     $.ajax({
-      url: URL_MEMBER_LOOKUP, // ✅ CHANGED
+      url: URL_MEMBER_LOOKUP,
       method: "POST",
       dataType: "json",
       data: { memberName: memberName },
@@ -367,6 +378,18 @@ $(function () {
           idChecked = false;
           $("#sendBtn").prop("disabled", true);
           setRowState("rowMember", "bad");
+          return;
+        }
+
+        // ✅ BAN 회원 처리 - 모달로 안내
+        if (res.banned === true) {
+          showBanModal(res.message);
+          idChecked = false;
+          $("#sendBtn").prop("disabled", true);
+          $("#memberEmail").val("");
+          setRowState("rowMember", "bad");
+          clearMsg($("#memberNameMsg"));
+          resetAuthUI();
           return;
         }
 
@@ -415,7 +438,7 @@ $(function () {
       return;
     }
 
-    const memberName = $("#memberName").val().trim();
+    var memberName = $("#memberName").val().trim();
     if (!memberName) {
       showMsg($("#memberNameMsg"), "아이디를 입력해주세요.", false);
       setRowState("rowMember", "bad");
@@ -429,7 +452,7 @@ $(function () {
     showLoading("인증번호 발송 중...");
 
     $.ajax({
-      url: URL_SEND_CODE, // ✅ CHANGED
+      url: URL_SEND_CODE,
       method: "POST",
       dataType: "json",
       data: { memberName: memberName },
@@ -456,7 +479,7 @@ $(function () {
         $("#pwArea").hide();
         $(".btn-main").prop("disabled", true);
 
-        const expireSeconds = res.expireSeconds || 180;
+        var expireSeconds = res.expireSeconds || 180;
         startTimer(expireSeconds);
       },
       error: function () {
@@ -464,7 +487,7 @@ $(function () {
         $("#sendBtn").prop("disabled", false).text("인증번호 발송");
         showMsg($("#memberEmailMsg"), "서버 통신 오류", false);
       },
-      complete: function(){
+      complete: function () {
         hideLoading();
         $("#rowEmail").removeClass("is-loading");
       }
@@ -475,7 +498,7 @@ $(function () {
   $("#resendBtn").click(function () {
     if (!idChecked) return;
 
-    const memberName = $("#memberName").val().trim();
+    var memberName = $("#memberName").val().trim();
     if (!memberName) return;
 
     $("#resendBtn").prop("disabled", true);
@@ -486,7 +509,7 @@ $(function () {
     clearMsg($("#verificationCodeMsg"));
 
     $.ajax({
-      url: URL_SEND_CODE, // ✅ CHANGED
+      url: URL_SEND_CODE,
       method: "POST",
       dataType: "json",
       data: { memberName: memberName },
@@ -504,14 +527,14 @@ $(function () {
         setRowState("rowEmail", "ok");
         $("#sendBtn").prop("disabled", true).text("발송 완료");
 
-        const expireSeconds = res.expireSeconds || 180;
+        var expireSeconds = res.expireSeconds || 180;
         startTimer(expireSeconds);
       },
       error: function () {
         showMsg($("#verificationCodeMsg"), "서버 통신 오류", false);
         setRowState("rowEmail", "bad");
       },
-      complete: function(){
+      complete: function () {
         hideLoading();
         $("#rowEmail").removeClass("is-loading");
       }
@@ -520,7 +543,7 @@ $(function () {
 
   // 4) 인증번호 확인
   $("#verifyBtn").click(function () {
-    const code = $("#verificationCode").val().trim();
+    var code = $("#verificationCode").val().trim();
     if (!code) {
       showMsg($("#verificationCodeMsg"), "인증번호를 입력해주세요.", false);
       setRowState("rowCode", "bad");
@@ -531,7 +554,7 @@ $(function () {
     setRowState("rowCode", "loading");
 
     $.ajax({
-      url: URL_VERIFY_CODE, // ✅ CHANGED
+      url: URL_VERIFY_CODE,
       method: "POST",
       dataType: "json",
       data: { code: code },
@@ -560,7 +583,7 @@ $(function () {
         $("#verifyBtn").prop("disabled", false).text("인증번호 확인");
         setRowState("rowCode", "bad");
       },
-      complete: function(){
+      complete: function () {
         $("#rowCode").removeClass("is-loading");
       }
     });
@@ -569,7 +592,7 @@ $(function () {
   // 5) 인증 취소 (전체 재시작)
   $("#emailEditBtn").click(function () {
     idChecked = false;
-    verified = false;
+    verified  = false;
 
     $("#memberName").prop("readonly", false).val("");
     $("#memberEmail").val("");
@@ -591,8 +614,8 @@ $(function () {
   $("#memberPassword, #memberPasswordConfirm").on("input", function () {
     if (!verified) return;
 
-    const pw = $("#memberPassword").val();
-    const pw2 = $("#memberPasswordConfirm").val();
+    var pw  = $("#memberPassword").val();
+    var pw2 = $("#memberPasswordConfirm").val();
 
     if (!passwordRegex.test(pw)) {
       showMsg($("#memberPasswordMsg"), "8~16자, 영문/숫자/특수문자 포함", false);
@@ -627,7 +650,6 @@ $(function () {
 
     <div class="reset-wrap">
 
-      <%-- ✅ CHANGED: action도 c:url로 통일 --%>
       <form action="${findPwActionUrl}" method="post">
 
         <div class="row-inline" id="rowMember">
@@ -665,7 +687,6 @@ $(function () {
           <button type="submit" class="btn-main" disabled>비밀번호 변경</button>
         </div>
 
-        <%-- ✅ CHANGED: 로그인 이동도 c:url 사용 --%>
         <a href="${loginUrl}" class="login-back">
           <span class="chev">&lt;</span>
           <span class="hint">로그인 화면으로 이동</span>

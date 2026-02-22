@@ -26,7 +26,6 @@ public class DeletedBoardCheckAspect {
     private BoardService boardService;
 
     @Before(
-        // toggleLike는 BoardApiController에 있음 (수정)
         "execution(* fourcheetah.animale.web.controller.board.BoardApiController.toggleLike(..)) || " +
         "execution(* fourcheetah.animale.web.controller.board.UserReportController.reportBoard(..)) || " +
         "execution(* fourcheetah.animale.web.controller.board.BoardController.boardDelete(..)) || " +
