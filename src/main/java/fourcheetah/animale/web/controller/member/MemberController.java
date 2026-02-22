@@ -384,6 +384,8 @@ public class MemberController {
             @RequestParam(value = "temporaryProfileImageToken", required = false) String temporaryProfileImageToken,
             @RequestParam(value = "memberProfileColor", required = false) String memberProfileColor,
             @RequestParam(value = "memberNicknameColor", required = false) String memberNicknameColor,
+            @RequestParam(value = "adminNickDecoStyle", required = false) String adminNickDecoStyle,
+            @RequestParam(value = "adminProfileDecoStyle", required = false) String adminProfileDecoStyle,
             HttpSession session
     ) {
         if (session == null || session.getAttribute("memberId") == null) {
@@ -441,7 +443,14 @@ public class MemberController {
         boolean nicknameColorChanged = (reqNicknameColor != null &&
                 (cur.getMemberNicknameColor() == null || !reqNicknameColor.equals(cur.getMemberNicknameColor())));
 
-        if (!nickChanged && !imgChanged && !profileColorChanged && !nicknameColorChanged) {
+        // 관리자 꾸미기 변경 감지
+        boolean adminNickDecoChanged = isAdmin && adminNickDecoStyle != null
+                && !adminNickDecoStyle.equals(cur.getMemberNicknameColor());
+        boolean adminProfileDecoChanged = isAdmin && adminProfileDecoStyle != null
+                && !adminProfileDecoStyle.equals(cur.getMemberProfileColor());
+
+        if (!nickChanged && !imgChanged && !profileColorChanged && !nicknameColorChanged
+                && !adminNickDecoChanged && !adminProfileDecoChanged) {
             session.setAttribute("msg", "변경된 내용이 없습니다.");
             return backPage;
         }
@@ -519,9 +528,10 @@ public class MemberController {
 
         up.setMemberNickname(nickChanged ? newNick : null);
         up.setMemberProfileImage(imgChanged ? "/uploads/profile/" + token : null);
-        up.setMemberProfileColor(profileColorChanged ? reqProfileColor : null);
-        up.setMemberNicknameColor(nicknameColorChanged ? reqNicknameColor : null);
-
+        up.setMemberProfileColor(profileColorChanged ? reqProfileColor
+                : (adminProfileDecoChanged ? adminProfileDecoStyle : null));
+        up.setMemberNicknameColor(nicknameColorChanged ? reqNicknameColor
+                : (adminNickDecoChanged ? adminNickDecoStyle : null));
         if (!isAdmin) {
             up.setMemberPayCash(needCash);
         }
