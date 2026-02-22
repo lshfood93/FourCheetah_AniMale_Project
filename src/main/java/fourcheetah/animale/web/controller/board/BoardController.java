@@ -203,6 +203,7 @@ public class BoardController {
 
 		//  추가
 		boardData.setBoardContent(htmlSanitizer.sanitizeBoardHtml(boardData.getBoardContent()));
+		boardData.setBoardTitle(htmlSanitizer.sanitizePlainText(boardData.getBoardTitle()));
 
 		// ✅ 신고 승인으로 삭제된 게시글 접근 차단 → 목록으로 redirect
 		if ("내용삭제".equals(boardData.getBoardStatus())) {
@@ -312,6 +313,8 @@ public class BoardController {
 				htmlSanitizer.sanitizeBoardHtml(boardData.getBoardContent())
 				);
 
+		boardData.setBoardTitle(htmlSanitizer.sanitizePlainText(boardData.getBoardTitle()));
+		
 		model.addAttribute("type", "BOARD");
 		model.addAttribute("boardData", boardData);
 		return "edit";
@@ -369,7 +372,7 @@ public class BoardController {
 		String title = boardDTO.getBoardTitle();
 		String content = boardDTO.getBoardContent();
 
-		title = htmlSanitizer.normalizePlainText(title); // ✅ (추가) 제목 normalize
+		title = htmlSanitizer.sanitizePlainText(title); // ✅ (추가) 제목 sanitize
 		if (title.isEmpty()) {
 			// 참고: 너 코드 기준 GET 수정폼 매핑은 /boardEditPage 라서 이 경로가 더 자연스러움
 			return message(model, "제목은 필수입니다.", "boardEditPage?boardId=" + boardId); // ✅ (수정)
@@ -447,8 +450,8 @@ public class BoardController {
 				"BOARD_SEARCH_CONTENT".equals(condition);
 
 		if (keyword != null) {
-			keyword = keyword.trim();
-			if (keyword.isEmpty()) keyword = null;
+		    keyword = htmlSanitizer.sanitizePlainText(keyword);
+		    if (keyword.isEmpty()) keyword = null;
 		}
 		boardDTO.setKeyword(keyword);
 
@@ -602,7 +605,7 @@ public class BoardController {
 		// ---------------------------------------------------------
 		// 2) 제목 검증 (일반 텍스트 normalize 사용)
 		// ---------------------------------------------------------
-		title = htmlSanitizer.normalizePlainText(title); // ✅ (추가) 제어문자 제거 + trim
+		title = htmlSanitizer.sanitizePlainText(title); // ✅ (추가) 제어문자 제거 + trim
 		if (title.isEmpty()) {
 			return message(model, "제목은 필수입니다.", "/boardWritePage?boardCategory=" + category);
 		}
@@ -635,11 +638,11 @@ public class BoardController {
 		//    - 현재는 Jsoup sanitize가 핵심 방어
 		//    - 이 검사는 추후 제거/완화 가능
 		// ---------------------------------------------------------
-		String lowerContent = content.toLowerCase();
-		if (lowerContent.contains("<script") || lowerContent.contains("javascript:")) {
-			return message(model, "허용되지 않는 내용이 포함되어 있습니다.", "/boardWritePage?boardCategory=" + category);
+		String lowerSafeContent = safeContent.toLowerCase();
+		if (lowerSafeContent.contains("<script") || lowerSafeContent.contains("javascript:")) {
+		    return message(model, "허용되지 않는 내용이 포함되어 있습니다.", "/boardWritePage?boardCategory=" + category);
 		}
-
+		
 		// ---------------------------------------------------------
 		// 6) DTO 세팅 (최종 저장값은 반드시 sanitize 결과 사용)
 		// ---------------------------------------------------------
