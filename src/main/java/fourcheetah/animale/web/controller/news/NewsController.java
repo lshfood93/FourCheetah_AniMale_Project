@@ -279,7 +279,11 @@ public class NewsController {
 
         // 3) 입력값 검증
         Integer animeId = dto.getAnimeId();
-        String newsTitle = (dto.getNewsTitle() == null) ? "" : dto.getNewsTitle().trim();
+
+        // ✅ [변경] 제목은 일반 텍스트 normalize 적용 (제어문자 제거 + trim)
+        String newsTitle = htmlSanitizer.normalizePlainText(dto.getNewsTitle());
+
+        // ✅ [유지] 본문은 리치텍스트이므로 trim만 적용 후 sanitize
         String newsContent = (dto.getNewsContent() == null) ? "" : dto.getNewsContent().trim();
 
         // 제목 검증
@@ -294,14 +298,19 @@ public class NewsController {
             return "message";
         }
 
-        // 내용 검증
+        // 내용 검증 (원본 기준)
         if (newsContent.isEmpty()) {
             model.addAttribute("msg", "내용은 필수입니다.");
             model.addAttribute("location", "/newsWrite");
             return "message";
         }
-        
-     //  서버측 HTML Sanitizing
+        if (newsContent.length() > 100000) {
+            model.addAttribute("msg", "내용이 너무 깁니다.");
+            model.addAttribute("location", "/newsWrite");
+            return "message";
+        }
+
+        // ✅ [핵심] 서버측 HTML Sanitizing
         String safeNewsContent = htmlSanitizer.sanitizeNewsHtml(newsContent);
         if (safeNewsContent == null || safeNewsContent.trim().isEmpty()) {
             model.addAttribute("msg", "내용이 올바르지 않습니다.");
@@ -309,7 +318,7 @@ public class NewsController {
             return "message";
         }
 
-        // XSS 방지
+        // (보조) 문자열 기반 차단 - sanitize가 핵심 방어, 이건 보조 유지
         String lowerContent = newsContent.toLowerCase();
         if (lowerContent.contains("<script") || lowerContent.contains("javascript:")) {
             model.addAttribute("msg", "허용되지 않는 내용이 포함되어 있습니다.");
@@ -326,14 +335,15 @@ public class NewsController {
 
         // 4) 파일 업로드 + DB 저장
         try {
-            String thumbnailUrl = saveFile(thumbFile, "/upload/newsThumb/", request);         
-         // sanitize된 HTML 기준으로 첫 이미지 추출
+            String thumbnailUrl = saveFile(thumbFile, "/upload/newsThumb/", request);
+
+            // ✅ [유지] sanitize된 HTML 기준으로 첫 이미지 추출 (더 안전/일관적)
             String newsImageUrl = extractFirstImgSrc(safeNewsContent);
 
             NewsDTO insertDTO = new NewsDTO();
             insertDTO.setAnimeId(animeId);
-            insertDTO.setNewsTitle(newsTitle);
-            insertDTO.setNewsContent(safeNewsContent);   // 변경
+            insertDTO.setNewsTitle(newsTitle);             // ✅ normalize된 제목 저장
+            insertDTO.setNewsContent(safeNewsContent);     // ✅ sanitize된 본문 저장
             insertDTO.setNewsThumbnailUrl(thumbnailUrl);
             insertDTO.setNewsImageUrl(newsImageUrl);
             insertDTO.setCondition("NEWS_INSERT");
@@ -418,6 +428,13 @@ public class NewsController {
             return "message";
         }
 
+        // ✅ [추가] 수정 화면 진입 시에도 본문 sanitize
+        // - 레거시 데이터/이상 HTML이 textarea로 그대로 내려가는 것 방지
+        // - boardEditPage에서 한 방식과 동일한 방어
+        newsData.setNewsContent(
+                htmlSanitizer.sanitizeNewsHtml(newsData.getNewsContent())
+        );
+
         // 5) 수정 페이지 이동
         model.addAttribute("type", "NEWS");
         model.addAttribute("newsData", newsData);
@@ -471,7 +488,10 @@ public class NewsController {
         }
 
         // 4) 입력값 검증
-        String newsTitle = (dto.getNewsTitle() == null) ? "" : dto.getNewsTitle().trim();
+        // ✅ [변경] 제목은 일반 텍스트 normalize 적용
+        String newsTitle = htmlSanitizer.normalizePlainText(dto.getNewsTitle());
+
+        // ✅ [유지] 본문은 리치텍스트이므로 trim 후 sanitize
         String newsContent = (dto.getNewsContent() == null) ? "" : dto.getNewsContent().trim();
 
         // 제목 검증
@@ -492,8 +512,13 @@ public class NewsController {
             model.addAttribute("location", "/newsEdit?newsId=" + newsId);
             return "message";
         }
-        
-     //  서버측 HTML Sanitizing
+        if (newsContent.length() > 100000) {
+            model.addAttribute("msg", "내용이 너무 깁니다.");
+            model.addAttribute("location", "/newsEdit?newsId=" + newsId);
+            return "message";
+        }
+
+        // ✅ [핵심] 서버측 HTML Sanitizing
         String safeNewsContent = htmlSanitizer.sanitizeNewsHtml(newsContent);
         if (safeNewsContent == null || safeNewsContent.trim().isEmpty()) {
             model.addAttribute("msg", "내용이 올바르지 않습니다.");
@@ -501,7 +526,7 @@ public class NewsController {
             return "message";
         }
 
-        // XSS 방지
+        // (보조) 문자열 기반 차단
         String lowerContent = newsContent.toLowerCase();
         if (lowerContent.contains("<script") || lowerContent.contains("javascript:")) {
             model.addAttribute("msg", "허용되지 않는 내용이 포함되어 있습니다.");
@@ -523,17 +548,17 @@ public class NewsController {
                 newsImageUrl = saveFile(newsImageFile, "/upload/newsImage/", request);
             }
 
-            // 이미지 URL이 없으면 content에서 추출
+            // 이미지 URL이 없으면 content에서 추출 (sanitize 결과 기준)
             if (newsImageUrl == null || newsImageUrl.isEmpty()) {
-            	newsImageUrl = extractFirstImgSrc(safeNewsContent); //  변경
+                newsImageUrl = extractFirstImgSrc(safeNewsContent);
             }
 
             // DB 업데이트
             NewsDTO updateDTO = new NewsDTO();
             updateDTO.setNewsId(newsId);
             updateDTO.setAnimeId(dto.getAnimeId());
-            updateDTO.setNewsTitle(newsTitle);
-            updateDTO.setNewsContent(safeNewsContent);   //  변경
+            updateDTO.setNewsTitle(newsTitle);             // ✅ normalize된 제목 저장
+            updateDTO.setNewsContent(safeNewsContent);     // ✅ sanitize된 본문 저장
             updateDTO.setNewsThumbnailUrl(thumbnailUrl);
             updateDTO.setNewsImageUrl(newsImageUrl);
             updateDTO.setCondition("NEWS_UPDATE");
@@ -557,7 +582,7 @@ public class NewsController {
             return "message";
         }
     }
-
+    
     // ==================== 삭제 ====================
     
     /**
