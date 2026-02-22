@@ -288,6 +288,17 @@
 <script src="${ctx}/js/bootstrap.min.js"></script>
 
 <script>
+  // ✅ CHANGED: 공통 알림 함수 (SweetAlert2 우선 사용)
+  // - 헤더에 SweetAlert2 CDN이 있다고 했으므로 Swal.fire 사용
+  // - 혹시 로딩 이슈가 생길 경우를 대비해 alert fallback 유지(안전장치)
+  function showPageAlert(options, fallbackMessage) {
+    if (window.Swal && typeof window.Swal.fire === 'function') {
+      return window.Swal.fire(options);
+    }
+    alert(fallbackMessage || (options && options.text) || '알림');
+    return Promise.resolve();
+  }
+
   // 검색어 trim + 빈값 방지
   (function(){
     var form = document.getElementById("boardSearchForm");
@@ -296,12 +307,25 @@
     form.addEventListener("submit", function(e){
       var input = document.getElementById("boardSearchInput");
       var k = (input && input.value ? input.value : "").trim();
+
+      // ✅ CHANGED: 기본 alert -> SweetAlert2
       if(!k){
         e.preventDefault();
-        alert("검색어를 입력하세요.");
-        if(input) input.focus();
+
+        showPageAlert({
+          icon: 'warning',
+          title: '검색어를 입력하세요',
+          text: '검색어를 입력한 뒤 다시 검색해주세요.',
+          confirmButtonText: '확인'
+        }, '검색어를 입력하세요.').then(function () {
+          // ✅ CHANGED: 모달 닫힌 뒤 포커스 복원 (UX)
+          if (input) input.focus();
+        });
+
         return;
       }
+
+      // ✅ 기존 동작 유지: trim 적용 후 제출
       input.value = k;
     });
   })();
@@ -313,7 +337,15 @@
 
     banBtn.addEventListener("click", function(e){
       e.preventDefault();
-      alert("제재 기간 동안 애니 게시판 글 작성이 제한됩니다.");
+
+      // ✅ CHANGED: 기본 alert -> SweetAlert2
+      showPageAlert({
+        icon: 'warning',
+        title: '작성 제한',
+        text: '제재 기간 동안 애니 게시판 글 작성이 제한됩니다.',
+        confirmButtonText: '확인'
+      }, '제재 기간 동안 애니 게시판 글 작성이 제한됩니다.');
+
       return false;
     });
   })();
@@ -329,9 +361,11 @@
     });
   })();
 </script>
+
 <c:if test="${deletedBoardRedirect}">
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  // ✅ CHANGED: SweetAlert2로 통일 (헤더 CDN 전제)
   if (window.Swal && typeof window.Swal.fire === 'function') {
     window.Swal.fire({
       icon: 'warning',
@@ -339,8 +373,6 @@ document.addEventListener('DOMContentLoaded', function () {
       text: '신고 처리가 완료된 게시글은 조회할 수 없습니다.',
       confirmButtonText: '확인'
     });
-  } else {
-    alert('신고 처리가 완료된 게시글은 조회할 수 없습니다.');
   }
 });
 </script>
