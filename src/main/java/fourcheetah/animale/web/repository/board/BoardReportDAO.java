@@ -409,7 +409,7 @@ public class BoardReportDAO {
                 memberId
             );
             return count != null && count > 0;
-        } catch (Exception e) {
+         } catch (Exception e) {
             System.out.println("[DAO 에러] isReportedByMember: " + e.getMessage());
             return false;
         }

@@ -152,12 +152,12 @@ public class MemberController {
                 // WARNING / WARNING_NEW (경고 1~2회 - 기능 제한 없음)
                 // WARNING_NEW: 제재 처리 후 최초 로그인 → 모달 표시 + WARNING으로 업데이트
                 // WARNING: 이미 확인 완료 → 모달 생략
-                if ("WARNING_NEW".equals(warningType) || "WARNING".equals(warningType)) {
+                if ("WARNING".equals(warningType)) {
                     session.setAttribute("memberStatus", "WARNING");
                     session.setAttribute("sanctionType", "WARNING");
                     session.setAttribute("sanctionReason", warningInfo.getReason());
 
-                    if ("WARNING_NEW".equals(warningType)) {
+                    if ("WARNING".equals(warningType) && isToday(warningInfo.getStartAt())) {
                         // ✅ 최초 확인: 모달 표시 + WARNING으로 업데이트
                         session.setAttribute("showSanctionModal", true);
                         memberWarningDAO.updateWarningConfirmed(warningInfo.getWarningId());
@@ -754,5 +754,9 @@ public class MemberController {
         }
 
         return "message";
+    }
+    private boolean isToday(java.time.LocalDateTime startAt) {
+        if (startAt == null) return false;
+        return startAt.toLocalDate().equals(java.time.LocalDate.now());
     }
 }
