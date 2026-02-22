@@ -35,6 +35,7 @@
       margin-bottom: 6px;
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body class="admin-dashboard">
@@ -221,19 +222,41 @@
   }
 
   function showActionAlert(type, message) {
-    const el = document.getElementById('actionAlert');
-    if (!el) return;
+	  // type: 'success' | 'danger' | etc
+	  // SweetAlert2 기준으로 매핑
+	  const icon = (type === 'success') ? 'success'
+	             : (type === 'warning') ? 'warning'
+	             : (type === 'info')    ? 'info'
+	             : 'error';
 
-    el.className = 'alert alert-' + type;
-    el.classList.remove('d-none');
-    el.innerHTML = '<div class="aa-title">' + (type === 'success' ? '완료' : '실패') + '</div>'
-                 + '<div>' + escapeHtml(String(message || '')) + '</div>';
+	  // ✅ Swal 있으면 통일(메시지.jsp와 동일 계열)
+	  if (window.Swal && typeof window.Swal.fire === 'function') {
+	    window.Swal.fire({
+	      position: "top",
+	      icon: icon,
+	      title: (icon === 'success') ? "완료" : "알림",
+	      text: String(message || ''),
+	      confirmButtonText: "확인",
+	      allowOutsideClick: false
+	    });
+	    return;
+	  }
 
-    window.clearTimeout(window.__adminReportAlertTimer);
-    window.__adminReportAlertTimer = window.setTimeout(() => {
-      el.classList.add('d-none');
-    }, 5000);
-  }
+	  // ✅ 혹시 Swal이 없을 때만 기존 alert DIV fallback
+	  const el = document.getElementById('actionAlert');
+	  if (!el) return;
+
+	  el.className = 'alert alert-' + type;
+	  el.classList.remove('d-none');
+	  el.innerHTML =
+	      '<div class="aa-title">' + (type === 'success' ? '완료' : '실패') + '</div>'
+	    + '<div>' + escapeHtml(String(message || '')) + '</div>';
+
+	  window.clearTimeout(window.__adminReportAlertTimer);
+	  window.__adminReportAlertTimer = window.setTimeout(() => {
+	    el.classList.add('d-none');
+	  }, 5000);
+	}
 
   function escapeHtml(str) {
     return str.replace(/[&<>"']/g, (m) => ({
@@ -319,10 +342,25 @@
     const tr = btn.closest('tr');
 
     const confirmMsg = (action === 'reject')
-      ? '신고를 반려(패스) 처리하시겠습니까?'
-      : '신고를 승인(제재) 처리하시겠습니까?';
+    ? '신고를 반려(패스) 처리하시겠습니까?'
+    : '신고를 승인(제재) 처리하시겠습니까?';
 
-    if(!confirm(confirmMsg)) return;
+  // ✅ confirm도 Swal로 통일
+  if (window.Swal && typeof window.Swal.fire === 'function') {
+    const resConfirm = await window.Swal.fire({
+      icon: "question",
+      title: "확인",
+      text: confirmMsg,
+      showCancelButton: true,
+      confirmButtonText: "확인",
+      cancelButtonText: "취소",
+      allowOutsideClick: false
+    });
+
+    if (!resConfirm.isConfirmed) return;
+  } else {
+    if (!confirm(confirmMsg)) return;
+  }
 
     try {
       const url = (action === 'reject')
