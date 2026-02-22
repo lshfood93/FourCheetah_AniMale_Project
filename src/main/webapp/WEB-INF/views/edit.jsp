@@ -325,22 +325,18 @@
 										enctype="multipart/form-data">
 
 										<%-- 수정 PK --%>
-										<input type="hidden" name="newsId" value="${post.newsId}">
-
+										<input type="hidden" name="newsId" value="<c:out value='${post.newsId}'/>">
+										
 										<%-- 관련 애니 ID (기존값 유지 + 변경 가능) --%>
 										<input type="hidden" name="animeId" id="animeIdHidden"
-											value="${post.animeId}">
-
+											value="<c:out value='${post.animeId}'/>">
+										
 										<%-- 새 파일 없으면 기존 유지용 --%>
 										<input type="hidden" name="existingThumbUrl" id="existingThumbUrl"
-											value="${post.newsThumbnailUrl}">
+											value="<c:out value='${post.newsThumbnailUrl}'/>">
 										<input type="hidden" name="existingImageUrl" id="existingImageUrl"
-											value="${post.newsImageUrl}">
+											value="<c:out value='${post.newsImageUrl}'/>">
 
-										<div class="form-group">
-											<label>상세 내용</label>
-											<textarea id="editor" name="newsContent"><c:out value="${post.newsContent}" /></textarea>
-										</div>
 
 										<div class="form-group">
 											<label>썸네일</label><br>
@@ -352,9 +348,9 @@
 
 										<div class="form-group">
 											<label>상세 내용</label>
-											<textarea id="editor" name="newsContent">${post.newsContent}</textarea>
+											<textarea id="editor" name="newsContent"><c:out value="${post.newsContent}" /></textarea>
 										</div>
-
+										
 										<div class="related-wrap">
 											<label style="color: #fff;">관련 애니</label>
 										<input type="text" id="animeSearchInput" class="form-control"
@@ -363,11 +359,13 @@
 											<ul id="animeSearchResult" class="anime-search-result"></ul>
 										</div>
 
+										<c:url var="newsDetailUrl" value="/newsDetail">
+											<c:param name="newsId" value="${post.newsId}" />
+										</c:url>
+										
 										<div class="form-actions">
 											<button type="submit" class="btn-submit">수정 완료</button>
-											<a href="${ctx}/newsDetail?newsId=${post.newsId}"
-												class="btn-cancel">취소</a>
-											<%-- ✅ (수정) ${pageContext.request.contextPath}${ctx} 중복 제거 --%>
+											<a href="${newsDetailUrl}" class="btn-cancel">취소</a>
 										</div>
 
 									</form>
@@ -411,8 +409,8 @@
 
 										<h3 style="color: #fff;">게시글 수정</h3>
 
-										<input type="hidden" name="boardId" value="${post.boardId}">
-										<input type="hidden" name="boardCategory" value="${post.boardCategory}">
+										<input type="hidden" name="boardId" value="<c:out value='${post.boardId}'/>">
+										<input type="hidden" name="boardCategory" value="<c:out value='${post.boardCategory}'/>">
 
 										<div class="form-group">
 											<label>게시글 제목</label>
@@ -424,11 +422,13 @@
 											<textarea id="boardEditor" name="boardContent"><c:out value="${post.boardContent}" /></textarea>
 										</div>
 
+										<c:url var="boardDetailUrl" value="/boardDetail">
+											<c:param name="boardId" value="${post.boardId}" />
+										</c:url>
+										
 										<div class="form-actions">
 											<button type="submit" class="btn-submit">수정 완료</button>
-											<a href="${ctx}/boardDetail?boardId=${post.boardId}"
-												class="btn-cancel">취소</a>
-											<%-- ✅ (수정) ${pageContext.request.contextPath}${ctx} 중복 제거 --%>
+											<a href="${boardDetailUrl}" class="btn-cancel">취소</a>
 										</div>
 
 									</form>

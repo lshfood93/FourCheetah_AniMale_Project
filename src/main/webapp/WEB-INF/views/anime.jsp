@@ -78,7 +78,7 @@
 
                 <!-- 관리자일 때만 '애니 추가' 노출 -->
                 <c:if test="${fn:toUpperCase(sessionScope.memberRole) eq 'ADMIN'}">
-                  <a class="anime-admin-btn" href="${ctx}/animeWritePage">애니 추가</a>
+                  <a class="anime-admin-btn" href="${ctx}/animeWrite">애니 추가</a>
                 </c:if>
               </div>
 
