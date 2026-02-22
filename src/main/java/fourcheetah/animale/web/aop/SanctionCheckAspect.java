@@ -27,7 +27,7 @@ import jakarta.servlet.http.HttpSession;
  * DB에서 최신 제재 정보를 조회하여 제재 회원의 기능을 제한
  * 
  * 제재 타입:
- * - WARNING: 경고 (기본적으로 모든 기능 사용 가능, allowTypes로 제어)
+ * - WARNING: 경고 (기능 제한 없음, 모달만 표시)
  * - SUSPEND_7D: 7일 정지 (게시글/댓글 작성 차단)
  * - SUSPEND_30D: 30일 정지 (게시글/댓글 작성 차단)
  * - BAN: 영구 정지 (강제 로그아웃)
@@ -113,23 +113,11 @@ public class SanctionCheckAspect {
             return joinPoint.proceed();
         }
         
-        // 7. WARNING (경고) → allowTypes 체크
-        if ("WARNING".equals(warningType)) {
-            String[] allowTypes = sanctionCheck.allowTypes();
-            
-            // allowTypes에 WARNING 포함 → 통과
-            for (String allowType : allowTypes) {
-                if ("WARNING".equals(allowType)) {
-                    System.out.println("[AOP] WARNING 허용 - 통과");
-                    System.out.println("========================================");
-                    return joinPoint.proceed();
-                }
-            }
-            
-            // allowTypes에 WARNING 없음 → 차단
-            System.out.println("[AOP] WARNING 차단");
+        // 7. WARNING (경고) → 기능 제한 없음, 무조건 통과
+        if ("WARNING".equals(warningType) || "WARNING_NEW".equals(warningType)) {
+            System.out.println("[AOP] WARNING - 기능 제한 없음, 통과");
             System.out.println("========================================");
-            return handleWarning(joinPoint, request);
+            return joinPoint.proceed();
         }
         
         // 8. 기타 (정상 처리)
@@ -194,7 +182,7 @@ public class SanctionCheckAspect {
     }
     
     /**
-     * 경고 처리 (WARNING)
+     * 경고 처리 (WARNING) - 현재 미사용 (WARNING은 기능 제한 없음)
      */
     private Object handleWarning(ProceedingJoinPoint joinPoint, HttpServletRequest request) {
         String methodName = joinPoint.getSignature().getName();
