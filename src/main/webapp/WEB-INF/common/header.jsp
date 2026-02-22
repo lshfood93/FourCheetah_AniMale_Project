@@ -63,7 +63,7 @@
                      
                      <li class="${newsCls}"><a href="${ctx}/newsList">NEWS</a></li>
                      <!-- 임시 네이버 스토어 >> 추후 오너먼트 페이지 사이트로 변경!! -->
-                  <li><a href="https://snxbest.naver.com/home" target="_blank" rel="noopener noreferrer">SHOP</a></li>
+                  <li><a href="${ctx}/ornably">SHOP</a></li>
                   
                </ul>
             </nav>
