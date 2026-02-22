@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import fourcheetah.animale.web.common.HtmlSanitizer;
 import fourcheetah.animale.web.dto.news.NewsDTO;
 import fourcheetah.animale.web.service.news.NewsService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -46,6 +47,9 @@ public class NewsController {
 
     @Autowired
     private NewsService newsService;
+    
+    @Autowired
+    private HtmlSanitizer htmlSanitizer;
 
     // ==================== 목록 ====================
     
@@ -192,6 +196,9 @@ public class NewsController {
             model.addAttribute("location", "/newsList");
             return "message";
         }
+        
+     //  추가
+        newsData.setNewsContent(htmlSanitizer.sanitizeNewsHtml(newsData.getNewsContent()));
 
         // 3) Model에 데이터 추가
         model.addAttribute("newsData", newsData);
@@ -293,6 +300,14 @@ public class NewsController {
             model.addAttribute("location", "/newsWrite");
             return "message";
         }
+        
+     //  서버측 HTML Sanitizing
+        String safeNewsContent = htmlSanitizer.sanitizeNewsHtml(newsContent);
+        if (safeNewsContent == null || safeNewsContent.trim().isEmpty()) {
+            model.addAttribute("msg", "내용이 올바르지 않습니다.");
+            model.addAttribute("location", "/newsWrite");
+            return "message";
+        }
 
         // XSS 방지
         String lowerContent = newsContent.toLowerCase();
@@ -311,13 +326,14 @@ public class NewsController {
 
         // 4) 파일 업로드 + DB 저장
         try {
-            String thumbnailUrl = saveFile(thumbFile, "/upload/newsThumb/", request);
-            String newsImageUrl = extractFirstImgSrc(newsContent);
+            String thumbnailUrl = saveFile(thumbFile, "/upload/newsThumb/", request);         
+         // sanitize된 HTML 기준으로 첫 이미지 추출
+            String newsImageUrl = extractFirstImgSrc(safeNewsContent);
 
             NewsDTO insertDTO = new NewsDTO();
             insertDTO.setAnimeId(animeId);
             insertDTO.setNewsTitle(newsTitle);
-            insertDTO.setNewsContent(newsContent);
+            insertDTO.setNewsContent(safeNewsContent);   // 변경
             insertDTO.setNewsThumbnailUrl(thumbnailUrl);
             insertDTO.setNewsImageUrl(newsImageUrl);
             insertDTO.setCondition("NEWS_INSERT");
@@ -476,6 +492,14 @@ public class NewsController {
             model.addAttribute("location", "/newsEdit?newsId=" + newsId);
             return "message";
         }
+        
+     //  서버측 HTML Sanitizing
+        String safeNewsContent = htmlSanitizer.sanitizeNewsHtml(newsContent);
+        if (safeNewsContent == null || safeNewsContent.trim().isEmpty()) {
+            model.addAttribute("msg", "내용이 올바르지 않습니다.");
+            model.addAttribute("location", "/newsEdit?newsId=" + newsId);
+            return "message";
+        }
 
         // XSS 방지
         String lowerContent = newsContent.toLowerCase();
@@ -501,7 +525,7 @@ public class NewsController {
 
             // 이미지 URL이 없으면 content에서 추출
             if (newsImageUrl == null || newsImageUrl.isEmpty()) {
-                newsImageUrl = extractFirstImgSrc(newsContent);
+            	newsImageUrl = extractFirstImgSrc(safeNewsContent); //  변경
             }
 
             // DB 업데이트
@@ -509,7 +533,7 @@ public class NewsController {
             updateDTO.setNewsId(newsId);
             updateDTO.setAnimeId(dto.getAnimeId());
             updateDTO.setNewsTitle(newsTitle);
-            updateDTO.setNewsContent(newsContent);
+            updateDTO.setNewsContent(safeNewsContent);   //  변경
             updateDTO.setNewsThumbnailUrl(thumbnailUrl);
             updateDTO.setNewsImageUrl(newsImageUrl);
             updateDTO.setCondition("NEWS_UPDATE");

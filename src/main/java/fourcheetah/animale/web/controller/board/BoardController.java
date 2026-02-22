@@ -18,6 +18,7 @@ import fourcheetah.animale.web.service.board.BoardService;
 import fourcheetah.animale.web.service.board.ReplyService;
 import fourcheetah.animale.web.repository.board.BoardReportDAO;
 import fourcheetah.animale.web.aop.SanctionCheck;
+import fourcheetah.animale.web.common.HtmlSanitizer;
 import fourcheetah.animale.web.aop.DeletedBoardCheck;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -59,6 +60,9 @@ public class BoardController {
 
     @Autowired
     private BoardReportDAO boardReportDAO;  // ✅ 신고 여부 체크용
+    
+    @Autowired
+    private HtmlSanitizer htmlSanitizer; // XSS Sanitizer 클래스
 
     // =========================================================
     // 1) 게시글 삭제 (POST /boardDelete)
@@ -196,6 +200,9 @@ public class BoardController {
             System.out.println("[게시글 상세보기 로그] 실패: 게시글 없음 boardId=" + boardId);
             return message(model, "존재하지 않는 게시글입니다.", "/main");
         }
+        
+        //  추가
+        boardData.setBoardContent(htmlSanitizer.sanitizeBoardHtml(boardData.getBoardContent()));
 
         // ✅ 신고 승인으로 삭제된 게시글 접근 차단 → 목록으로 redirect
         if ("내용삭제".equals(boardData.getBoardStatus())) {
@@ -370,6 +377,13 @@ public class BoardController {
         if (content.length() > 100000) {
             return message(model, "내용이 너무 깁니다.", "boardEdit?boardId=" + boardId);
         }
+        
+     // sanitize
+        String safeContent = htmlSanitizer.sanitizeBoardHtml(content);
+        if (safeContent == null || safeContent.trim().isEmpty()) {
+            return message(model, "내용이 올바르지 않습니다.", "boardEdit?boardId=" + boardId);
+        }
+
 
         // UPDATE 호출
         boardDTO.setCondition("BOARD_UPDATE");
@@ -577,7 +591,14 @@ public class BoardController {
         if (title.length() > 255) {
             return message(model, "제목은 255자 이내로 작성해주세요.", "/boardWritePage?boardCategory=" + category);
         }
-        boardDTO.setBoardTitle(title);
+        
+     // 서버측 HTML Sanitizing (화이트리스트)
+        String safeContent = htmlSanitizer.sanitizeBoardHtml(content);
+        if (safeContent == null || safeContent.trim().isEmpty()) {
+            return message(model, "내용이 올바르지 않습니다.", "/boardWritePage?boardCategory=" + category);
+        }
+        boardDTO.setBoardContent(safeContent);
+        
 
         if (content == null || content.trim().isEmpty()) {
             return message(model, "내용은 필수입니다.", "/boardWritePage?boardCategory=" + category);
@@ -586,6 +607,7 @@ public class BoardController {
         if (content.length() > 100000) {
             return message(model, "내용이 너무 깁니다.", "/boardWritePage?boardCategory=" + category);
         }
+        
         boardDTO.setBoardContent(content);
 
         // 최소 XSS 방어(기존 유지)
