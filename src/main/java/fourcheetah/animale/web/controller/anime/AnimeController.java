@@ -209,7 +209,7 @@ public class AnimeController {
 
         // 3) 작성 페이지 이동
         model.addAttribute("type", "ANIME");
-        return "write";
+        return "animewrite";
     }
 
     // =========================================================
@@ -387,7 +387,7 @@ public class AnimeController {
 
         model.addAttribute("type", "ANIME");
         model.addAttribute("animeData", animeData);
-        return "edit";
+        return "animeedit";
     }
 
     // =========================================================

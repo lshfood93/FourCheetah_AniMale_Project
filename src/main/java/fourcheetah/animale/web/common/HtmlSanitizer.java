@@ -14,6 +14,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class HtmlSanitizer {
 
+    // ✅ [CHANGED] baseUri를 빈 문자열("") 대신 사용할 기본 기준 URI
+    // - Jsoup가 상대경로(/upload/..., /animale/upload/...)의 프로토콜 검사를 할 때 필요
+    // - preserveRelativeLinks(true)와 함께 쓰면 최종 결과는 상대경로를 유지함
+    private static final String DEFAULT_BASE_URI = "https://animale.local";
+
     private final Safelist richTextSafelist;
     private final Document.OutputSettings outputSettings;
 
@@ -36,7 +41,10 @@ public class HtmlSanitizer {
     public HtmlSanitizer() {
         this.outputSettings = new Document.OutputSettings().prettyPrint(false);
 
-        // CKEditor 리치 텍스트용 화이트리스트
+        // ✅ [유지 + 보강] CKEditor 리치 텍스트용 화이트리스트
+        // - figure / figcaption / table 등 CKEditor가 자주 만드는 태그 허용
+        // - img의 src/alt/width/height 허용
+        // - class 허용(figure.image 등 유지)
         this.richTextSafelist = Safelist.relaxed()
                 .addTags("figure", "figcaption", "span", "div", "hr",
                         "table", "thead", "tbody", "tr", "th", "td")
@@ -46,10 +54,10 @@ public class HtmlSanitizer {
                 .addProtocols("a", "href", "http", "https", "mailto")
                 .addProtocols("img", "src", "http", "https");
 
-        // /upload/... 같은 상대경로 이미지 유지
+        // ✅ [중요] /upload/... 같은 상대경로를 최종 결과에서 유지
         this.richTextSafelist.preserveRelativeLinks(true);
 
-        // 링크 보안 속성 강제
+        // ✅ 링크 보안 속성 강제
         this.richTextSafelist.addEnforcedAttribute("a", "rel", "noopener noreferrer nofollow");
     }
 
@@ -57,20 +65,36 @@ public class HtmlSanitizer {
     // Rich HTML (게시글/뉴스 본문)
     // ===========================
 
-    public String sanitizeBoardHtml(String html) {
+    /**
+     * ✅ [CHANGED] 리치 HTML 공통 정제
+     * - 핵심: baseUri를 빈 문자열("")로 주지 않음
+     * - 이유: 상대경로 img src(/upload/...)가 프로토콜 검사 단계에서 탈락하지 않도록 하기 위함
+     */
+    private String cleanRichHtmlInternal(String html) {
         if (html == null) return "";
-        return Jsoup.clean(html, "", richTextSafelist, outputSettings);
+
+        // 1) 기본 sanitize (화이트리스트 기반)
+        String cleaned = Jsoup.clean(html, DEFAULT_BASE_URI, richTextSafelist, outputSettings);
+
+        // 2) ✅ [보강] 아주 드물게 남을 수 있는 빈 src img 정리 (선택적 방어)
+        //    - "<img>" 또는 src="" 만 남아 레이아웃만 깨지는 경우 예방
+        //    - 필요 없으면 이 줄은 제거해도 됨
+        cleaned = cleaned.replaceAll("(?i)<img(?=\\s|>)(?![^>]*\\bsrc\\s*=)[^>]*>", "");
+
+        return cleaned;
+    }
+
+    public String sanitizeBoardHtml(String html) {
+        return cleanRichHtmlInternal(html);
     }
 
     public String sanitizeNewsHtml(String html) {
-        if (html == null) return "";
-        return Jsoup.clean(html, "", richTextSafelist, outputSettings);
+        return cleanRichHtmlInternal(html);
     }
 
-    // (선택) 공통 리치HTML 메서드로 써도 됨
+    // (선택) 공통 리치HTML 메서드
     public String sanitizeRichHtml(String html) {
-        if (html == null) return "";
-        return Jsoup.clean(html, "", richTextSafelist, outputSettings);
+        return cleanRichHtmlInternal(html);
     }
 
     // ===========================
@@ -103,6 +127,7 @@ public class HtmlSanitizer {
     // ===========================
     // URL / 이미지 URL 검증
     // ===========================
+
     /**
      * http/https 또는 내부 상대경로(/...)만 허용
      * - javascript:, data:, vbscript: 차단
@@ -113,7 +138,7 @@ public class HtmlSanitizer {
         String v = url.trim();
         if (v.isEmpty()) return null;
 
-        // 내부 상대경로 허용 (/uploads/..., /newsList 등)
+        // 내부 상대경로 허용 (/upload/..., /newsList 등)
         if (v.startsWith("/")) {
             return v;
         }

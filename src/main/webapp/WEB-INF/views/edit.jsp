@@ -337,6 +337,10 @@
 										<input type="hidden" name="existingImageUrl" id="existingImageUrl"
 											value="<c:out value='${post.newsImageUrl}'/>">
 
+										<div class="form-group">
+										    <label>제목</label>
+										    <input type="text" class="form-control" name="newsTitle" value="<c:out value='${post.newsTitle}'/>">
+										</div>
 
 										<div class="form-group">
 											<label>썸네일</label><br>
@@ -345,6 +349,7 @@
 											<button type="button" id="thumbResetBtn" class="thumb-reset-btn" style="display: none;">되돌리기</button>
 											<input type="file" id="thumbFile" name="thumbFile" class="thumb-file" accept="image/*">
 										</div>
+										
 
 										<div class="form-group">
 											<label>상세 내용</label>
