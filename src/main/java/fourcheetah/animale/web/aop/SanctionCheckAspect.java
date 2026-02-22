@@ -87,6 +87,14 @@ public class SanctionCheckAspect {
             return handleBan(joinPoint, request, session);
         }
         
+        // 정지 중에도 허용하는 기능 (좋아요 등 조회/반응 기능)
+        String methodName = joinPoint.getSignature().getName();
+        if ("toggleLike".equals(methodName) || "likeMemberList".equals(methodName)) {
+            System.out.println("[AOP] 정지 예외 기능 - 통과 (좋아요)");
+            System.out.println("========================================");
+            return joinPoint.proceed();
+        }
+
         // 6. 기간 정지 (SUSPEND_7D / SUSPEND_30D) → 종료일 체크
         if ("SUSPEND_7D".equals(warningType) || "SUSPEND_30D".equals(warningType)) {
             LocalDateTime endAt = latestWarning.getEndAt();

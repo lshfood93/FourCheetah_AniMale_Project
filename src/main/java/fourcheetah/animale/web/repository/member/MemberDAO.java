@@ -88,7 +88,7 @@ public class MemberDAO {
 			+ "WHERE member_id = ?";
 
 	// 현재 활성화된 제재 조회 (추가!)
-	private static final String SELECT_ACTIVE_WARNING = "SELECT warning_type, reason, start_at, end_at "
+	private static final String SELECT_ACTIVE_WARNING = "SELECT warning_id, warning_type, reason, start_at, end_at "
 			+ "FROM member_warning " + "WHERE member_id = ? " + "AND start_at <= NOW() "
 			+ "AND (end_at IS NULL OR end_at > NOW()) " + "ORDER BY start_at DESC LIMIT 1";
 
@@ -550,13 +550,20 @@ public class MemberDAO {
 	public MemberWarningDTO selectActiveWarning(int memberId) {
 		System.out.println("[MemberDAO] selectActiveWarning 실행 - memberId=" + memberId);
 
-		String sql = "SELECT warning_type, reason, start_at, end_at " + "FROM member_warning " + "WHERE member_id = ? "
-				+ "AND start_at <= NOW() " + "AND (end_at IS NULL OR end_at > NOW()) " + "ORDER BY start_at DESC "
+		String sql = "SELECT warning_id, warning_type, reason, start_at, end_at " + "FROM member_warning " + "WHERE member_id = ? "
+				+ "AND start_at <= NOW() " + "AND (end_at IS NULL OR end_at > NOW()) "
+				+ "ORDER BY CASE warning_type "
+				+ "  WHEN 'BAN'         THEN 1 "
+				+ "  WHEN 'SUSPEND_30D' THEN 2 "
+				+ "  WHEN 'SUSPEND_7D'  THEN 3 "
+				+ "  WHEN 'WARNING'     THEN 4 "
+				+ "  ELSE 5 END ASC "
 				+ "LIMIT 1";
 
 		try {
 			return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
 				MemberWarningDTO dto = new MemberWarningDTO();
+				dto.setWarningId(rs.getInt("warning_id"));
 				dto.setWarningType(rs.getString("warning_type"));
 				dto.setReason(rs.getString("reason"));
 

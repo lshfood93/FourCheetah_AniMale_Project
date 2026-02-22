@@ -217,19 +217,13 @@ public class AdminReportServiceImpl implements AdminReportService {
             System.out.println("[3단계] 작성자 이메일: " + memberEmail);
             
             // ========================================
-            // 【4단계】 제재 판정
-            // ✅ FIX: == 조건 → >= 조건으로 수정 (4회, 6회 제재 누락 버그 수정)
-            //   기존: newCount == 3  → SUSPEND_7D
-            //         newCount == 5  → SUSPEND_30D
-            //         newCount >= 6  → BAN
-            //   수정: newCount >= 7  → BAN
-            //         newCount >= 5  → SUSPEND_30D
-            //         newCount >= 3  → SUSPEND_7D
+            // 【4단계】 제재 판정 (3회/5회/6회)
             // ========================================
             String warningType = null;
             LocalDateTime endAt = null;
             String reason = null;
             
+            // 1~2회: 경고 / 3~4회: 7일 정지 / 5~6회: 30일 정지 / 7회+: 영구 정지
             if (newCount >= 7) {
                 warningType = "BAN";
                 endAt = null;
@@ -249,7 +243,10 @@ public class AdminReportServiceImpl implements AdminReportService {
                 System.out.println("[4단계] 제재 판정: 7일 정지");
                 
             } else {
-                System.out.println("[4단계] 제재 없음 (누적 " + newCount + "회)");
+                warningType = "WARNING";
+                endAt = LocalDateTime.now().plusDays(1);
+                reason = "게시글 신고 승인 - 경고 (누적 " + newCount + "회)";
+                System.out.println("[4단계] 제재 판정: 경고 (누적 " + newCount + "회)");
             }
             
          // ========================================
