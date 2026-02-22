@@ -217,29 +217,36 @@ public class AdminReportServiceImpl implements AdminReportService {
             System.out.println("[3단계] 작성자 이메일: " + memberEmail);
             
             // ========================================
-            // 【4단계】 제재 판정 (3회/5회/6회)
+            // 【4단계】 제재 판정
+            // ✅ FIX: == 조건 → >= 조건으로 수정 (4회, 6회 제재 누락 버그 수정)
+            //   기존: newCount == 3  → SUSPEND_7D
+            //         newCount == 5  → SUSPEND_30D
+            //         newCount >= 6  → BAN
+            //   수정: newCount >= 7  → BAN
+            //         newCount >= 5  → SUSPEND_30D
+            //         newCount >= 3  → SUSPEND_7D
             // ========================================
             String warningType = null;
             LocalDateTime endAt = null;
             String reason = null;
             
-            if (newCount == 3) {
-                warningType = "SUSPEND_7D";
-                endAt = LocalDateTime.now().plusDays(7);
-                reason = "유효 신고 누적 3회 - 7일 정지";
-                System.out.println("[4단계] 제재 판정: 7일 정지");
-                
-            } else if (newCount == 5) {
-                warningType = "SUSPEND_30D";
-                endAt = LocalDateTime.now().plusDays(30);
-                reason = "유효 신고 누적 5회 - 30일 정지";
-                System.out.println("[4단계] 제재 판정: 30일 정지");
-                
-            } else if (newCount >= 6) {
+            if (newCount >= 7) {
                 warningType = "BAN";
                 endAt = null;
-                reason = "유효 신고 누적 6회 이상 - 영구 정지";
+                reason = "유효 신고 누적 7회 이상 - 영구 정지";
                 System.out.println("[4단계] 제재 판정: 영구 정지");
+                
+            } else if (newCount >= 5) {
+                warningType = "SUSPEND_30D";
+                endAt = LocalDateTime.now().plusDays(30);
+                reason = "유효 신고 누적 5~6회 - 30일 정지";
+                System.out.println("[4단계] 제재 판정: 30일 정지");
+                
+            } else if (newCount >= 3) {
+                warningType = "SUSPEND_7D";
+                endAt = LocalDateTime.now().plusDays(7);
+                reason = "유효 신고 누적 3~4회 - 7일 정지";
+                System.out.println("[4단계] 제재 판정: 7일 정지");
                 
             } else {
                 System.out.println("[4단계] 제재 없음 (누적 " + newCount + "회)");

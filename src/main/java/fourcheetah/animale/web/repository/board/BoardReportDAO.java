@@ -63,7 +63,7 @@ public class BoardReportDAO {
         "FROM board_report br " +
         "WHERE br.status = 'PENDING'";
 
-    // 중복 신고 체크
+    // ✅ status 무관 체크 → 반려(REJECTED) 후에도 재신고 불가
     private static final String CHECK_DUPLICATE_REPORT =
         "SELECT COUNT(*) " +
         "FROM board_report " +
@@ -297,11 +297,12 @@ public class BoardReportDAO {
 
     /**
      * 신고 승인 (트랜잭션)
-     * 1. 게시글 상태 변경
-     * 2. 신고 승인
-     * 3. 작성자 경고 +1
-     * 4. member_warning 테이블에 제재 기록
-     * 5. 알림 생성 (3회 이상)
+     * 1. 현재 신고 횟수 조회
+     * 2. 게시글 상태 변경
+     * ✅ FIX: 3. INSERT_MEMBER_WARNING 먼저 실행 (board_report WHERE status='PENDING' 참조)
+     * 4. 신고 APPROVED 처리 (PENDING → APPROVED, INSERT_MEMBER_WARNING 이후)
+     * 5. 작성자 경고 +1
+     * 6. 알림 생성 (3회 이상)
      */
     @Transactional
     public boolean approveReport(int boardId, int boardWriterId, int handledBy) {
@@ -325,31 +326,33 @@ public class BoardReportDAO {
             int rows1 = jdbcTemplate.update(UPDATE_BOARD_DELETE, boardId);
             System.out.println("[DAO] 게시글 상태 변경 - rows=" + rows1);
 
-            // 3. 신고 승인 (해당 게시글의 모든 PENDING 신고)
-            int rows2 = jdbcTemplate.update(UPDATE_REPORT_APPROVE, handledBy, boardId);
-            System.out.println("[DAO] 신고 승인 - rows=" + rows2);
-
-            // 4. 작성자 경고 +1
-            int rows3 = jdbcTemplate.update(UPDATE_MEMBER_WARNING, boardWriterId);
-            System.out.println("[DAO] 작성자 경고 +1 - rows=" + rows3);
-
-            // 5. member_warning 테이블에 제재 기록
+            // ✅ FIX: INSERT_MEMBER_WARNING이 board_report WHERE status='PENDING'을 FROM으로 참조하므로
+            //         UPDATE_REPORT_APPROVE(PENDING→APPROVED) 보다 반드시 먼저 실행해야 함
+            // 3. member_warning 테이블에 제재 기록 (PENDING 상태 참조)
             int rows4 = jdbcTemplate.update(
                 INSERT_MEMBER_WARNING,
                 boardWriterId,      // member_id
                 handledBy,          // issued_by
-                newCount,           // warning_type 판단 (>= 6)
-                newCount,           // warning_type 판단 (== 5)
-                newCount,           // warning_type 판단 (== 3)
-                newCount,           // reason 판단 (>= 6)
-                newCount,           // reason 판단 (== 5)
-                newCount,           // reason 판단 (== 3)
-                newCount,           // end_at 판단 (>= 6)
-                newCount,           // end_at 판단 (== 5)
-                newCount,           // end_at 판단 (== 3)
+                newCount,           // warning_type 판단 (>= 7)
+                newCount,           // warning_type 판단 (>= 5)
+                newCount,           // warning_type 판단 (>= 3)
+                newCount,           // reason 판단 (>= 7)
+                newCount,           // reason 판단 (>= 5)
+                newCount,           // reason 판단 (>= 3)
+                newCount,           // end_at 판단 (>= 7)
+                newCount,           // end_at 판단 (>= 5)
+                newCount,           // end_at 판단 (>= 3)
                 boardId             // source_report_id 조회용
             );
             System.out.println("[DAO] 제재 기록 생성 - rows=" + rows4);
+
+            // 4. 신고 승인 (해당 게시글의 모든 PENDING 신고) - INSERT_MEMBER_WARNING 이후 실행
+            int rows2 = jdbcTemplate.update(UPDATE_REPORT_APPROVE, handledBy, boardId);
+            System.out.println("[DAO] 신고 승인 - rows=" + rows2);
+
+            // 5. 작성자 경고 +1
+            int rows3 = jdbcTemplate.update(UPDATE_MEMBER_WARNING, boardWriterId);
+            System.out.println("[DAO] 작성자 경고 +1 - rows=" + rows3);
 
             // 6. 알림 생성 (3회 이상)
             if (newCount >= 3) {
