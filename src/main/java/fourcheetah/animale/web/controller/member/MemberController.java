@@ -78,6 +78,11 @@ public class MemberController {
         this.withdrawRepository = withdrawRepository;
         this.memberWarningDAO = memberWarningDAO;
     }
+    
+    @GetMapping("/ornably")
+    public String ornably() {
+        return "ornably";
+    }
 
     // ==================== 로그인 ====================
 
