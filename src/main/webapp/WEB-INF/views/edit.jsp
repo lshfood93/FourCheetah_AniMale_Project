@@ -338,8 +338,8 @@
 											value="${post.newsImageUrl}">
 
 										<div class="form-group">
-											<label>제목</label>
-											<input type="text" class="form-control" name="newsTitle" value="${post.newsTitle}">
+											<label>상세 내용</label>
+											<textarea id="editor" name="newsContent"><c:out value="${post.newsContent}" /></textarea>
 										</div>
 
 										<div class="form-group">
@@ -357,9 +357,9 @@
 
 										<div class="related-wrap">
 											<label style="color: #fff;">관련 애니</label>
-											<input type="text" id="animeSearchInput" class="form-control"
-												placeholder="애니 제목을 입력하세요" autocomplete="off"
-												value="${post.animeTitle}">
+										<input type="text" id="animeSearchInput" class="form-control"
+											placeholder="애니 제목을 입력하세요" autocomplete="off"
+											value="<c:out value='${post.animeTitle}'/>">
 											<ul id="animeSearchResult" class="anime-search-result"></ul>
 										</div>
 
@@ -416,12 +416,12 @@
 
 										<div class="form-group">
 											<label>게시글 제목</label>
-											<input type="text" class="form-control" name="boardTitle" value="${post.boardTitle}">
+											<input type="text" class="form-control" name="boardTitle" value="<c:out value='${post.boardTitle}'/>">
 										</div>
 
 										<div class="form-group">
 											<label>텍스트 내용</label>
-											<textarea id="boardEditor" name="boardContent">${post.boardContent}</textarea>
+											<textarea id="boardEditor" name="boardContent"><c:out value="${post.boardContent}" /></textarea>
 										</div>
 
 										<div class="form-actions">

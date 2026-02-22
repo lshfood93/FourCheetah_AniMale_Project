@@ -73,10 +73,10 @@
 
 	<c:if test="${not empty msg}">
 		<div class="container" style="margin-top: 18px;">
-			<div class="alert alert-warning" style="border-radius: 14px;">${msg}</div>
+			<div class="alert alert-warning" style="border-radius: 14px;"><c:out value="${msg}" /></div>
 		</div>
 	</c:if>
-
+	
 	<div class="container mypage-title">
 		<h1 class="mypage-title__h1">마이페이지</h1>
 	</div>
@@ -92,9 +92,9 @@
 						<div class="profile-img-wrap is-loading" id="profileWrap"
 							style="--profile-border-color: ${borderColorStyle};">
 							<img id="profilePreview" alt="프로필 이미지"
-								data-real-src="${profileSrc}"
-								data-initial-src="${profileSrc}"
-								data-default-src="${ctx}/img/profile-default.jpg"
+								data-real-src="<c:out value='${profileSrc}'/>"
+								data-initial-src="<c:out value='${profileSrc}'/>"
+								data-default-src="<c:out value='${ctx}/img/profile-default.jpg'/>"
 								src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
 
 							<div class="profile-loader" role="status" aria-live="polite">
@@ -174,7 +174,7 @@
 									<span class="split-text">아이디</span>
 								</div>
 								<div class="split-value">
-									<input id="idInput" type="text" value="${memberData.memberName}" readonly>
+									<input id="idInput" type="text" value="<c:out value='${memberData.memberName}'/>" readonly>
 								</div>
 							</div>
 
@@ -190,7 +190,7 @@
 									<span class="split-text">이메일</span>
 								</div>
 								<div class="split-value">
-									<input id="emailInput" type="email" value="${memberData.memberEmail}" readonly>
+									<input id="emailInput" type="email" value="<c:out value='${memberData.memberEmail}'/>" readonly>
 								</div>
 							</div>
 
@@ -209,8 +209,7 @@
 										<span class="split-text">닉네임</span>
 									</div>
 									<div class="split-value">
-										<input id="nicknameInput" name="memberNickname" type="text"
-											value="${memberData.memberNickname}" readonly>
+										<input id="nicknameInput" type="text" value="<c:out value='${memberData.memberNickname}'/>" readonly>
 									</div>
 								</div>
 
@@ -254,7 +253,7 @@
 
 										<div class="decorate-preview">
 											<span class="preview-label">미리보기</span>
-											<span id="nickDecorPreview" class="preview-nickname">${memberData.memberNickname}</span>
+											<span id="nickDecorPreview" class="preview-nickname"><c:out value="${memberData.memberNickname}" /></span>
 										</div>
 									</div>
 								</div>
