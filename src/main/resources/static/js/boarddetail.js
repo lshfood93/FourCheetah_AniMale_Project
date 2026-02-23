@@ -1,27 +1,28 @@
 // /js/boarddetail.js
 // =========================================================
-// Board Detail Page Script (ES5 + fetch)
+// Board Detail Page Script (ES5 + fetch / 주석 복습용 버전)
 //
-// 목표
-// 1) 게시글 상세에서 좋아요/댓글/신고를 비동기로 처리
-// 2) 서버에서 403(삭제된 게시글)을 내려주면 모달 띄우고 이후 모든 액션 차단
+// 내가 여기서 하고 싶은 것
+// 1) 게시글 상세에서 좋아요/댓글/신고를 페이지 새로고침 없이 처리한다.
+// 2) 서버가 403(삭제된 게시글 접근) 응답을 주면,
+//    안내 모달을 띄우고 그 이후에는 모든 액션 요청을 막는다.
 //
-// 전제(서버/JSP에서 주입되는 전역 변수)
-// - ctx: contextPath
-// - boardId: 현재 게시글 ID
-// - isLogin: 로그인 여부(boolean 또는 1/0 등)
-// - sessionMemberId: 로그인한 회원 ID
-// - sessionMemberRole: 로그인한 회원 권한(ADMIN/USER 등)
-// - isReported: 이미 신고한 게시글인지 여부
-// - isBanned: 제재 회원인지 여부
+// 서버/JSP에서 주입되는 전역값(여기서 직접 선언하지 않음)
+// - ctx               : contextPath
+// - boardId           : 현재 게시글 ID
+// - isLogin           : 로그인 여부(true/false 또는 1/0 등)
+// - sessionMemberId   : 로그인한 회원 ID
+// - sessionMemberRole : 권한(ADMIN/USER 등)
+// - isReported        : 이미 신고한 게시글인지 여부
+// - isBanned          : 제재 회원인지 여부
 // =========================================================
 (function () {
   'use strict';
 
-  // =========================================================
-  // 비동기 요청이 필요한 URL만 한곳에 모아두기
-  // (JSP에서 ctx 주입되니까 상대경로를 ctx 기준으로 합쳐서 만든다)
-  // =========================================================
+  // ---------------------------------------------------------
+  // 요청 URL들은 한 군데에 모아두고 여기만 바꾸면 되게 구성
+  // - ctx는 JSP에서 주입되므로, 최종 URL은 ctx + "/..." 형태로 만든다.
+  // ---------------------------------------------------------
   var API = {
     likeToggle: ctx + '/BoardLikeToggle',
     likeMembers: ctx + '/LikeMemberList',
@@ -29,10 +30,11 @@
     boardReport: ctx + '/report/board'
   };
 
-  // =========================================================
-  // DOM 캐시
-  // 자주 쓰는 요소는 한번만 찾아서 변수로 들고 있는 방식
-  // =========================================================
+  // ---------------------------------------------------------
+  // DOM 캐싱
+  // - 이벤트에서 계속 찾지 말고 처음에 한 번만 찾아둔다.
+  // - id가 바뀌면 여기부터 깨진다.
+  // ---------------------------------------------------------
   var $replyList = document.getElementById('replyList');
   var $replyEmpty = document.getElementById('replyEmpty');
   var $replyCount = document.getElementById('replyCount');
@@ -66,17 +68,20 @@
 
   var $banActionText = document.getElementById('banActionText');
 
-  // =========================================================
+  // ---------------------------------------------------------
   // 삭제된 게시글(403) 상태 플래그
-  // 한번 403을 받으면 이후 fetch 요청은 전부 차단해서
-  // "삭제된 글인데도 좋아요/댓글/신고 눌리는" 상황을 막는다
-  // =========================================================
+  // - 한 번이라도 403을 받으면 true로 바꾼다.
+  // - true인 동안은 모든 fetch 요청을 막아서
+  //   "삭제된 글인데도 좋아요/댓글/신고가 계속 눌리는" 상황을 방지한다.
+  // ---------------------------------------------------------
   var __deletedBlocked = false;
 
-  // =========================================================
-  // 삭제 안내 모달 DOM이 없으면 생성해둔다
-  // Bootstrap 모달을 기준으로 만들었고, jQuery 없으면 alert로 대체됨
-  // =========================================================
+  // ---------------------------------------------------------
+  // 삭제 안내 모달 생성
+  // - 페이지에 모달 DOM이 없으면 여기서 한 번 만들어 넣는다.
+  // - Bootstrap 모달 구조 기준
+  // - jQuery(부트스트랩)가 없으면 alert로 대체된다.
+  // ---------------------------------------------------------
   function ensureDeletedModal() {
     if (document.getElementById('deletedGuardModal')) return;
 
@@ -104,12 +109,12 @@
     document.body.appendChild(wrap.firstChild);
   }
 
-  // =========================================================
-  // 403(삭제된 글) 수신 시 실행되는 루틴
-  // 1) blocked 플래그 켜기
-  // 2) UI 버튼/입력 잠금
-  // 3) 모달 표시(없으면 alert)
-  // =========================================================
+  // ---------------------------------------------------------
+  // 403(삭제된 글) 응답을 받았을 때 실행하는 공통 루틴
+  // 1) blocked 플래그를 켜서 이후 요청을 차단
+  // 2) 화면의 버튼/입력도 잠가서 UX가 헷갈리지 않게 처리
+  // 3) 모달을 띄우거나, 모달 라이브러리가 없으면 alert로 안내
+  // ---------------------------------------------------------
   function showDeleted403Modal() {
     __deletedBlocked = true;
     ensureDeletedModal();
@@ -123,10 +128,13 @@
     }
   }
 
-  // =========================================================
-  // 페이지 내 사용자 액션을 전부 잠그는 처리
-  // (좋아요/신고/댓글 작성/댓글 액션 버튼 등)
-  // =========================================================
+  // ---------------------------------------------------------
+  // 페이지에서 가능한 사용자 액션들을 전부 잠그는 처리
+  // - 좋아요 버튼
+  // - 신고 버튼/제출 버튼
+  // - 댓글 작성 입력/전송 버튼
+  // - 댓글 리스트 내부의 수정/삭제 등 버튼
+  // ---------------------------------------------------------
   function lockAllActionsUI() {
     if ($btnLike) {
       $btnLike.disabled = true;
@@ -154,10 +162,10 @@
     }
   }
 
-  // =========================================================
-  // 제재 회원 공통 안내 메시지
-  // 액션별로 텍스트만 바꿔서 재사용한다
-  // =========================================================
+  // ---------------------------------------------------------
+  // 제재 회원 공통 안내
+  // - 액션마다 문구만 바꿔서 재사용하기 쉽게 만든다.
+  // ---------------------------------------------------------
   function alertBanned(actionText) {
     alert('제재회원은 ' + (actionText || '해당 기능') + '이(가) 제한됩니다.');
   }
@@ -166,7 +174,11 @@
   // Utils
   // =========================================================
 
-  // HTML 이스케이프(댓글/닉네임/이미지 경로 등 XSS 방지용)
+  // ---------------------------------------------------------
+  // XSS 방지용 이스케이프
+  // - 댓글/닉네임/이미지 경로 등을 DOM에 innerHTML로 넣는 구간이 있어서
+  //   여기서 기본적인 escape를 해준다.
+  // ---------------------------------------------------------
   function escapeHtml(v) {
     var s = (v === null || v === undefined) ? '' : String(v);
     return s
@@ -177,13 +189,19 @@
       .replace(/'/g, '&#39;');
   }
 
-  // textarea에서 줄바꿈을 화면 출력용 <br/>로 변환
+  // ---------------------------------------------------------
+  // textarea 줄바꿈을 화면용 <br/>로 바꾸는 함수
+  // - 실제 저장 데이터는 textarea 그대로고, 화면 렌더만 줄바꿈 표현.
+  // ---------------------------------------------------------
   function nl2br(v) {
     return escapeHtml(v).replace(/\r?\n/g, '<br/>');
   }
 
-  // 색상값을 CSS에 바로 넣기 전에 화이트리스트로 제한
-  // (임의 문자열 주입 방지 + 깨진 스타일 방지)
+  // ---------------------------------------------------------
+  // 닉네임/프로필 색상값을 그대로 CSS에 넣으면 주입 위험이 있어서
+  // 허용 패턴만 통과시키는 화이트리스트 방식으로 제한한다.
+  // 허용: #RGB/#RRGGBB/#RRGGBBAA, rgb()/rgba()/hsl()/hsla(), 영문 색상명
+  // ---------------------------------------------------------
   function sanitizeColor(v) {
     if (!v) return '';
     var s = String(v).trim();
@@ -193,10 +211,12 @@
     return '';
   }
 
-  // 프로필 이미지 등 경로 정규화
+  // ---------------------------------------------------------
+  // 프로필 이미지/썸네일 같은 URL 정규화
   // - http(s)/data/blob는 그대로 사용
-  // - "/..." 절대경로면 ctx 붙여서 사용
-  // - 그 외 상대경로면 ctx + "/" 붙여서 사용
+  // - "/..."처럼 절대경로면 ctx를 앞에 붙인다
+  // - 상대경로면 ctx + "/" + 경로로 만든다
+  // ---------------------------------------------------------
   function normalizeUrl(src) {
     if (!src) return '';
     var s = String(src).trim();
@@ -207,23 +227,29 @@
     return ctx + '/' + s;
   }
 
-  // 서버에서 boolean/1/'true' 등 여러 형태로 내려오는 값을 한 번에 판정
+  // ---------------------------------------------------------
+  // 서버에서 true/1/'1'/'true' 등 다양하게 오는 값을
+  // 한 번에 boolean처럼 판정하기 위한 유틸
+  // ---------------------------------------------------------
   function isTruthy(v) {
     return v === true || v === 1 || v === '1' || v === 'true';
   }
 
-  // 댓글 수 텍스트 업데이트
+  // 댓글 수 표시 업데이트
   function setReplyCount(n) {
     if ($replyCount) $replyCount.textContent = String(n);
   }
 
-  // 댓글 없음 안내 영역 표시/숨김
+  // 댓글 없음 안내 영역 토글
   function showReplyEmpty(show) {
     if (!$replyEmpty) return;
     $replyEmpty.style.display = show ? 'block' : 'none';
   }
 
-  // 기존 댓글 아이템 DOM 제거(정렬/리로드 시 중복 방지)
+  // ---------------------------------------------------------
+  // 댓글을 다시 렌더할 때 중복 방지를 위해 기존 .reply-item을 제거
+  // - 정렬 변경(loadReplies)에서 매번 쓰는 함수
+  // ---------------------------------------------------------
   function removeAllReplyItems() {
     if (!$replyList) return;
     var items = $replyList.querySelectorAll('.reply-item');
@@ -232,14 +258,23 @@
     }
   }
 
-  // 댓글 수정 가능 조건: 로그인 + 제재아님 + 본인 댓글
+  // ---------------------------------------------------------
+  // 댓글 수정 가능 조건
+  // - 로그인 상태여야 하고
+  // - 제재 회원이 아니어야 하고
+  // - 작성자가 본인이어야 한다
+  // ---------------------------------------------------------
   function canEditReply(r) {
     if (!isLogin) return false;
     if (typeof isBanned !== 'undefined' && isBanned) return false;
     return String(r.memberId) === String(sessionMemberId);
   }
 
-  // 댓글 삭제 가능 조건: 로그인 + 제재아님 + 본인 댓글 or ADMIN
+  // ---------------------------------------------------------
+  // 댓글 삭제 가능 조건
+  // - 로그인 상태 + 제재 아님
+  // - 본인 댓글이거나, ADMIN이면 삭제 가능
+  // ---------------------------------------------------------
   function canDeleteReply(r) {
     if (!isLogin) return false;
     if (typeof isBanned !== 'undefined' && isBanned) return false;
@@ -247,10 +282,11 @@
     return String(sessionMemberRole) === 'ADMIN';
   }
 
-  // =========================================================
-  // CKEditor 본문(이미지/영상 등)의 src 보정
-  // 에디터가 상대경로로 저장하는 경우가 있어서 ctx 기준으로 경로 붙여준다
-  // =========================================================
+  // ---------------------------------------------------------
+  // CKEditor 본문에 있는 이미지/영상 src 보정
+  // - 저장된 값이 상대경로로 들어오는 경우가 있어서
+  //   ctx 기준으로 절대처럼 만들어준다.
+  // ---------------------------------------------------------
   function normalizeEditorMediaUrls() {
     var root = (typeof ctx === 'string') ? ctx : '';
     var nodes = document.querySelectorAll('.bd-content img, .bd-content iframe, .bd-content video, .bd-content source');
@@ -268,10 +304,13 @@
 
   // =========================================================
   // HTTP 래퍼
-  // 공통 포인트:
-  // - blocked 상태면 요청 자체를 거부
-  // - 응답이 403이면 모달 띄우고 예외로 흐름 끊기
   // =========================================================
+
+  // ---------------------------------------------------------
+  // 403 가드
+  // - fetch 응답이 403이면 "삭제된 게시글"로 보고
+  //   모달을 띄운 다음 예외를 throw해서 이후 then 흐름을 끊는다.
+  // ---------------------------------------------------------
   function guard403(res) {
     if (res && res.status === 403) {
       showDeleted403Modal();
@@ -282,6 +321,11 @@
     return res;
   }
 
+  // ---------------------------------------------------------
+  // GET JSON
+  // - blocked 상태면 요청 자체를 보내지 않는다.
+  // - 공통적으로 credentials를 붙여 세션 쿠키를 포함시킨다.
+  // ---------------------------------------------------------
   function httpGetJson(url) {
     if (__deletedBlocked) return Promise.reject(new Error('BLOCKED'));
     return fetch(url, { method: 'GET', credentials: 'same-origin' })
@@ -292,6 +336,10 @@
       });
   }
 
+  // ---------------------------------------------------------
+  // POST FormData
+  // - 서버가 form 기반으로 받는 액션(좋아요/신고 등)을 위해 FormData를 그대로 보낸다.
+  // ---------------------------------------------------------
   function httpPostForm(url, formData) {
     if (__deletedBlocked) return Promise.reject(new Error('BLOCKED'));
     return fetch(url, { method: 'POST', body: formData, credentials: 'same-origin' })
@@ -302,8 +350,13 @@
       });
   }
 
-  // 폼 제출도 fetch로 보내서 403을 동일하게 잡는다
-  // 서버에서 redirect 응답이면 그 URL로 이동, 아니면 reload 처리
+  // ---------------------------------------------------------
+  // 폼 제출도 fetch로 통일 처리
+  // - 댓글 작성/수정/삭제 폼을 기본 submit 대신 fetch로 보내서
+  //   403 처리를 동일하게 잡는다.
+  // - 서버가 redirected=true를 주면 res.url로 이동
+  // - 아니면 그냥 reload로 마무리(폼 방식 유지)
+  // ---------------------------------------------------------
   function submitFormByFetch(formEl, formData) {
     if (__deletedBlocked) return Promise.reject(new Error('BLOCKED'));
     var url = formEl.getAttribute('action');
@@ -326,7 +379,12 @@
   // Like
   // =========================================================
 
-  // 좋아요 UI 토글 (버튼 텍스트/상태/카운트)
+  // ---------------------------------------------------------
+  // 좋아요 상태 UI 반영
+  // - pill 클래스 토글
+  // - 버튼 텍스트/데이터 속성 업데이트
+  // - 카운트 숫자 업데이트
+  // ---------------------------------------------------------
   function setLikeUI(liked, likeCnt) {
     if ($likePill) $likePill.classList.toggle('is-liked', !!liked);
 
@@ -340,7 +398,12 @@
     }
   }
 
-  // 좋아요 버튼 클릭 → 토글 API 호출
+  // ---------------------------------------------------------
+  // 좋아요 토글 이벤트 바인딩
+  // - 클릭 시 로그인 체크
+  // - FormData로 boardId를 보내서 토글 API 호출
+  // - 응답값으로 liked/likeCnt UI 갱신
+  // ---------------------------------------------------------
   function initLike() {
     if (!$btnLike) return;
 
@@ -379,8 +442,11 @@
     });
   }
 
-  // 좋아요 누른 유저 목록 모달 렌더링
-  // 리스트 DOM이 없으면 최소한의 fallback(alert)로 이름만 출력
+  // ---------------------------------------------------------
+  // 좋아요 누른 유저 목록 모달 렌더
+  // - 모달 DOM이 있으면 리스트를 그려서 모달 오픈
+  // - 모달 DOM이 없으면 최소 fallback로 alert에 닉네임만 출력
+  // ---------------------------------------------------------
   function openLikeUsersModal(users) {
     if (!$likeUsersList || !$likeUsersEmpty) {
       var namesFallback = [];
@@ -425,7 +491,10 @@
     else alert('모달 라이브러리가 없어 목록을 표시할 수 없습니다.');
   }
 
-  // 좋아요 유저 목록 버튼 클릭 → 목록 조회 API 호출 → 모달 오픈
+  // ---------------------------------------------------------
+  // 좋아요 유저 목록 버튼 바인딩
+  // - 클릭 시 boardId로 유저 목록 조회 -> 모달 오픈
+  // ---------------------------------------------------------
   function initLikeUsers() {
     var btn = document.getElementById('btnLikeUsers');
     if (!btn) return;
@@ -455,21 +524,36 @@
   // Replies - 조회/렌더/정렬
   // =========================================================
 
-  // 정렬 select의 현재 값
+  // ---------------------------------------------------------
+  // 현재 선택된 정렬 조건 가져오기
+  // - select 값이 이상하면 최신순으로 폴백한다.
+  // ---------------------------------------------------------
   function getSelectedCondition() {
     if (!$replySort) return CONDITION_RECENT;
     var v = ($replySort.value || '').trim();
     return (v === CONDITION_OLDEST) ? CONDITION_OLDEST : CONDITION_RECENT;
   }
 
-  // 댓글 1개를 HTML로 변환
-  // - 닉네임/프로필/색상/관리자 장식(rainbow) 처리 포함
-  // - 수정/삭제 버튼은 권한에 따라 노출
+  // ---------------------------------------------------------
+  // 댓글 1개를 HTML로 렌더링하는 함수
+  //
+  // 들어오는 r 객체에서 쓰는 값들
+  // - writerNickname, memberId, replyContent, replyId
+  // - writerProfileImage, writerNicknameColor, writerProfileColor, writerDecoClass
+  // - replyCreatedAt, replyUpdatedAt, isEdited(옵션)
+  //
+  // 여기에서 처리하는 것들
+  // - 관리자 닉네임 장식(무지개) 적용 규칙
+  // - 프로필 이미지 없을 때 fallback(첫 글자)
+  // - 수정/삭제 버튼은 권한(canEditReply/canDeleteReply)에 따라 출력
+  // - 시간 표시는 수정 여부에 따라 작성일/수정일로 분기
+  // ---------------------------------------------------------
   function renderReplyItem(r) {
     var nickname = (r.writerNickname && String(r.writerNickname).trim() !== '')
       ? r.writerNickname
       : r.memberId;
 
+    // 닉네임이 "관리자"/"ADMIN"이면 관리자 작성자로 취급
     var isAdminWriter = false;
     try {
       var nn = String(nickname || '').trim();
@@ -483,12 +567,12 @@
     var profileColor = sanitizeColor(r.writerProfileColor || r.writer_profile_color || '');
     var decoClass = (r.writerDecoClass || r.writer_deco_class || '').trim();
 
-    // 관리자가 작성한 댓글인데 닉네임 색이 없으면, 기본 장식 클래스로 무지개 처리
+    // 관리자 댓글인데 닉네임 색이 따로 없으면 무지개 장식 클래스를 붙인다.
     if (isAdminWriter && !nickColor) {
       decoClass = (decoClass ? (decoClass + ' ') : '') + 'is-rainbow';
     }
 
-    // 프로필 컬러가 있으면 링/쉐도우 효과를 inline style로 준다
+    // 프로필 컬러가 있으면 링/쉐도우 느낌을 inline style로 준다.
     var avatarFx = '';
     if (profileColor) {
       avatarFx =
@@ -496,10 +580,10 @@
         'box-shadow:0 0 0 3px rgba(255,255,255,0.06), 0 0 18px ' + escapeHtml(profileColor) + ';';
     }
 
-    // 관리자인데 별도 프로필 색상이 없으면 무지개 링을 적용
+    // 관리자 작성 + 프로필 색상이 없으면 무지개 링을 사용한다.
     var useRainbowRing = (isAdminWriter && !profileColor);
 
-    // 프로필 이미지가 있으면 img, 없으면 첫 글자 fallback
+    // 프로필 이미지가 있으면 img로, 없으면 첫 글자 fallback 박스로 구성
     var avatarHtml = '';
     if (profileImg) {
       avatarHtml =
@@ -520,12 +604,12 @@
         (useRainbowRing ? "</div>" : "");
     }
 
-    // 닉네임 색상이 있고, 무지개 클래스가 아니면 inline color 적용
+    // 닉네임 색상이 있고, 무지개 클래스가 아니면 inline color를 적용
     var nickStyleAttr = (nickColor && !/\bis-rainbow\b/.test(decoClass))
       ? (" style='color:" + escapeHtml(nickColor) + ";'")
       : '';
 
-    // 액션 버튼(수정/삭제)은 권한에 따라 생성
+    // 수정/삭제 버튼 영역은 권한이 있을 때만 생성
     var actions = '';
     if (!(typeof isBanned !== 'undefined' && isBanned) && (canEditReply(r) || canDeleteReply(r))) {
       actions += "<div class='reply-actions-wrap'>";
@@ -540,15 +624,15 @@
       actions += "</div>";
     }
 
-    // 수정 여부 판정
-    // - isEdited가 오면 그 값을 우선
-    // - 없으면 createdAt/updatedAt 비교로 추정
+    // 수정 여부 판단
+    // - isEdited가 오면 그 값을 우선 사용
+    // - 없으면 createdAt/updatedAt이 다른지 비교로 추정
     var edited = isTruthy(r.isEdited);
     if (typeof r.isEdited === 'undefined' || r.isEdited === null) {
       edited = !!(r.replyUpdatedAt && r.replyCreatedAt && String(r.replyUpdatedAt) !== String(r.replyCreatedAt));
     }
 
-    // 시간 표시 텍스트(수정일/작성일)
+    // 시간 출력은 수정 여부에 따라 작성일/수정일로 분기
     var timeHtml = '';
     if (edited && r.replyUpdatedAt) {
       timeHtml = "<span class='t-time'>수정일 " + escapeHtml(r.replyUpdatedAt || '') + "</span>";
@@ -577,10 +661,12 @@
     );
   }
 
-  // 댓글 목록 로드
-  // - 정렬 조건(condition) 포함해서 API 호출
-  // - 기존 목록 제거 후 새로 렌더
-  // - 0개면 "댓글 없음" 안내 표시
+  // ---------------------------------------------------------
+  // 댓글 목록 로드(정렬 포함)
+  // - condition과 함께 API 호출
+  // - 기존 댓글 DOM을 제거하고 새로 렌더
+  // - 0개면 "댓글 없음" 안내를 켠다.
+  // ---------------------------------------------------------
   function loadReplies(condition) {
     if (!$replyList) return Promise.resolve();
 
@@ -606,7 +692,7 @@
         html += renderReplyItem(list[i]);
       }
 
-      // empty 안내 영역 앞(beforebegin)에 끼워 넣는 방식(레이아웃 유지 목적)
+      // "댓글 없음 안내" 앞쪽에 끼워 넣는 방식(레이아웃 유지 목적)
       if ($replyEmpty && $replyEmpty.insertAdjacentHTML) {
         $replyEmpty.insertAdjacentHTML('beforebegin', html);
       } else {
@@ -624,8 +710,12 @@
       try { window.jQuery($replySort).niceSelect(); } catch (e) {}
     }
 
-    // 정렬 변경 시 댓글 리로드
-    // 같은 값으로 짧은 시간 안에 여러 번 호출되는 경우를 막기 위해 간단한 디바운스/중복 방지 처리
+    // -------------------------------------------------------
+    // 댓글 정렬 변경
+    // - change 이벤트로 loadReplies 호출
+    // - 같은 값이 짧은 시간에 여러 번 호출되는 케이스를 막기 위해
+    //   간단한 중복 방지(_lastSortCond/_lastSortAt)를 둔다.
+    // -------------------------------------------------------
     if ($replySort) {
       var _lastSortCond = null;
       var _lastSortAt = 0;
@@ -645,7 +735,7 @@
 
       $replySort.addEventListener('change', requestReloadBySort);
 
-      // niceSelect가 DOM 이벤트를 별도로 쏘는 경우가 있어서 jQuery 이벤트도 같이 묶어둠
+      // niceSelect는 내부적으로 이벤트가 다르게 들어올 수 있어서 보조로 한 번 더 묶어둔다.
       if (window.jQuery) {
         try { window.jQuery($replySort).on('change.replySort', requestReloadBySort); } catch (e) {}
         try {
@@ -656,9 +746,11 @@
       }
     }
 
+    // -------------------------------------------------------
     // 댓글 작성
-    // - 기본 submit을 막고 fetch로 전송해서 403을 통일 처리
-    // - 작성 성공 시 redirect가 오면 그 URL로 이동, 아니면 reload
+    // - 기본 submit을 막고 fetch로 제출해서 403 처리를 통일한다.
+    // - 로그인/제재/빈값/길이(500자) 검증을 여기서 한다.
+    // -------------------------------------------------------
     if ($replyForm) {
       $replyForm.addEventListener('submit', function (e) {
         if (!isLogin) {
@@ -695,8 +787,11 @@
       });
     }
 
-    // 댓글 리스트 영역에서 발생하는 버튼 클릭을 이벤트 위임으로 처리
-    // (댓글이 동적으로 렌더되기 때문에 개별 바인딩이 아니라 상위에서 잡는다)
+    // -------------------------------------------------------
+    // 댓글 수정/삭제 버튼들(동적 렌더링)이므로 이벤트 위임으로 처리
+    // - replyList에서 클릭을 한 번만 받고,
+    //   실제 클릭된 target의 class로 분기한다.
+    // -------------------------------------------------------
     if ($replyList) {
       $replyList.addEventListener('click', function (e) {
         var target = e.target;
@@ -707,7 +802,7 @@
 
         var replyId = item.getAttribute('data-reply-id');
 
-        // 제재 회원은 수정/삭제 액션을 눌러도 안내만 띄우고 종료
+        // 제재 회원은 수정/삭제 관련 버튼을 눌러도 안내만 띄우고 종료
         if (typeof isBanned !== 'undefined' && isBanned) {
           if (
             target.classList.contains('btn-reply-del') ||
@@ -720,8 +815,10 @@
           return;
         }
 
+        // ---------------------------------------------------
         // 댓글 삭제
-        // - hidden form에 boardId/replyId 세팅 후 fetch 제출
+        // - hidden form에 boardId/replyId를 세팅하고 fetch 제출
+        // ---------------------------------------------------
         if (target.classList.contains('btn-reply-del')) {
           if (!confirm('댓글을 삭제할까요?')) return;
           if (!$replyDeleteForm || !$delBoardId || !$delReplyId) {
@@ -740,8 +837,12 @@
           return;
         }
 
-        // 댓글 수정 시작(인라인 textarea로 교체)
-        // - 기존 텍스트는 data-original-content로 저장해두고 취소 시 복구
+        // ---------------------------------------------------
+        // 댓글 수정 시작(인라인 편집)
+        // - 기존 내용을 data-original-content에 저장해두고
+        //   reply-content 영역을 textarea로 바꾼다.
+        // - 버튼 영역도 수정 모드용(저장/취소)로 전환한다.
+        // ---------------------------------------------------
         if (target.classList.contains('btn-reply-edit')) {
           if (item.classList.contains('is-editing')) return;
 
@@ -767,8 +868,11 @@
           return;
         }
 
+        // ---------------------------------------------------
         // 댓글 수정 저장
-        // - hidden form에 boardId/replyId/content 세팅 후 fetch 제출
+        // - textarea 값 검증(빈값/500자) 후
+        // - hidden form에 값(boardId/replyId/content) 세팅해서 fetch 제출
+        // ---------------------------------------------------
         if (target.classList.contains('btn-reply-save')) {
           if (!$replyEditForm || !$editBoardId || !$editReplyId || !$editReplyContent) {
             alert('수정 폼이 없어 수정이 불가능합니다.');
@@ -795,8 +899,11 @@
           return;
         }
 
+        // ---------------------------------------------------
         // 댓글 수정 취소
-        // - data-original-content로 원복하고 버튼 상태도 원래대로 되돌린다
+        // - data-original-content로 원복
+        // - 버튼 UI도 원래(수정/삭제)로 되돌린다.
+        // ---------------------------------------------------
         if (target.classList.contains('btn-reply-cancel')) {
           var original = item.getAttribute('data-original-content') || '';
           var contentEl2 = item.querySelector('.reply-content');
@@ -817,10 +924,14 @@
 
   // =========================================================
   // Report
-  // - 이미 신고한 글(isReported)이면 신고 버튼 숨김
-  // - 제재 회원은 신고 모달 대신 제한 안내 모달로 유도
-  // - 신고 제출도 fetch로 처리해서 403을 통일 처리
   // =========================================================
+
+  // ---------------------------------------------------------
+  // 신고 초기화
+  // - 이미 신고한 글이면 신고 버튼 자체를 숨긴다.
+  // - 제재 회원이면 신고 모달 대신 제한 안내 모달을 보여준다.
+  // - 신고 제출도 fetch로 처리해서 403 가드 로직을 그대로 탄다.
+  // ---------------------------------------------------------
   function initReport() {
     if (!$btnReport || !$btnReportSubmit) return;
 
@@ -829,7 +940,7 @@
       return;
     }
 
-    // 제재 회원 안내 모달(텍스트만 바꿔 재사용)
+    // 제재 안내 모달: 텍스트만 넣고 모달을 띄우는 구조
     function openBanActionModal(htmlMsg, fallbackMsg) {
       if ($banActionText && htmlMsg) $banActionText.innerHTML = htmlMsg;
       if (window.jQuery) window.jQuery('#banReportModal').modal('show');
@@ -843,7 +954,7 @@
       );
     }
 
-    // 신고 버튼 클릭 → 로그인/제재 체크 후 신고 모달 열기
+    // 신고 버튼 클릭: 로그인/제재 체크 후 신고 모달 오픈
     $btnReport.addEventListener('click', function () {
       if (!isLogin) {
         alert('로그인 후 이용 가능합니다.');
@@ -858,7 +969,7 @@
       if (window.jQuery) window.jQuery('#reportModal').modal('show');
     });
 
-    // 신고 제출 버튼 클릭 → FormData 구성 후 신고 API 호출
+    // 신고 제출: reason/content를 읽어서 FormData로 전송
     $btnReportSubmit.addEventListener('click', function () {
       if (!isLogin) {
         alert('로그인 후 이용 가능합니다.');
@@ -885,7 +996,7 @@
           if ($reportContent) $reportContent.value = '';
           if ($btnReport) $btnReport.style.display = 'none';
 
-          // SweetAlert가 있으면 그걸 우선 사용(없으면 alert)
+          // SweetAlert이 있으면 우선 사용, 없으면 기본 alert
           if (window.Swal && typeof window.Swal.fire === 'function') {
             return window.Swal.fire({
               icon: 'success',
@@ -916,12 +1027,15 @@
 
   // =========================================================
   // Init
-  // 페이지 로드시 한 번만 실행되는 초기화 루틴
-  // 1) 에디터 본문 src 보정
-  // 2) 삭제 안내 모달 미리 생성
-  // 3) 좋아요/목록/신고/댓글 이벤트 바인딩
-  // 4) 댓글 첫 로드(기본은 최신순)
   // =========================================================
+
+  // ---------------------------------------------------------
+  // 초기화 루틴(페이지 로드 시 1번 실행)
+  // 1) 본문 내부 미디어 src 보정
+  // 2) 삭제 안내 모달 DOM 미리 생성(403 대비)
+  // 3) 좋아요 / 좋아요 유저 목록 / 신고 / 댓글 이벤트 바인딩
+  // 4) 댓글 최초 로드(기본 정렬값 기준)
+  // ---------------------------------------------------------
   function init() {
     normalizeEditorMediaUrls();
     ensureDeletedModal();
@@ -941,7 +1055,11 @@
     });
   }
 
-  // DOMContentLoaded 이전이면 이벤트로 걸고, 이미 로드된 상태면 바로 실행
+  // ---------------------------------------------------------
+  // DOM 로딩 상태에 따라 init 실행 타이밍 조절
+  // - 아직 로딩 중이면 DOMContentLoaded에 걸고
+  // - 이미 로딩이 끝난 상태면 바로 init 실행
+  // ---------------------------------------------------------
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
