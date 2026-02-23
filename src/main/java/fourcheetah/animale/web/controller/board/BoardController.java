@@ -207,14 +207,17 @@ public class BoardController {
 
 		// 신고 승인으로 삭제된 게시글 접근 차단 → 목록으로 redirect
 		if ("내용삭제".equals(boardData.getBoardStatus())) {
-			System.out.println("[게시글 상세보기 로그] 내용삭제 게시글 접근 차단 - boardId=" + boardId);
-			if (session == null) session = request.getSession(true);
-			session.setAttribute("deletedBoardRedirect", true);
-			String category = boardData.getBoardCategory();
-			if (category == null || category.trim().isEmpty()) category = "ANIME";
-			return "redirect:/boardList?boardCategory=" + category;
+		    System.out.println("[게시글 상세보기 로그] 내용삭제 게시글 접근 차단 - boardId=" + boardId);
+		    if (session == null) session = request.getSession(true);
+		    session.setAttribute("deletedBoardRedirect", true);
+		    String category = boardData.getBoardCategory();
+		    if (category == null || category.trim().isEmpty()) category = "ANIME";
+		    try {
+		        return "redirect:/boardList?boardCategory=" + java.net.URLEncoder.encode(category, "UTF-8");
+		    } catch (Exception e) {
+		        return "redirect:/boardList?boardCategory=ANIME";
+		    }
 		}
-
 		// 3) 좋아요 개수
 		boardLikeDTO.setBoardId(boardId);
 		boardLikeDTO.setCondition("BOARD_LIKE_COUNT");

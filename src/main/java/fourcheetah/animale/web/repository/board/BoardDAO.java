@@ -44,20 +44,30 @@ public class BoardDAO {
          + ") l ON l.board_id = b.board_id " + "WHERE b.board_category = ? AND m.member_role = 'ADMIN' "
          + "ORDER BY b.board_id DESC";
 
-   private static final String SELECT_MY_BOARD_WRITE_LIST = "SELECT " + "  b.board_id, b.member_id, "
-         + "  m.member_role AS writer_role, "
-         + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' ELSE m.member_nickname END AS writer_nickname, "
-         + "  b.board_title, b.board_views, b.board_category, " + "  IFNULL(l.like_cnt, 0) AS like_cnt "
-         + "FROM board b " + "JOIN member m ON m.member_id = b.member_id " + "LEFT JOIN (" + LIKE_COUNT_SUBQUERY
-         + ") l ON l.board_id = b.board_id " + "WHERE b.member_id = ? " + "ORDER BY b.board_id DESC";
+   private static final String SELECT_MY_BOARD_WRITE_LIST = "SELECT "
+	        + "  b.board_id, b.member_id, "
+	        + "  m.member_role AS writer_role, "
+	        + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' ELSE m.member_nickname END AS writer_nickname, "
+	        + "  b.board_title, b.board_views, b.board_category, b.board_status, "  // board_status 추가
+	        + "  IFNULL(l.like_cnt, 0) AS like_cnt "
+	        + "FROM board b "
+	        + "JOIN member m ON m.member_id = b.member_id "
+	        + "LEFT JOIN (" + LIKE_COUNT_SUBQUERY + ") l ON l.board_id = b.board_id "
+	        + "WHERE b.member_id = ? "
+	        + "ORDER BY b.board_id DESC";
 
-   private static final String SELECT_MY_BOARD_LIKE_LIST = "SELECT " + "  b.board_id, b.member_id, "
-         + "  m.member_role AS writer_role, "
-         + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' ELSE m.member_nickname END AS writer_nickname, "
-         + "  b.board_title, b.board_views, b.board_category, " + "  IFNULL(l.like_cnt, 0) AS like_cnt "
-         + "FROM board_like bl " + "JOIN board b ON b.board_id = bl.board_id "
-         + "JOIN member m ON m.member_id = b.member_id " + "LEFT JOIN (" + LIKE_COUNT_SUBQUERY
-         + ") l ON l.board_id = b.board_id " + "WHERE bl.member_id = ? " + "ORDER BY bl.board_like_id DESC";
+   private static final String SELECT_MY_BOARD_LIKE_LIST = "SELECT "
+	        + "  b.board_id, b.member_id, "
+	        + "  m.member_role AS writer_role, "
+	        + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' ELSE m.member_nickname END AS writer_nickname, "
+	        + "  b.board_title, b.board_views, b.board_category, b.board_status, "  // board_status 추가
+	        + "  IFNULL(l.like_cnt, 0) AS like_cnt "
+	        + "FROM board_like bl "
+	        + "JOIN board b ON b.board_id = bl.board_id "
+	        + "JOIN member m ON m.member_id = b.member_id "
+	        + "LEFT JOIN (" + LIKE_COUNT_SUBQUERY + ") l ON l.board_id = b.board_id "
+	        + "WHERE bl.member_id = ? "
+	        + "ORDER BY bl.board_like_id DESC";
 
    private static final String SELECT_BOARD_LIKE_MEMBER_LIST = "SELECT " + "  bl.member_id, "
          + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' ELSE m.member_nickname END AS like_member_nickname "
@@ -336,35 +346,34 @@ public class BoardDAO {
    // =========================================================
       // 리스트용 RowMapper (board_content 읽지 않음)
       // =========================================================
-      class BoardListRowMapper implements RowMapper<BoardDTO> {
+   class BoardListRowMapper implements RowMapper<BoardDTO> {
 
-          @Override
-          public BoardDTO mapRow(ResultSet rs, int rowNum) throws SQLException {
-              BoardDTO data = new BoardDTO();
+	    @Override
+	    public BoardDTO mapRow(ResultSet rs, int rowNum) throws SQLException {
+	        BoardDTO data = new BoardDTO();
 
-              data.setBoardId(rs.getInt("board_id"));
-              data.setMemberId(rs.getInt("member_id"));
+	        data.setBoardId(rs.getInt("board_id"));
+	        data.setMemberId(rs.getInt("member_id"));
+	        data.setWriterRole(rs.getString("writer_role"));
+	        data.setWriterNickname(rs.getString("writer_nickname"));
+	        data.setBoardTitle(rs.getString("board_title"));
+	        data.setBoardViews(getIntOrZero(rs, "board_views"));
+	        data.setBoardCategory(rs.getString("board_category"));
+	        data.setLikeCnt(getIntOrZero(rs, "like_cnt"));
 
-              data.setWriterRole(rs.getString("writer_role"));
-              data.setWriterNickname(rs.getString("writer_nickname"));
+	        // board_status: MY 쿼리에만 있으므로 없는 경우 무시
+	        try { data.setBoardStatus(rs.getString("board_status")); }
+	        catch (SQLException ignored) {}
 
-              data.setBoardTitle(rs.getString("board_title"));
-              // board_content는 목록 쿼리에 없으므로 여기서 절대 읽지 않음
+	        return data;
+	    }
 
-              data.setBoardViews(getIntOrZero(rs, "board_views"));
-              data.setBoardCategory(rs.getString("board_category"));
-
-              data.setLikeCnt(getIntOrZero(rs, "like_cnt")); // LEFT JOIN이면 NULL일 수 있어서 안전 처리
-
-              return data;
-          }
-
-          private int getIntOrZero(ResultSet rs, String colName) throws SQLException {
-              Object obj = rs.getObject(colName);
-              if (obj == null) return 0;
-              return ((Number) obj).intValue();
-          }
-      }
+	    private int getIntOrZero(ResultSet rs, String colName) throws SQLException {
+	        Object obj = rs.getObject(colName);
+	        if (obj == null) return 0;
+	        return ((Number) obj).intValue();
+	    }
+	}
 
       // =========================================================
       // 상세용 RowMapper (board_content + board_status + created_at + updated_at 포함)
