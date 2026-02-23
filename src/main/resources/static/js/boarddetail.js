@@ -1,18 +1,18 @@
-// ✅ FINAL: /js/boarddetail.js
+
 // =========================================================
 // Board Detail Page Script (ES5 + fetch)
-// - 403(삭제된 게시글) 수신 시: 모달 표시 + 모든 액션 차단
+// - 403 (삭제된 게시글) 수신 시: 모달 표시 + 모든 액션 차단
 // =========================================================
 (function () {
   'use strict';
 
   // =========================================================
-  // JSP 전역 변수(계약)
+  // JSP 전역 변수 (계약)
   // const ctx, boardId, isLogin, sessionMemberId, sessionMemberRole, isReported, isBanned
   // =========================================================
 
   // =========================================================
-  // API 매핑(비동기용만 관리)
+  // API 매핑 (비동기용만 관리)
   // =========================================================
   var API = {
     likeToggle: ctx + '/BoardLikeToggle',
@@ -58,7 +58,7 @@
   var $banActionText = document.getElementById('banActionText');
 
   // =========================================================
-  // ✅ Deleted Guard (403)
+  // Deleted Guard (403)
   // =========================================================
   var __deletedBlocked = false;
 
@@ -134,7 +134,7 @@
   }
 
   // =========================================================
-  // ✅ 제재회원 공통 안내
+  // 제재회원 공통 안내
   // =========================================================
   function alertBanned(actionText) {
     alert('제재회원은 ' + (actionText || '해당 기능') + '이(가) 제한됩니다.');
@@ -261,7 +261,7 @@
       });
   }
 
-  // ✅ 폼을 fetch로 보내서 403 잡고, redirect면 이동
+  // 폼을 fetch로 보내서 403 잡고 redirect면 이동
   function submitFormByFetch(formEl, formData) {
     if (__deletedBlocked) return Promise.reject(new Error('BLOCKED'));
     var url = formEl.getAttribute('action');
@@ -428,11 +428,19 @@
     var profileImgRaw = r.writerProfileImage || r.writerProfileImg || r.writer_profile_image || '';
     var profileImg = normalizeUrl(profileImgRaw);
 
-    var nickColor = sanitizeColor(r.writerNicknameColor || r.writer_nickname_color || '');
-    var profileColor = sanitizeColor(r.writerProfileColor || r.writer_profile_color || '');
+    // [FIX] RAINBOW 문자열 감지 → is-rainbow 클래스로 처리, color style 적용 안 함
+    var rawNickColor = r.writerNicknameColor || r.writer_nickname_color || '';
+    var isRainbowNick = (String(rawNickColor).trim().toUpperCase() === 'RAINBOW');
+    var nickColor = isRainbowNick ? '' : sanitizeColor(rawNickColor);
+
+    var rawProfileColor = r.writerProfileColor || r.writer_profile_color || '';
+    var isRainbowProfile = (String(rawProfileColor).trim().toUpperCase() === 'RAINBOW');
+    var profileColor = isRainbowProfile ? '' : sanitizeColor(rawProfileColor);
+
     var decoClass = (r.writerDecoClass || r.writer_deco_class || '').trim();
 
-    if (isAdminWriter && !nickColor) {
+    // [FIX] DB null (관리자 폴백) 또는 DB 'RAINBOW' 둘 다 is-rainbow 클래스 적용
+    if ((isAdminWriter && !nickColor) || isRainbowNick) {
       decoClass = (decoClass ? (decoClass + ' ') : '') + 'is-rainbow';
     }
 
@@ -443,7 +451,8 @@
         'box-shadow:0 0 0 3px rgba(255,255,255,0.06), 0 0 18px ' + escapeHtml(profileColor) + ';';
     }
 
-    var useRainbowRing = (isAdminWriter && !profileColor);
+    // [FIX] DB null (관리자 폴백) 또는 DB 'RAINBOW' 둘 다 rainbow 링 적용
+    var useRainbowRing = (isAdminWriter && !profileColor) || isRainbowProfile;
 
     var avatarHtml = '';
     if (profileImg) {
@@ -550,7 +559,7 @@
   }
 
   // =========================================================
-  // Replies - 이벤트(정렬/작성/수정/삭제)
+  // Replies - 이벤트 (정렬/작성/수정/삭제)
   // =========================================================
   function bindReplyEvents() {
     if ($replySort && window.jQuery && window.jQuery.fn && window.jQuery.fn.niceSelect) {
@@ -586,7 +595,7 @@
       }
     }
 
-    // ✅ 댓글 작성: fetch로 전환(403 잡기)
+    // 댓글 작성: fetch로 전환 (403 잡기)
     if ($replyForm) {
       $replyForm.addEventListener('submit', function (e) {
         if (!isLogin) {
@@ -646,7 +655,7 @@
           return;
         }
 
-        // 삭제: fetch로 전환(403 잡기)
+        // 삭제: fetch로 전환 (403 잡기)
         if (target.classList.contains('btn-reply-del')) {
           if (!confirm('댓글을 삭제할까요?')) return;
           if (!$replyDeleteForm || !$delBoardId || !$delReplyId) {

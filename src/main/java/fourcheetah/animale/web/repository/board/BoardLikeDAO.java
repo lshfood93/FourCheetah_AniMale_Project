@@ -77,7 +77,7 @@ public class BoardLikeDAO {
 	// - 이미 좋아요면 DELETE
 	// - 아니면 INSERT
 	//
-	// 트랜잭션: 서비스에 @Transactional 걸어도 되고,
+	// 트랜잭션: 서비스에 @Transactional 걸어도 되고
 	// 여기 DAO에 걸어도 됨(아래는 DAO에 적용)
 
 	@Transactional

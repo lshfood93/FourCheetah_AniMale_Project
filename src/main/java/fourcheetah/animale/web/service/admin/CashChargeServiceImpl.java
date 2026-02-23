@@ -150,12 +150,12 @@ public class CashChargeServiceImpl implements CashChargeService {
         upd.setCondition("CHARGE_APPROVE_READY_BY_ORDER");
         upd.setPartnerOrderId(partnerOrderId);
         upd.setMemberId(memberId);                 // 추가
-        upd.setProvider(charge.getProvider());     //  추가(가장 안전)
+        upd.setProvider(charge.getProvider());     //  추가 (가장 안전)
         upd.setApprovedAt(approvedAt == null ? LocalDateTime.now() : approvedAt);
 
         boolean chargeOk = cashChargeDAO.update(upd);
         if (!chargeOk) {
-            // READY가 아니거나(동시 처리), 주문번호가 없거나
+            // READY가 아니거나(동시 처리) 주문번호가 없거나
             return false;
         }
 

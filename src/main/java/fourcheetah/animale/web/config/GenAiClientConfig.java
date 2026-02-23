@@ -16,12 +16,12 @@ public class GenAiClientConfig {
     @Value("${ai.chat.timeoutMs:20000}")
     private int timeoutMs;
 
-    @Bean(destroyMethod = "close") // ✅ [ADDED] Client는 close 가능(리소스 정리) :contentReference[oaicite:2]{index=2}
+    @Bean(destroyMethod = "close") // [ADDED] Client는 close 가능(리소스 정리) :contentReference[oaicite:2]{index=2}
     public Client genAiClient() {
         return Client.builder()
                 .apiKey(apiKey)
                 .httpOptions(HttpOptions.builder()
-                        .timeout(timeoutMs) // ✅ [ADDED] SDK 기본 timeout (ms) :contentReference[oaicite:3]{index=3}
+                        .timeout(timeoutMs) // [ADDED] SDK 기본 timeout (ms) :contentReference[oaicite:3]{index=3}
                         .build())
                 .build();
     }

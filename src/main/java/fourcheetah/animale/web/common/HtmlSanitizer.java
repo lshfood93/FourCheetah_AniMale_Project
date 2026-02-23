@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class HtmlSanitizer {
 
-    // ✅ [CHANGED] baseUri를 빈 문자열("") 대신 사용할 기본 기준 URI
+    // [CHANGED] baseUri를 빈 문자열("") 대신 사용할 기본 기준 URI
     // - Jsoup가 상대경로(/upload/..., /animale/upload/...)의 프로토콜 검사를 할 때 필요
     // - preserveRelativeLinks(true)와 함께 쓰면 최종 결과는 상대경로를 유지함
     private static final String DEFAULT_BASE_URI = "https://animale.local";
@@ -41,7 +41,7 @@ public class HtmlSanitizer {
     public HtmlSanitizer() {
         this.outputSettings = new Document.OutputSettings().prettyPrint(false);
 
-        // ✅ [유지 + 보강] CKEditor 리치 텍스트용 화이트리스트
+        // [유지 + 보강] CKEditor 리치 텍스트용 화이트리스트
         // - figure / figcaption / table 등 CKEditor가 자주 만드는 태그 허용
         // - img의 src/alt/width/height 허용
         // - class 허용(figure.image 등 유지)
@@ -54,10 +54,10 @@ public class HtmlSanitizer {
                 .addProtocols("a", "href", "http", "https", "mailto")
                 .addProtocols("img", "src", "http", "https");
 
-        // ✅ [중요] /upload/... 같은 상대경로를 최종 결과에서 유지
+        // [중요] /upload/... 같은 상대경로를 최종 결과에서 유지
         this.richTextSafelist.preserveRelativeLinks(true);
 
-        // ✅ 링크 보안 속성 강제
+        // 링크 보안 속성 강제
         this.richTextSafelist.addEnforcedAttribute("a", "rel", "noopener noreferrer nofollow");
     }
 
@@ -66,7 +66,7 @@ public class HtmlSanitizer {
     // ===========================
 
     /**
-     * ✅ [CHANGED] 리치 HTML 공통 정제
+     * [CHANGED] 리치 HTML 공통 정제
      * - 핵심: baseUri를 빈 문자열("")로 주지 않음
      * - 이유: 상대경로 img src(/upload/...)가 프로토콜 검사 단계에서 탈락하지 않도록 하기 위함
      */
@@ -76,7 +76,7 @@ public class HtmlSanitizer {
         // 1) 기본 sanitize (화이트리스트 기반)
         String cleaned = Jsoup.clean(html, DEFAULT_BASE_URI, richTextSafelist, outputSettings);
 
-        // 2) ✅ [보강] 아주 드물게 남을 수 있는 빈 src img 정리 (선택적 방어)
+        // 2) 아주 드물게 남을 수 있는 빈 src img 정리 (선택적 방어)
         //    - "<img>" 또는 src="" 만 남아 레이아웃만 깨지는 경우 예방
         //    - 필요 없으면 이 줄은 제거해도 됨
         cleaned = cleaned.replaceAll("(?i)<img(?=\\s|>)(?![^>]*\\bsrc\\s*=)[^>]*>", "");
@@ -92,7 +92,7 @@ public class HtmlSanitizer {
         return cleanRichHtmlInternal(html);
     }
 
-    // (선택) 공통 리치HTML 메서드
+    // 공통 리치HTML 메서드
     public String sanitizeRichHtml(String html) {
         return cleanRichHtmlInternal(html);
     }

@@ -26,7 +26,7 @@ public class CandidateService {
         List<String> genres = (spec != null) ? spec.getGenres() : List.of();
         List<RecommendedAnimeDTO> result = animeRepository.findCandidates(genres, excludeIds, candidateLimit);
 
-        // 부족하면(예: 장르 너무 빡셈) 장르조건 없이 한번 더
+        // 부족하면 (예: 장르 너무 빡셈) 장르조건 없이 한번 더
         if (result.size() < candidateLimit / 2) {
             result = animeRepository.findCandidates(List.of(), excludeIds, candidateLimit);
         }

@@ -43,7 +43,7 @@ public class BoardApiController {
 
     // =========================================================
     // 1) 좋아요 토글 API (POST /BoardLikeToggle)
-    // ✅ FIX: SUSPEND 회원도 좋아요 가능 - allowTypes에 SUSPEND_7D, SUSPEND_30D 추가
+    // FIX: SUSPEND 회원도 좋아요 가능 - allowTypes에 SUSPEND_7D, SUSPEND_30D 추가
     @SanctionCheck(allowTypes = {"WARNING", "SUSPEND_7D", "SUSPEND_30D"})
     @DeletedBoardCheck
     @PostMapping("/BoardLikeToggle")
