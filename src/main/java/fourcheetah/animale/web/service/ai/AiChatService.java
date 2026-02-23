@@ -126,7 +126,7 @@ public class AiChatService {
         // 새로운 조건 추천 -> 더보기 카운트 리셋
         sessionService.setMoreCount(session, 0);
 
-        // ✅ 최소 복원 핵심: 마지막 추천 리스트 저장
+        // 최소 복원 핵심: 마지막 추천 리스트 저장
         sessionService.setLastRecommendedAnimes(session, top);
         
         log.info("[AI-CHAT-SAVE] sessionId={}, topSize={}, savedLastRecSize={}",
@@ -178,7 +178,7 @@ public class AiChatService {
 
         sessionService.setMoreCount(session, moreCount + 1);
 
-        // ✅ 최소 복원 핵심: 마지막 추천 리스트 갱신
+        // 최소 복원 핵심: 마지막 추천 리스트 갱신
         sessionService.setLastRecommendedAnimes(session, top);
         
         log.info("[AI-MORE-SAVE] sessionId={}, topSize={}, savedLastRecSize={}",
@@ -201,7 +201,7 @@ public class AiChatService {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "NO_SESSION", "세션이 없습니다.");
         }
 
-        // ✅ 반드시 초기화 수행
+        // 반드시 초기화 수행
         sessionService.resetAll(session);
         sessionService.initIfAbsent(session);
 
@@ -244,7 +244,7 @@ public class AiChatService {
         res.setChatHistory(history == null ? new ArrayList<>() : new ArrayList<>(history));
         res.setMoreCount(moreCount);
 
-        // ✅ 최소 복원용
+        // 최소 복원용
         res.setLastRecommendedAnimes(
                 lastRecommendedAnimes == null ? new ArrayList<>() : new ArrayList<>(lastRecommendedAnimes)
         );

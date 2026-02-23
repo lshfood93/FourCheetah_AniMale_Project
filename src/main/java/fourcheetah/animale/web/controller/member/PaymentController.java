@@ -226,7 +226,7 @@ public class PaymentController {
                     approvedAt = java.time.OffsetDateTime.parse(s).toLocalDateTime();
                 } catch (Exception ignore) {
                     try {
-                        approvedAt = java.time.LocalDateTime.parse(s.replace("Z","")); // ✅ [FIX] 풀네임
+                        approvedAt = java.time.LocalDateTime.parse(s.replace("Z","")); // [FIX] 풀네임
                     } catch (Exception ignore2) {
                         // 파싱 실패하면 now() 유지
                     }
@@ -446,7 +446,7 @@ public class PaymentController {
 
         // clientKey는 공개키라 내려줘도 됨(프론트에서 requestPayment에 필요)
         // - application.properties: toss.clientKey=...
-        String clientKey = env.getProperty("toss.clientKey"); // ✅ env 주입 필요(아래 참고)
+        String clientKey = env.getProperty("toss.clientKey"); // env 주입 필요(아래 참고)
 
         return ResponseEntity.ok(Map.of(
             "ok", true,

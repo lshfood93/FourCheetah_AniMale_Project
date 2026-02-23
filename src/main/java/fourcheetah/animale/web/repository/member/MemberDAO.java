@@ -87,7 +87,7 @@ public class MemberDAO {
 	private static final String SELECT_CASH = "SELECT member_cash AS MEMBER_CASH " + "FROM MEMBER "
 			+ "WHERE member_id = ?";
 
-	// 현재 활성화된 제재 조회 (추가!)
+	// 현재 활성화된 제재 조회 
 	private static final String SELECT_ACTIVE_WARNING = "SELECT warning_id, warning_type, reason, start_at, end_at "
 			+ "FROM member_warning " + "WHERE member_id = ? " + "AND start_at <= NOW() "
 			+ "AND (end_at IS NULL OR end_at > NOW()) " + "ORDER BY start_at DESC LIMIT 1";

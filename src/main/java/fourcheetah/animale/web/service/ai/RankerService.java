@@ -32,12 +32,12 @@ public class RankerService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // =========================================================
-    // ✅ [ADDED] "과부하 방지"용: bounded thread pool + bulkhead(semaphore)
+    // [ADDED] "과부하 방지"용: bounded thread pool + bulkhead (semaphore)
     // - bounded queue: 큐가 꽉 차면 즉시 reject → 즉시 fallback
-    // - bulkhead: 동시에 LLM 호출 가능한 개수 제한(헬스 보호)
+    // - bulkhead: 동시에 LLM 호출 가능한 개수 제한 (헬스 보호)
     // =========================================================
-    private ThreadPoolExecutor executor;          // ✅ [CHANGED] Executors.newFixedThreadPool → bounded executor
-    private Semaphore inFlightLimiter;            // ✅ [ADDED] 동시 호출 제한
+    private ThreadPoolExecutor executor;          // [CHANGED] Executors.newFixedThreadPool → bounded executor
+    private Semaphore inFlightLimiter;            // [ADDED] 동시 호출 제한
 
     @Value("${ai.chat.timeoutMs:5000}")
     private long timeoutMs;
@@ -48,7 +48,7 @@ public class RankerService {
     @Value("${ai.chat.model:gemini-3-flash-preview}")
     private String modelName;
 
-    // ✅ [ADDED] 스레드풀 튜닝 파라미터(기본값 포함)
+    // [ADDED] 스레드풀 튜닝 파라미터 (기본값 포함)
     @Value("${ai.chat.ranker.poolSize:4}")
     private int poolSize;
 
@@ -58,16 +58,16 @@ public class RankerService {
     @Value("${ai.chat.ranker.maxInFlight:4}")
     private int maxInFlight;
 
-    // ✅ [ADDED] future.get()의 대기 버퍼(스케줄링/직렬화 오버헤드 약간 감안)
+    // [ADDED] future.get()의 대기 버퍼 (스케줄링/직렬화 오버헤드 약간 감안)
     @Value("${ai.chat.ranker.waitBufferMs:250}")
     private long waitBufferMs;
 
     public RankerService(Client client) {
         this.client = client;
-        initExecutor(); // ✅ [ADDED] 생성 시 초기화(스프링 주입 완료 전이어도 기본값으로 동작)
+        initExecutor(); // [ADDED] 생성 시 초기화 (스프링 주입 완료 전이어도 기본값으로 동작)
     }
 
-    // ✅ [ADDED] executor/semaphore 초기화
+    // [ADDED] executor/semaphore 초기화
     private void initExecutor() {
         // 스프링이 @Value를 주입하기 전에도 안전하도록 "최소" 기본값 가드
         int ps = (poolSize > 0) ? poolSize : 4;
@@ -78,7 +78,7 @@ public class RankerService {
 
         BlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(qc);
 
-        ThreadFactory tf = new ThreadFactory() { // ✅ [ADDED] 쓰레드 이름 부여(로그 추적 편함)
+        ThreadFactory tf = new ThreadFactory() { // [ADDED] 쓰레드 이름 부여 (로그 추적 편함)
             private final AtomicInteger seq = new AtomicInteger(1);
             @Override public Thread newThread(Runnable r) {
                 Thread t = new Thread(r);
@@ -88,7 +88,7 @@ public class RankerService {
             }
         };
 
-        // ✅ [ADDED] AbortPolicy: 큐가 꽉 차면 RejectedExecutionException → 즉시 fallback
+        // [ADDED] AbortPolicy: 큐가 꽉 차면 RejectedExecutionException → 즉시 fallback
         this.executor = new ThreadPoolExecutor(
                 ps, ps,
                 30L, TimeUnit.SECONDS,
@@ -96,10 +96,10 @@ public class RankerService {
                 tf,
                 new ThreadPoolExecutor.AbortPolicy()
         );
-        this.executor.allowCoreThreadTimeOut(true); // ✅ [ADDED] 유휴 쓰레드 정리
+        this.executor.allowCoreThreadTimeOut(true); // [ADDED] 유휴 쓰레드 정리
     }
 
-    // ✅ [ADDED] 종료 시 정리(서버 종료/재시작 시 스레드 누수 방지)
+    // [ADDED] 종료 시 정리 (서버 종료/재시작 시 스레드 누수 방지)
     @jakarta.annotation.PreDestroy
     public void shutdown() {
         if (executor != null) executor.shutdownNow();
@@ -115,7 +115,7 @@ public class RankerService {
         }
 
         // =========================================================
-        // ✅ [ADDED] 0) "과부하 즉시 fallback"
+        // [ADDED] 0) "과부하 즉시 fallback"
         // - 동시 호출 제한(maxInFlight) 초과면 LLM 호출 자체를 안 하고 바로 fallback
         // =========================================================
         if (!inFlightLimiter.tryAcquire()) {
@@ -123,7 +123,7 @@ public class RankerService {
             return fallbackFromCandidates(candidates, "서버가 잠시 혼잡해서 후보 기반으로 빠르게 추천했어요.");
         }
 
-        long queuedAtNs = System.nanoTime(); // ✅ [ADDED] queueWait 측정용
+        long queuedAtNs = System.nanoTime(); // [ADDED] queueWait 측정용
 
         try {
             // 1) JSON 스키마: [{ animeId: number, reason: string }]
@@ -142,7 +142,7 @@ public class RankerService {
                     .build();
 
             // =========================================================
-            // ✅ [ADDED] 2) SDK 레벨 timeout을 request config에 부여
+            // [ADDED] 2) SDK 레벨 timeout을 request config에 부여
             // - HttpOptions.timeout(ms)
             // - (가능하면 Client 레벨에도 설정 권장: 아래 2번 참고)
             // =========================================================
@@ -152,16 +152,16 @@ public class RankerService {
                     .temperature((float) 0.3)
                     .maxOutputTokens(512)
                     .httpOptions(HttpOptions.builder()
-                            .timeout((int) timeoutMs) // ✅ [ADDED] SDK timeout (ms)
+                            .timeout((int) timeoutMs) // [ADDED] SDK timeout (ms)
                             .build())
                     .build();
 
             String prompt = buildPrompt(userMessage, recentHistory, candidates, recommendSize);
 
             // =========================================================
-            // ✅ [ADDED] 3) bounded executor에 제출 + queueWait 로깅
+            // [ADDED] 3) bounded executor에 제출 + queueWait 로깅
             // - 큐가 꽉 차면 RejectedExecutionException -> 즉시 fallback
-            // - semaphore release는 "작업이 실제 종료될 때" 수행(헬스 보호)
+            // - semaphore release는 "작업이 실제 종료될 때" 수행 (헬스 보호)
             // =========================================================
             Future<GenerateContentResponse> future;
             try {
@@ -176,15 +176,15 @@ public class RankerService {
                     );
 
                     try {
-                        // ✅ [CHANGED] 실제 LLM 호출
+                        // [CHANGED] 실제 LLM 호출
                         return client.models.generateContent(modelName, prompt, config);
                     } finally {
-                        // ✅ [ADDED] inFlightLimiter는 "LLM 호출이 끝난 시점"에 반환
+                        // [ADDED] inFlightLimiter는 "LLM 호출이 끝난 시점"에 반환
                         inFlightLimiter.release();
                     }
                 });
             } catch (RejectedExecutionException rex) {
-                // ✅ [ADDED] 큐 포화 → 즉시 fallback (여기서는 아직 작업이 실행되지 않았으므로 permit 반환)
+                // [ADDED] 큐 포화 → 즉시 fallback (여기서는 아직 작업이 실행되지 않았으므로 permit 반환)
                 inFlightLimiter.release();
                 log.warn("[AI-RANK] OVERLOAD: executor queue full -> immediate fallback (pool={}, queueCap={})",
                         poolSize, queueCapacity);
@@ -192,7 +192,7 @@ public class RankerService {
             }
 
             // =========================================================
-            // ✅ [CHANGED] 4) hard timeout: timeoutMs + buffer
+            // [CHANGED] 4) hard timeout: timeoutMs + buffer
             // - timeout이면 cancel(true) 하고 "즉시 fallback" 반환
             // - (permit은 작업 finally에서 반환됨: SDK timeout으로 곧 종료되도록 유도)
             // =========================================================
@@ -205,7 +205,7 @@ public class RankerService {
                 log.warn("[AI-RANK] TIMEOUT -> immediate fallback timeoutMs={} waitBufferMs={}", timeoutMs, waitBufferMs);
                 return fallbackFromCandidates(candidates, "AI 응답이 지연돼서 후보 기반으로 빠르게 추천했어요.");
             } catch (Exception e) {
-                // ✅ [ADDED] 모든 예외는 사용자 UX 위해 fallback
+                // [ADDED] 모든 예외는 사용자 UX 위해 fallback
                 log.warn("[AI-RANK] ERROR -> fallback: {}", e.toString());
                 return fallbackFromCandidates(candidates, "AI 오류로 후보 기반 추천을 제공해요.");
             }
@@ -246,13 +246,13 @@ public class RankerService {
             return result;
 
         } finally {
-            // ✅ [ADDED] inFlightLimiter.release()는 submit된 작업에서만 수행.
+            // [ADDED] inFlightLimiter.release()는 submit된 작업에서만 수행.
             // - 여기서 release하면 timeout 시 "실제로는 아직 LLM 호출 중"인데 permit이 풀려버려 과부하가 악화될 수 있음.
         }
     }
 
     // =========================================================
-    // ✅ [ADDED] 즉시 fallback 생성기(항상 빠르게 끝남)
+    // [ADDED] 즉시 fallback 생성기(항상 빠르게 끝남)
     // =========================================================
     private List<RecommendedAnimeDTO> fallbackFromCandidates(List<RecommendedAnimeDTO> candidates, String reason) {
         List<RecommendedAnimeDTO> result = new ArrayList<>();

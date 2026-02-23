@@ -20,7 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  * - 서비스에서는 BCryptPasswordEncoder 구체타입보다
  *   PasswordEncoder 인터페이스로 주입받는 것을 권장
  */
-@Configuration // ✅ 스프링 설정 클래스임을 표시 (Bean 등록용)
+@Configuration // 스프링 설정 클래스임을 표시 (Bean 등록용)
 public class PasswordConfig {
 
     /**

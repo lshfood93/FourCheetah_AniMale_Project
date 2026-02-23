@@ -432,7 +432,7 @@ public class NewsController {
             return "message";
         }
 
-        // ✅ [추가] 수정 화면 진입 시에도 본문 sanitize
+        // [추가] 수정 화면 진입 시에도 본문 sanitize
         // - 레거시 데이터/이상 HTML이 textarea로 그대로 내려가는 것 방지
         // - boardEditPage에서 한 방식과 동일한 방어
         newsData.setNewsTitle(htmlSanitizer.sanitizePlainText(newsData.getNewsTitle()));
@@ -561,8 +561,8 @@ public class NewsController {
             NewsDTO updateDTO = new NewsDTO();
             updateDTO.setNewsId(newsId);
             updateDTO.setAnimeId(dto.getAnimeId());
-            updateDTO.setNewsTitle(newsTitle);             // ✅ normalize된 제목 저장
-            updateDTO.setNewsContent(newsContent);     // ✅ sanitize된 본문 저장
+            updateDTO.setNewsTitle(newsTitle);             // normalize된 제목 저장
+            updateDTO.setNewsContent(newsContent);     // sanitize된 본문 저장
             updateDTO.setNewsThumbnailUrl(thumbnailUrl);
             updateDTO.setNewsImageUrl(newsImageUrl);
             updateDTO.setCondition("NEWS_UPDATE");

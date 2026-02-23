@@ -10,7 +10,7 @@ public interface MemberService {
     
     MemberDTO selectOne(MemberDTO dto);
     
-    MemberWarningDTO selectActiveWarning(int memberId);  // ← 반환 타입 확인!
+    MemberWarningDTO selectActiveWarning(int memberId);  // 반환 타입 확인
     
     boolean insert(MemberDTO dto);
     

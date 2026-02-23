@@ -161,7 +161,7 @@ public class BoardReportDAO {
         "GROUP BY br.board_id, b.member_id, m.member_nickname, b.board_title, b.board_content " +
         "LIMIT 1";
 
-    // ✅ 수정: 1회부터 무조건 notice_pending = 'Y' 세팅 (조건 제거)
+    // 수정: 1회부터 무조건 notice_pending = 'Y' 세팅 (조건 제거)
     private static final String UPDATE_MEMBER_NOTICE =
         "UPDATE member " +
         "SET notice_pending = 'Y', " +
@@ -320,7 +320,7 @@ public class BoardReportDAO {
             int rows1 = jdbcTemplate.update(UPDATE_BOARD_DELETE, boardId);
             System.out.println("[DAO] 게시글 상태 변경 - rows=" + rows1);
 
-            // ✅ FIX: INSERT_MEMBER_WARNING이 status='PENDING' 참조하므로 UPDATE_REPORT_APPROVE 전에 실행
+            // FIX: INSERT_MEMBER_WARNING이 status='PENDING' 참조하므로 UPDATE_REPORT_APPROVE 전에 실행
             // 4. member_warning 테이블에 제재 기록 (PENDING 상태 참조)
             int rows4 = jdbcTemplate.update(
                 INSERT_MEMBER_WARNING,
@@ -347,7 +347,7 @@ public class BoardReportDAO {
             int rows3 = jdbcTemplate.update(UPDATE_MEMBER_WARNING, boardWriterId);
             System.out.println("[DAO] 작성자 경고 +1 - rows=" + rows3);
 
-            // ✅ 수정: 1회부터 무조건 알림 생성 (기존 >= 3 조건 제거)
+            // 수정: 1회부터 무조건 알림 생성 (기존 >= 3 조건 제거)
             int rows5 = jdbcTemplate.update(UPDATE_MEMBER_NOTICE, boardWriterId);
             System.out.println("[DAO] 알림 생성 - rows=" + rows5);
 

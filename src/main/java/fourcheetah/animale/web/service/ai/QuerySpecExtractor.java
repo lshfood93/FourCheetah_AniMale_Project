@@ -22,14 +22,14 @@ public class QuerySpecExtractor {
 
         String msg = userMessage == null ? "" : userMessage.trim();
 
-        // 장르 추출(단순 포함 기반)
+        // 장르 추출 (단순 포함 기반)
         List<String> genres = new ArrayList<>();
         for (String g : KNOWN_GENRES) {
             if (msg.contains(g)) genres.add(g);
         }
         spec.setGenres(genres);
 
-        // 키워드(아주 간단 버전)
+        // 키워드 (아주 간단 버전)
         List<String> keywords = new ArrayList<>();
         for (String token : msg.split("\\s+")) {
             if (token.length() >= 2 && token.length() <= 10) {

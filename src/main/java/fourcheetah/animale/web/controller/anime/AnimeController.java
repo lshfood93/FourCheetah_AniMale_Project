@@ -30,7 +30,7 @@ public class AnimeController {
     private AnimeService animeService;
 
     @Autowired
-    private HtmlSanitizer htmlSanitizer; // ✅ [XSS] 추가: 일반 텍스트 필드 정리/태그 제거용
+    private HtmlSanitizer htmlSanitizer; // [XSS] 추가: 일반 텍스트 필드 정리/태그 제거용
 
     // =========================================================
     // 1) 애니 리스트 (GET /animeList)
@@ -48,7 +48,7 @@ public class AnimeController {
         Integer year = dto.getYear();
         Integer quarter = dto.getQuarter();
 
-        // ✅ [XSS] 검색어는 일반 텍스트 필드이므로 plain text sanitize
+        // [XSS] 검색어는 일반 텍스트 필드이므로 plain text sanitize
         // - reflected XSS 방어 (message.jsp / anime.jsp에서 다시 출력될 수 있음)
         // - 검색용 문자열로도 무리 없이 사용 가능
         if (keyword != null) {
@@ -118,7 +118,7 @@ public class AnimeController {
 
         List<AnimeDTO> animeList = animeService.selectAll(listDTO);
 
-        // ✅ [선택] 리스트 출력용 제목/원제/줄거리(미리보기)가 JSP에서 raw 출력될 가능성 대비
+        // 리스트 출력용 제목/원제/줄거리(미리보기)가 JSP에서 raw 출력될 가능성 대비
         // - 전체 항목 루프 sanitize는 비용이 크지 않음(페이지당 12개)
         // - genres/tags(JSON 문자열)는 구조 깨질 수 있어 건드리지 않음
         if (animeList != null) {
@@ -139,7 +139,7 @@ public class AnimeController {
         model.addAttribute("endPage", endPage);
 
         model.addAttribute("condition", condition);
-        model.addAttribute("keyword", keyword); // ✅ [XSS] sanitize 반영값
+        model.addAttribute("keyword", keyword); // [XSS] sanitize 반영값
         model.addAttribute("sort", sort);
 
         model.addAttribute("year", year);
@@ -177,7 +177,7 @@ public class AnimeController {
             return "message";
         }
 
-        // ✅ [XSS] 저장된 레거시 데이터/비정상 데이터 대비 표시 직전 방어
+        // [XSS] 저장된 레거시 데이터/비정상 데이터 대비 표시 직전 방어
         // - 애니 제목/원제/줄거리는 HTML 허용 안 하는 일반 텍스트 필드라고 가정
         animeData.setAnimeTitle(htmlSanitizer.sanitizePlainText(animeData.getAnimeTitle()));
         animeData.setOriginalTitle(htmlSanitizer.sanitizePlainText(animeData.getOriginalTitle()));
@@ -239,7 +239,7 @@ public class AnimeController {
         }
 
         // 3) 입력값 검증
-        // ✅ [XSS] 일반 텍스트 필드 정리/태그 제거 후 검증
+        // [XSS] 일반 텍스트 필드 정리/태그 제거 후 검증
         String animeTitle = htmlSanitizer.sanitizePlainText(dto.getAnimeTitle());
         String originalTitle = htmlSanitizer.sanitizePlainText(dto.getOriginalTitle());
         String animeStory = htmlSanitizer.sanitizePlainText(dto.getAnimeStory());
@@ -305,11 +305,11 @@ public class AnimeController {
 
             // 4) DTO 세팅 + INSERT
             AnimeDTO insertDTO = new AnimeDTO();
-            insertDTO.setAnimeTitle(animeTitle);       // ✅ [XSS] sanitize된 값 저장
-            insertDTO.setOriginalTitle(originalTitle); // ✅ [XSS] sanitize된 값 저장
+            insertDTO.setAnimeTitle(animeTitle);       // [XSS] sanitize된 값 저장
+            insertDTO.setOriginalTitle(originalTitle); // [XSS] sanitize된 값 저장
             insertDTO.setAnimeYear(animeYear);
             insertDTO.setAnimeQuarter(animeQuarter);
-            insertDTO.setAnimeStory(animeStory);       // ✅ [XSS] sanitize된 값 저장
+            insertDTO.setAnimeStory(animeStory);       // [XSS] sanitize된 값 저장
             insertDTO.setAnimeThumbnailUrl(thumbUrl);
 
             // JSON 문자열은 구조 보존을 위해 그대로 유지 (XSS 패치 범위 밖)
@@ -380,7 +380,7 @@ public class AnimeController {
             return "message";
         }
 
-        // ✅ [XSS] 수정 폼 진입 시에도 레거시 데이터 방어
+        // [XSS] 수정 폼 진입 시에도 레거시 데이터 방어
         animeData.setAnimeTitle(htmlSanitizer.sanitizePlainText(animeData.getAnimeTitle()));
         animeData.setOriginalTitle(htmlSanitizer.sanitizePlainText(animeData.getOriginalTitle()));
         animeData.setAnimeStory(htmlSanitizer.sanitizePlainText(animeData.getAnimeStory()));
@@ -426,7 +426,7 @@ public class AnimeController {
         }
 
         // 4) 입력값 검증
-        // ✅ [XSS] 일반 텍스트 필드 정리/태그 제거 후 검증
+        // [XSS] 일반 텍스트 필드 정리/태그 제거 후 검증
         String animeTitle = htmlSanitizer.sanitizePlainText(dto.getAnimeTitle());
         String originalTitle = htmlSanitizer.sanitizePlainText(dto.getOriginalTitle());
         String animeStory = htmlSanitizer.sanitizePlainText(dto.getAnimeStory());
@@ -501,11 +501,11 @@ public class AnimeController {
             // 6) UPDATE
             AnimeDTO updateDTO = new AnimeDTO();
             updateDTO.setAnimeId(animeId);
-            updateDTO.setAnimeTitle(animeTitle);       // ✅ [XSS] sanitize된 값 저장
-            updateDTO.setOriginalTitle(originalTitle); // ✅ [XSS] sanitize된 값 저장
+            updateDTO.setAnimeTitle(animeTitle);       // [XSS] sanitize된 값 저장
+            updateDTO.setOriginalTitle(originalTitle); // [XSS] sanitize된 값 저장
             updateDTO.setAnimeYear(animeYear);
             updateDTO.setAnimeQuarter(animeQuarter);
-            updateDTO.setAnimeStory(animeStory);       // ✅ [XSS] sanitize된 값 저장
+            updateDTO.setAnimeStory(animeStory);       // [XSS] sanitize된 값 저장
             updateDTO.setAnimeThumbnailUrl(thumbUrl);
 
             // JSON 문자열은 구조 보존 위해 그대로 유지
