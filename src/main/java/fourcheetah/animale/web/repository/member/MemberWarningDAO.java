@@ -67,7 +67,7 @@ public class MemberWarningDAO {
     public MemberWarningDTO selectLatestWarning(int memberId) {
         System.out.println("[MemberWarningDAO] selectLatestWarning 실행 - memberId=" + memberId);
         
-        // FIX: 활성 제재 필터 추가 + 심각도 우선순위 정렬 (BAN이 항상 최우선)
+        // 활성 제재 필터 추가 + 심각도 우선순위 정렬 (BAN이 항상 최우선)
         String sql = "SELECT warning_id, member_id, issued_by, source_report_id, " +
                      "warning_type, reason, start_at, end_at, created_at " +
                      "FROM member_warning " +

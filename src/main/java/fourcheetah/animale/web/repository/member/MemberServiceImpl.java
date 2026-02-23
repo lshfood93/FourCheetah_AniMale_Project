@@ -12,7 +12,7 @@ import fourcheetah.animale.web.service.member.MemberService;
 @Service
 public class MemberServiceImpl implements MemberService {
 
-    // CHANGED: 생성자 주입 + PasswordEncoder 주입
+    // 생성자 주입 + PasswordEncoder 주입
     private final MemberDAO memberDAO;
     private final PasswordEncoder passwordEncoder;
 
@@ -34,7 +34,7 @@ public class MemberServiceImpl implements MemberService {
 
         String condition = dto.getCondition();
 
-        // CHANGED: 로그인 / 현재비밀번호확인만 서비스에서 비밀번호 검증 처리
+        // 로그인 / 현재비밀번호확인만 서비스에서 비밀번호 검증 처리
         if ("MEMBER_LOGIN".equals(condition) || "MEMBER_PASSWORD_CHECK".equals(condition)) {
             String rawPassword = dto.getMemberPassword();
 
@@ -85,7 +85,7 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public boolean insert(MemberDTO dto) {
-        // CHANGED: 회원가입(MEMBER_JOIN)일 때만 비밀번호 해시 처리
+        // 회원가입(MEMBER_JOIN)일 때만 비밀번호 해시 처리
         if (dto != null && "MEMBER_JOIN".equals(dto.getCondition())) {
             String rawPassword = dto.getMemberPassword();
 
@@ -102,7 +102,7 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public boolean update(MemberDTO dto) {
-        // CHANGED: 비밀번호 변경/재설정(MEMBER_PASSWORD_UPDATE)일 때만 해시 처리
+        // 비밀번호 변경/재설정(MEMBER_PASSWORD_UPDATE)일 때만 해시 처리
         if (dto != null && "MEMBER_PASSWORD_UPDATE".equals(dto.getCondition())) {
             String rawPassword = dto.getMemberPassword();
 

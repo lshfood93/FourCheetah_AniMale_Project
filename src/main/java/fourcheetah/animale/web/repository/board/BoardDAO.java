@@ -154,7 +154,7 @@ public class BoardDAO {
 
    private static final String DELETE_BOARD = "DELETE FROM board WHERE board_id = ? AND member_id = ?";
 
-   // [수정] RowMapper 분리: 목록용(내용 X) / 상세용(내용 O)
+   // RowMapper 분리: 목록용(내용 X) / 상세용(내용 O)
 
    
    // =========================================================
@@ -165,7 +165,7 @@ public class BoardDAO {
 
        String condition = boardDTO.getCondition();
 
-       // CHANGED: 람다(mapBoardRowList) 제거 → RowMapper 클래스로 통일
+       // 람다(mapBoardRowList) 제거 → RowMapper 클래스로 통일
        final BoardListRowMapper listMapper = new BoardListRowMapper();
 
        
@@ -190,7 +190,7 @@ public class BoardDAO {
    
        List<BoardDTO> list;
 
-       // [수정] selectAll은 전부 listMapper 사용 (board_content 읽지 않음)
+       // selectAll은 전부 listMapper 사용 (board_content 읽지 않음)
        if ("CATEGORY_LIST".equals(condition)) {
            list = jdbcTemplate.query(SELECT_CATEGORY_LIST, listMapper, boardDTO.getBoardCategory());
 
@@ -268,10 +268,10 @@ public class BoardDAO {
            return null;
        }
    }
-   // insertReturnId / update / delete 는 그대로
+   // update / delete 는 그대로
 
    // =========================================================
-   // insertReturnId (getGeneratedKeys -> KeyHolder)
+   // insert (getGeneratedKeys -> KeyHolder)
    public boolean insert(BoardDTO boardDTO) {
 
        if (!"BOARD_INSERT".equals(boardDTO.getCondition())) {

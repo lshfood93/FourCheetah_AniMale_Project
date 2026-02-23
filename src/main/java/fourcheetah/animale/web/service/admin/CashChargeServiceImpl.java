@@ -26,9 +26,9 @@ public class CashChargeServiceImpl implements CashChargeService {
     private CashChargeDAO cashChargeDAO;
 	
 	@Autowired
-	private MemberService memberService; // [ADD] MEMBER 캐시 증가 호출용
+	private MemberService memberService; // MEMBER 캐시 증가 호출용
 
-	//[ADD]
+	
     @Autowired 
     private TossPaymentsClient tossPaymentsClient;
 	

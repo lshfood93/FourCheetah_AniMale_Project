@@ -22,10 +22,10 @@ public interface CashChargeService {
     // 대시보드용(집계)
     Map<String, Object> getDashboardSummary(int year, int month);
     
-    // [ADD] 결제 승인 트랜잭션 처리(READY -> APPROVED + MEMBER 캐시 증가)
+    //  결제 승인 트랜잭션 처리(READY -> APPROVED + MEMBER 캐시 증가)
     boolean approveChargeTx(int memberId, String partnerOrderId, int approvedTotal, LocalDateTime approvedAt);
     
- //  [ADD]
+ //  
     boolean approveTossTx(int memberId, String orderId, String paymentKey, int amountFromQuery);
 
 	boolean cancelReadyTx(int memberId, String orderId, String provider);

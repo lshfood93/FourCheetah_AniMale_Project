@@ -19,7 +19,7 @@
 	    @Autowired
 	    private JdbcTemplate jdbcTemplate;
 	    
-	 //  [ADD] LocalDateTime -> Timestamp 변환 유틸
+	 // LocalDateTime -> Timestamp 변환 유틸
 	    private Timestamp toTs(LocalDateTime ldt) {
 	        return (ldt == null) ? null : Timestamp.valueOf(ldt);
 	    }
@@ -32,7 +32,7 @@
 	    private static final String SELECT_ONE_BY_ID =
 	        "SELECT * FROM CASH_CHARGE WHERE charge_id=?";
 	    
-	 // [ADD] partner_order_id로 조회
+	 // partner_order_id로 조회
 	    private static final String SELECT_ONE_BY_ORDER_ID =
 	        "SELECT * FROM CASH_CHARGE WHERE partner_order_id=?";
 	    
@@ -84,7 +84,7 @@
 	    	    "SET status=?, approved_at=? " +
 	    	    "WHERE partner_order_id=?";
 	    
-	 // [ADD] 승인(READY -> APPROVED) : partner_order_id 기준
+	 // 승인(READY -> APPROVED) : partner_order_id 기준
 	    private static final String UPDATE_APPROVE_READY_BY_ORDER =
 	    	    "UPDATE CASH_CHARGE " +
 	    	    "SET status='APPROVED', approved_at=? " +
@@ -93,8 +93,8 @@
 	    	    "  AND provider=? " +
 	    	    "  AND status='READY'";
 
-	    // [ADD] 취소(READY -> CANCEL) : partner_order_id 기준
-	 // [ADD] CANCEL: READY -> CANCEL
+	    // 취소(READY -> CANCEL) : partner_order_id 기준
+	 // CANCEL: READY -> CANCEL
 	    private static final String UPDATE_CANCEL_READY_BY_ORDER =
 	        "UPDATE CASH_CHARGE " +
 	        "SET status='CANCEL' " +
@@ -104,9 +104,9 @@
 	        "  AND status='READY'";
 
 
-	    // [ADD] 실패(READY -> FAIL) : partner_order_id 기준
-	 // [ADD] READY -> FAIL
-	 // [ADD] FAIL: READY -> FAIL
+	    //  실패(READY -> FAIL) : partner_order_id 기준
+	 //  READY -> FAIL
+	 // FAIL: READY -> FAIL
 	    private static final String UPDATE_FAIL_READY_BY_ORDER =
 	        "UPDATE CASH_CHARGE " +
 	        "SET status='FAIL' " +
@@ -194,7 +194,7 @@
 	            return result;
 	        }
 	        
-	     // [ADD] SELECT_ONE 분기
+	     // SELECT_ONE 분기
 	        if ("CHARGE_SELECT_BY_ORDER_ID".equals(dto.getCondition())) {
 	            List<CashChargeDTO> list = jdbcTemplate.query(
 	                SELECT_ONE_BY_ORDER_ID,
@@ -251,7 +251,7 @@
 	            return result > 0;
 	        }
 	        
-	        // [ADD] 승인 처리(READY -> APPROVED) : partner_order_id 기준
+	        // 승인 처리(READY -> APPROVED) : partner_order_id 기준
 	        if ("CHARGE_APPROVE_READY_BY_ORDER".equals(dto.getCondition())) {
 	            Timestamp approvedAt = toTs(dto.getApprovedAt());
 	            if (approvedAt == null) approvedAt = Timestamp.valueOf(LocalDateTime.now());
@@ -273,7 +273,7 @@
 	            return result > 0;
 	        }
 
-	        // [ADD] 취소 전환 (READY에서만)
+	        // 취소 전환 (READY에서만)
 	        if ("CHARGE_CANCEL_READY_BY_ORDER".equals(dto.getCondition())) {
 	            int result = jdbcTemplate.update(
 	                UPDATE_CANCEL_READY_BY_ORDER,
@@ -285,7 +285,7 @@
 	        }
 
 
-	        // [ADD] 실패 전환 (READY에서만)
+	        // 실패 전환 (READY에서만)
 	        if ("CHARGE_FAIL_READY_BY_ORDER".equals(dto.getCondition())) {
 	            int result = jdbcTemplate.update(
 	                UPDATE_FAIL_READY_BY_ORDER,

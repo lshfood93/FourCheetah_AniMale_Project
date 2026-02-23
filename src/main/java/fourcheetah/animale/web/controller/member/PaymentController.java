@@ -117,7 +117,7 @@ public class PaymentController {
             String tid = resObj.get("tid").getAsString();
             String nextRedirectPcUrl = resObj.get("next_redirect_pc_url").getAsString();
             
-         // [ADD] CASH_CHARGE에 READY INSERT (대시보드/승인 업데이트의 기반 row)
+         // CASH_CHARGE에 READY INSERT (대시보드/승인 업데이트의 기반 row)
             CashChargeDTO charge = new CashChargeDTO();
             charge.setMemberId(memberId);
             charge.setProvider("KAKAOPAY");
@@ -136,7 +136,7 @@ public class PaymentController {
              return "cashresult";
          }
          
-      // [ADD] 카카오 READY 중복 호출 방지 락
+      // 카카오 READY 중복 호출 방지 락
          if (session.getAttribute("KAKAO_READY_LOCK") != null) {
              model.addAttribute("payResult", "FAIL");
              model.addAttribute("message", "결제가 이미 진행 중입니다. 잠시 후 다시 시도해주세요.");
@@ -255,7 +255,7 @@ public class PaymentController {
                 return "cashresult";
             }
 
-            //  [CHANGED] 트랜잭션 성공 후에만 중복 처리 세션 세팅
+            // 트랜잭션 성공 후에만 중복 처리 세션 세팅
             session.setAttribute("kakaopay_processed_order_id", partnerOrderId);
             // =========================================================
             // 4) 화면 출력용 데이터 세팅 + 성공 리턴
@@ -272,7 +272,7 @@ public class PaymentController {
             model.addAttribute("totalCash", String.format("%,d", totalCash));
             model.addAttribute("approvedAt", approvedAt.toString()); // 필요하면 포맷 적용
 
-            return "cashresult"; // [FIX] 성공 시 리턴 추가
+            return "cashresult"; // 성공 시 리턴 추가
 
         } catch (DataAccessException dae) {
             dae.printStackTrace();
@@ -369,7 +369,7 @@ public class PaymentController {
     
     
     
- // [ADD] Toss 결제 시작(READY) 엔드포인트
+ // Toss 결제 시작(READY) 엔드포인트
     @PostMapping("/payment/toss/prepare")
     public ResponseEntity<Map<String, Object>> tossReady(
     		 @RequestParam(value = "selectCash", required = false) Integer selectCash,
@@ -384,10 +384,10 @@ public class PaymentController {
             ));
         }
 
-        // [FIX] 어떤 이름으로 오든 금액 확정
+        // 어떤 이름으로 오든 금액 확정
         Integer cashCharge = (selectCash != null) ? selectCash : amount;
 
-        // [FIX] 누락 방어 (여기서 예외 대신 400으로 처리)
+        // 누락 방어 (여기서 예외 대신 400으로 처리)
         if (cashCharge == null) {
             return ResponseEntity.badRequest().body(Map.of(
                     "ok", false,
@@ -492,7 +492,7 @@ public class PaymentController {
         }
 
         try {
-            //  [CHANGED] 여기서 바로 memberService.update 하면 안 됨
+            // 여기서 바로 memberService.update 하면 안 됨
             boolean txOk = cashChargeService.approveTossTx(memberId, orderId, paymentKey, amount);
 
             if (!txOk) {
@@ -502,7 +502,7 @@ public class PaymentController {
                 return "cashresult";
             }
 
-            // [CHANGED] 트랜잭션 성공 후에만 중복처리 방지 세션값 저장
+            // 트랜잭션 성공 후에만 중복처리 방지 세션값 저장
             session.setAttribute("toss_processed_order_id", orderId);
 
             // 화면 출력용
@@ -551,7 +551,7 @@ public class PaymentController {
 
 
         // ================================
-        // [ADD] READY -> CANCEL/FAIL 상태 반영
+        // READY -> CANCEL/FAIL 상태 반영
         // ================================
         Integer memberId = (Integer) session.getAttribute("memberId");
         if (memberId != null && orderId != null && !orderId.isBlank()) {
