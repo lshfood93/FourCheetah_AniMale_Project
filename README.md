@@ -1,15 +1,19 @@
 # 🐾 ANIMale
 
 애니메이션 정보와 커뮤니티 기능을 중심으로 만든 웹 서비스 프로젝트입니다.  
-Spring Boot + JSP 기반으로 구현했으며, 회원/게시판/댓글/뉴스/애니리스트/결제/관리자 기능을 포함합니다.
+Spring Boot + JSP 기반으로 구현했으며,
+회원/게시판/댓글/뉴스/애니리스트/결제/관리자 기능을 포함합니다.
 
-기존 중간 프로젝트(Java Servlet/JSP + FrontController) 구조를 바탕으로, 최종 프로젝트에서 Spring Boot 구조로 확장/리팩토링했습니다.
+기존 중간 프로젝트(Java Servlet/JSP + FrontController) 구조를 바탕으로, 
+최종 프로젝트에서 Spring Boot 구조로 확장/리팩토링했습니다.
 
 ---
 
 ## 📌 프로젝트 개요
 
-ANIMale은 애니메이션 콘텐츠를 탐색하고, 커뮤니티에서 글/댓글/좋아요/신고 기능을 사용할 수 있는 웹 커뮤니티 서비스입니다.
+ANIMale은 애니메이션 콘텐츠를 탐색하고, 
+커뮤니티에서 글/댓글/좋아요/신고 기능을 사용할 수 있는
+웹 커뮤니티 서비스입니다.
 
 주요 목표
 - 애니메이션 정보 탐색(리스트/상세)
@@ -22,7 +26,7 @@ ANIMale은 애니메이션 콘텐츠를 탐색하고, 커뮤니티에서 글/댓
 
 ---
 
-## ✅ 현재 프로젝트 기준 주요 변경점 (기존 README 대비)
+## 현재 프로젝트 기준 주요 변경점 (기존 README 대비)
 
 - Java Servlet/JSP MVC → Spring Boot MVC
 - FrontController `*.do` 구조 → `@Controller`, `@RestController` 기반 라우팅
@@ -91,7 +95,9 @@ ANIMale은 애니메이션 콘텐츠를 탐색하고, 커뮤니티에서 글/댓
   - BCrypt PasswordEncoder Bean
   - AI Client 설정
 
-참고: 레거시 호환을 위해 일부 URL 네이밍(`/BoardLikeToggle`, `/ReplyListOrder` 등)은 기존 스타일이 유지되어 있습니다.
+참고)
+레거시 호환을 위해 일부 URL 네이밍(`/BoardLikeToggle`, `/ReplyListOrder` 등)은 
+기존 스타일이 유지되어 있습니다.
 
 ---
 
