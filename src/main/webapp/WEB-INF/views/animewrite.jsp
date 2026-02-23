@@ -409,6 +409,66 @@
                                   required></textarea>
                       </div>
                     </div>
+                    
+                                        <%-- anime_genres: 장르 입력(화면에서는 쉼표 입력, 서버 전송은 JSON 배열 문자열) --%>
+                    <div class="col-lg-6 col-md-6">
+                      <div class="form-group" style="margin-bottom:16px;">
+                        <label style="display:block; margin-bottom:8px;">
+                          장르 (선택)
+                        </label>
+
+                        <%-- 
+                          사용자 입력용(가독성/입력 편의용)
+                          예: 판타지, 액션, 모험
+                          실제 서버 전송은 아래 hidden(animeGenres)에 JSON 문자열로 들어간다.
+                        --%>
+                        <input type="text"
+                               class="form-control"
+                               id="anime_genres_input"
+                               placeholder="예) 판타지, 액션, 모험"
+                               maxlength="1000">
+
+                        <%-- 
+                          실제 서버 전송용 hidden 필드
+                          컨트롤러 dto.getAnimeGenres() 로 들어가는 값
+                          기본값은 빈 배열 JSON 문자열([])로 둬서 JSON 컬럼과 궁합을 맞춘다.
+                        --%>
+                        <input type="hidden"
+                               name="animeGenres"
+                               id="anime_genres_json"
+                               value="[]">
+
+                        <div class="help">
+                          쉼표(,)로 구분해서 입력하면 등록 시 JSON 배열 형태로 변환되어 전송됩니다.
+                          예: ["판타지", "액션"] 형태로 저장되도록 준비하는 입력칸입니다.
+                        </div>
+                      </div>
+                    </div>
+
+                    <%-- anime_tags: 태그 입력(화면에서는 쉼표 입력, 서버 전송은 JSON 배열 문자열) --%>
+                    <div class="col-lg-6 col-md-6">
+                      <div class="form-group" style="margin-bottom:16px;">
+                        <label style="display:block; margin-bottom:8px;">
+                          태그 (선택)
+                        </label>
+
+                        <input type="text"
+                               class="form-control"
+                               id="anime_tags_input"
+                               placeholder="예) 성장, 힐링, 학교"
+                               maxlength="1000">
+
+                        <input type="hidden"
+                               name="animeTags"
+                               id="anime_tags_json"
+                               value="[]">
+
+                        <div class="help">
+                          쉼표(,)로 구분해서 입력하면 등록 시 JSON 배열 형태로 변환되어 전송됩니다.
+                          중복 항목은 자동으로 한 번만 남기도록 정리합니다.
+                        </div>
+                      </div>
+                    </div>
 
                   </div>
 
@@ -455,9 +515,20 @@
   <script src="${ctx}/js/owl.carousel.min.js"></script>
   <script src="${ctx}/js/main.js"></script>
 
-  <!-- 페이지 전용 JS: 필수값 검사 + 썸네일 미리보기 -->
+  <!-- 페이지 전용 JS: 필수값 검사 + 썸네일 미리보기 + 장르/태그 JSON 변환 -->
   <script>
     (function () {
+      // =========================================================
+      // 이 페이지 스크립트 역할
+      // 1) 필수 입력값 검사 + 등록 버튼 활성화/비활성화
+      // 2) 썸네일 파일 미리보기
+      // 3) 장르/태그를 "쉼표 입력"에서 "JSON 배열 문자열"로 변환해서 hidden에 세팅
+      //
+      // 핵심 포인트:
+      // - 사용자는 보기 편하게 "판타지, 액션"처럼 입력
+      // - 서버에는 ["판타지","액션"] 형태의 JSON 문자열로 전송
+      // =========================================================
+
       // 폼 요소 참조를 한 번만 잡아두고 재사용
       var titleEl = document.getElementById('anime_title');
       var yearEl = document.getElementById('anime_year');
@@ -469,9 +540,55 @@
       var thumbBox = document.getElementById('thumbBox');
       var formEl = document.getElementById('animeWriteForm');
 
+      // 장르/태그(사용자 입력용 + 서버 전송용 hidden)
+      var genresInputEl = document.getElementById('anime_genres_input');
+      var tagsInputEl = document.getElementById('anime_tags_input');
+      var genresJsonEl = document.getElementById('anime_genres_json');
+      var tagsJsonEl = document.getElementById('anime_tags_json');
+
       // 공백만 입력한 경우를 막기 위해 trim 기준으로 값 확인
       function trimVal(el) {
         return (el && el.value) ? String(el.value).trim() : '';
+      }
+
+      // 쉼표 입력 문자열을 배열로 정리
+      // 예) " 판타지, 액션 , , 모험 " -> ["판타지","액션","모험"]
+      // - 앞뒤 공백 제거
+      // - 빈 항목 제거
+      // - 중복 제거(입력 순서 유지)
+      function parseCommaList(raw) {
+        var text = (raw == null) ? '' : String(raw);
+        if (!text.trim()) return [];
+
+        var parts = text.split(',');
+        var result = [];
+        var seen = {};
+
+        for (var i = 0; i < parts.length; i++) {
+          var item = String(parts[i]).trim();
+          if (!item) continue;
+
+          // 같은 단어가 여러 번 들어온 경우 중복 제거
+          if (seen[item]) continue;
+          seen[item] = true;
+
+          result.push(item);
+        }
+        return result;
+      }
+
+      // 장르/태그 visible input 값을 hidden(JSON 문자열)로 동기화
+      // 빈값일 때는 빈 문자열 대신 []를 넣어서 JSON 컬럼에 들어갈 때 깨질 가능성을 줄임
+      function syncGenreTagJsonFields() {
+        var genresArr = parseCommaList(genresInputEl ? genresInputEl.value : '');
+        var tagsArr = parseCommaList(tagsInputEl ? tagsInputEl.value : '');
+
+        if (genresJsonEl) {
+          genresJsonEl.value = JSON.stringify(genresArr);
+        }
+        if (tagsJsonEl) {
+          tagsJsonEl.value = JSON.stringify(tagsArr);
+        }
       }
 
       // 버튼 활성화 조건을 한 군데에서 관리
@@ -484,14 +601,19 @@
         var storyOk = trimVal(storyEl).length > 0;
         var fileOk = !!(fileEl && fileEl.files && fileEl.files.length > 0);
 
-        if (submitBtn) submitBtn.disabled = !(titleOk && yearOk && originalTitleOk && quarterOk && storyOk && fileOk);
+        if (submitBtn) {
+          submitBtn.disabled = !(titleOk && yearOk && originalTitleOk && quarterOk && storyOk && fileOk);
+        }
       }
 
       if (fileEl) {
         fileEl.addEventListener('change', function () {
           // 파일 선택이 취소된 경우도 있으니 먼저 null 체크
           var file = (fileEl.files && fileEl.files[0]) ? fileEl.files[0] : null;
-          if (!file) { validateForm(); return; }
+          if (!file) {
+            validateForm();
+            return;
+          }
 
           // 선택한 이미지를 서버 업로드 전에 브라우저에서 바로 미리보기
           var reader = new FileReader();
@@ -509,24 +631,36 @@
       }
 
       // 입력/변경 이벤트마다 버튼 상태 갱신
-      // input: 타이핑 중 실시간 반영
-      // change: select/file 등 변경 반영
+      // 장르/태그는 필수값은 아니지만, 타이핑 중 hidden(JSON) 동기화를 해두면 디버깅할 때 편함
       var events = ['input', 'change'];
       for (var i = 0; i < events.length; i++) {
         var evt = events[i];
+
         if (titleEl) titleEl.addEventListener(evt, validateForm);
         if (yearEl) yearEl.addEventListener(evt, validateForm);
         if (originalTitleEl) originalTitleEl.addEventListener(evt, validateForm);
         if (quarterEl) quarterEl.addEventListener(evt, validateForm);
         if (storyEl) storyEl.addEventListener(evt, validateForm);
+
+        if (genresInputEl) {
+          genresInputEl.addEventListener(evt, function () {
+            syncGenreTagJsonFields();
+          });
+        }
+        if (tagsInputEl) {
+          tagsInputEl.addEventListener(evt, function () {
+            syncGenreTagJsonFields();
+          });
+        }
       }
 
-      <%-- 
-        버튼 disabled만 믿지 않고 submit 시점에도 한 번 더 검증한다.
-        엔터키 제출이나 브라우저 동작 차이로 우회되는 상황을 줄이기 위한 마지막 체크.
-      --%>
+      // 버튼 disabled만 믿지 않고 submit 시점에도 마지막 검증/변환 실행
       if (formEl) {
         formEl.addEventListener('submit', function (e) {
+          // 장르/태그 입력값을 hidden JSON 문자열로 확정 세팅
+          syncGenreTagJsonFields();
+
+          // 필수값 검증은 기존 정책 유지
           validateForm();
           if (submitBtn && submitBtn.disabled) {
             e.preventDefault();
@@ -536,7 +670,8 @@
         });
       }
 
-      // 초기 진입 시점에도 버튼 상태 맞춰두기 (기본 disabled 유지 확인용)
+      // 초기 진입 시점에도 버튼 상태/hidden JSON 기본값 맞춰두기
+      syncGenreTagJsonFields();
       validateForm();
     })();
   </script>
