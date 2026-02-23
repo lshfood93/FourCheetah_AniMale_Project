@@ -178,7 +178,7 @@ public class MemberDAO {
 		return data;
 	};
 	
-	// CHANGED: 비밀번호 검증용 (member_id + member_password만 조회)
+	// 비밀번호 검증용 (member_id + member_password만 조회)
 	private static final RowMapper<MemberDTO> ID_PASSWORD_ROW_MAPPER = (rs, rowNum) -> {
 	    MemberDTO data = new MemberDTO();
 	    data.setMemberId(rs.getInt("MEMBER_ID"));

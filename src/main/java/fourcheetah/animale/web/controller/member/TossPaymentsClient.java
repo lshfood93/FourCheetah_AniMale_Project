@@ -15,7 +15,7 @@ public class TossPaymentsClient {
 
     private final RestClient restClient;
 
-    // [ADD] secretKey는 서버 properties에만 두기
+    // secretKey는 서버 properties에만 두기
     public TossPaymentsClient(@Value("${toss.secretKey}") String secretKey) {
         String token = Base64.getEncoder()
                 .encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
@@ -27,7 +27,7 @@ public class TossPaymentsClient {
                 .build();
     }
 
-    //  [ADD] 결제 승인(confirm) 호출
+    //  결제 승인(confirm) 호출
     public String confirm(String paymentKey, String orderId, int amount) {
         Map<String, Object> body = Map.of(
                 "paymentKey", paymentKey,

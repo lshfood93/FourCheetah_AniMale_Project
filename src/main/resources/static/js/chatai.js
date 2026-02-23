@@ -1,54 +1,53 @@
 // /js/chatai.js
 // =========================================================
-// ChatAI Widget (Front, ES5 호환 최종본 + 상세 주석판)
+// ChatAI Widget (Front, ES5 호환)
 // ---------------------------------------------------------
-// 1) 목적
-//   - 어떤 페이지에서든 우하단 FAB 클릭으로 AI 추천 위젯을 열고,
-//     서버 세션 기반으로 추천 대화를 진행한다.
+// 목표
+// - 어떤 페이지에서든 우하단 FAB 버튼으로 AI 추천 위젯을 열고,
+//   서버 세션(쿠키) 기반으로 대화/추천을 진행한다.
 //
-// 2) 전제
-//   - JSP에 #chatai 루트가 존재해야 동작한다. (없으면 즉시 return)
-//   - #chatai의 data-endpoint가 API base가 된다.
-//     예) data-endpoint='/animale/api/ai-chat'
-//     실제 호출 URL:
-//       GET  base + '/open'
-//       POST base + '/message' (body: { userMessage })
-//       POST base + '/reset'
-//       POST base + '/more'
-//       POST base + '/change'  (body: { userMessage })
+// 동작 전제
+// - JSP에 #chatai 루트가 있어야만 실행한다. (없으면 바로 return)
+// - #chatai의 data-endpoint 값이 API base URL이 된다.
+//   예) data-endpoint="/animale/api/ai-chat"
 //
-// 3) 핵심 상태(3개)
-//   - openedOnce : 위젯을 '처음 열었을 때만' /open을 호출하기 위한 플래그
-//                 (닫았다 다시 열어도 open 재호출 안함, reset은 별도 버튼으로)
-//   - busy       : 요청 진행 중 중복 요청 방지(버튼/엔터/칩 클릭 전부 차단)
-//   - hasRecs    : 추천 카드가 한번이라도 출력된 이후에만 '더 추천' 가능
+// 실제 호출되는 엔드포인트(상대 경로)
+// - GET  base + "/open"      : 초기 진입 또는 세션 대화 복원
+// - POST base + "/message"   : 일반 메시지 전송 (body: { userMessage })
+// - POST base + "/reset"     : 대화 초기화
+// - POST base + "/more"      : 같은 조건으로 추가 추천
+// - POST base + "/change"    : 조건 변경 + 추천 (body: { userMessage })
 //
-// 4) UX 정책
-//   - busy=true 동안: 입력/전송/더추천/조건바꾸기/리셋/칩 모두 비활성화
-//   - 추천이 없는 상태에서 더추천을 누르면: 안내 메시지 출력 후 종료
-//   - 서버에서 errorMessage를 주면: 그 문구를 최우선으로 출력
+// 핵심 상태(프론트에서 들고 있는 플래그 3개)
+// - openedOnce : 위젯을 "처음 열었을 때만" /open 호출(닫았다 열어도 재호출 안 함)
+// - busy       : 요청 중복 방지(버튼/엔터/칩 전부 차단)
+// - hasRecs    : 추천 카드가 한번이라도 렌더된 이후에만 "더 추천" 허용
 //
-// 5) 보안/세션
-//   - credentials: 'same-origin' 사용
-//     -> 쿠키 기반 세션을 동일 오리진에서만 자동 포함
+// UX 정책
+// - busy=true 동안은 입력/전송/더추천/조건변경/리셋/칩을 전부 비활성화한다.
+// - 추천이 없는 상태에서 더추천을 누르면 서버 호출 없이 안내 문구만 출력한다.
+// - 서버가 errorMessage를 내려주면 그 문구를 최우선으로 화면에 출력한다.
 //
-// 6) 커스터마이징 포인트
-//   - QUICK_LIST : 칩 목록만 바꾸면 추천 예시가 바뀜
-//   - ctx 계산  : 추천 카드 링크 경로가 바뀌면 ctx 생성 규칙 수정
+// 보안/세션
+// - fetch 옵션 credentials: "same-origin" 사용
+//   -> 동일 오리진일 때만 쿠키(세션)가 자동 포함되도록 한다.
 // =========================================================
 
 document.addEventListener('DOMContentLoaded', function () {
-  // =========================================================
+
+  // ---------------------------------------------------------
   // [0] 루트 가드
-  // - 페이지에 위젯이 포함되지 않았으면 아무것도 하지 않는다.
-  // =========================================================
+  // - 이 페이지에 위젯 DOM 자체가 없으면 아무것도 하지 않는다.
+  // - 공통 JS로 모든 페이지에 로드해도 안전하게 만들기 위한 방어 장치.
+  // ---------------------------------------------------------
   var root = document.getElementById('chatai');
   if (!root) return;
 
-  // =========================================================
-  // [1] DOM 캐시
-  // - 반복 접근하는 요소를 변수로 잡아 성능/가독성 확보
-  // =========================================================
+  // ---------------------------------------------------------
+  // [1] DOM 캐싱
+  // - 자주 쓰는 요소들을 미리 잡아두고 재탐색을 줄인다.
+  // - id 기반이라 페이지 구조가 바뀌면 여기부터 확인.
+  // ---------------------------------------------------------
   var fab = document.getElementById('chataiFab');
   var panel = document.getElementById('chataiPanel');
   var closeBtn = document.getElementById('chataiClose');
@@ -66,41 +65,40 @@ document.addEventListener('DOMContentLoaded', function () {
   var moreBtn = document.getElementById('chataiMoreBtn');
   var changeBtn = document.getElementById('chataiChangeBtn');
 
-  // =========================================================
-  // [2] API endpoint(base) 설정
-  // - JSP에서 data-endpoint를 주입한다.
-  // - 끝에 '/'가 붙어도 동일하게 동작하도록 제거한다.
-  //
-  // 주의:
-  // - base가 비어있으면 위젯 UI는 열리지만 서버 호출은 불가
-  // - 이 경우 callOpen/callMessage 등에서 친절한 안내 메시지를 출력한다.
-  // =========================================================
+  // ---------------------------------------------------------
+  // [2] API base(endpoint) 구성
+  // - JSP에서 #chatai에 data-endpoint를 주입해준다.
+  // - 끝에 "/"가 붙어도 동일하게 처리되도록 마지막 "/"는 제거한다.
+  // - base가 비어있으면 서버 호출은 불가능하므로 안내 메시지를 띄운다.
+  // ---------------------------------------------------------
   var base = '';
   if (root.dataset && root.dataset.endpoint) base = root.dataset.endpoint;
   base = String(base || '').replace(/\/$/, '');
 
-  // =========================================================
-  // [3] ctx 계산(추천 카드 링크 생성용)
-  // - base = '/{ctx}/api/ai-chat' 라고 가정하고 ctx를 만든다.
-  // - 추천 카드 링크는 ctx + '/animeDetail?animeId=...'
-  //
-  // 만약 너 프로젝트에서 상세 페이지가 다른 경로라면
-  // 여기 규칙을 1번만 바꾸면 카드 링크 전체가 바뀐다.
-  // =========================================================
+  // ---------------------------------------------------------
+  // [3] ctx 계산(추천 카드 링크용)
+  // - base가 "/{ctx}/api/ai-chat" 형태라고 가정하고 ctx를 만든다.
+  // - 추천 카드 클릭 시 상세 페이지로 보내는 링크에 ctx를 붙이기 위함.
+  // - 상세 페이지 URL 규칙이 바뀌면 여기와 appendRecommendations의 href만 보면 된다.
+  // ---------------------------------------------------------
   var ctx = base.replace(/\/api\/ai-chat$/, '');
 
-  // =========================================================
+  // ---------------------------------------------------------
   // [4] 상태 플래그
-  // =========================================================
-  var openedOnce = false; // 최초 open 1회 제어
-  var busy = false;       // 요청 중 UI 잠금
-  var hasRecs = false;    // 추천 이후 더추천 가능 여부
+  // - openedOnce : 패널을 처음 열 때만 /open 호출
+  // - busy       : 요청 중 중복 호출 방지 + 입력/버튼 잠금
+  // - hasRecs    : 추천 카드가 찍힌 이후에만 더추천 허용
+  // ---------------------------------------------------------
+  var openedOnce = false;
+  var busy = false;
+  var hasRecs = false;
 
-  // =========================================================
-  // [5] Quick chips 목록
-  // - label: 버튼에 보이는 텍스트
-  // - text : 서버로 전달될 userMessage(실제 추천 조건)
-  // =========================================================
+  // ---------------------------------------------------------
+  // [5] Quick chips
+  // - label: 화면에 보이는 텍스트
+  // - text : 서버로 넘길 실제 조건 문장(키워드)
+  // - 이 배열만 바꾸면 칩 구성이 바뀐다.
+  // ---------------------------------------------------------
   var QUICK_LIST = [
     { label: '판타지 성장', text: '판타지 성장 모험' },
     { label: '로맨스 학원', text: '로맨스 학원 설렘' },
@@ -110,12 +108,12 @@ document.addEventListener('DOMContentLoaded', function () {
     { label: 'SF 모험', text: 'SF 모험 세계관' }
   ];
 
-  // =========================================================
-  // [UTIL] busy 상태 처리
-  // - busy=true : 중복 요청 방지 + UX 일관성(여러번 클릭/엔터 방지)
-  // - panel aria-busy는 접근성 힌트(스크린리더)
-  // - quick chips는 CSS 클래스 토글로 pointer-events 차단
-  // =========================================================
+  // ---------------------------------------------------------
+  // [UTIL] busy 토글
+  // - true: 입력/버튼 비활성화 + quick 클릭도 막는다.
+  // - panel aria-busy는 접근성(스크린리더)용 힌트.
+  // - quick은 클래스 토글로 pointer-events를 막는 방식.
+  // ---------------------------------------------------------
   function setBusy(v) {
     busy = !!v;
 
@@ -133,11 +131,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // =========================================================
-  // [UTIL] 안전한 JSON 파싱
-  // - res.json()은 body가 비었거나 JSON이 깨지면 throw/catch가 필요하다.
-  // - 이 함수는 실패해도 null로 떨어져서 이후 흐름이 죽지 않게 한다.
-  // =========================================================
+  // ---------------------------------------------------------
+  // [UTIL] JSON 파싱 안전 처리
+  // - res.json()은 body가 비어있거나 JSON이 깨지면 예외가 날 수 있다.
+  // - 여기서는 실패해도 null로 떨어뜨려 흐름이 죽지 않게 한다.
+  // ---------------------------------------------------------
   function safeJson(res) {
     try {
       return res.json().catch(function () { return null; });
@@ -146,30 +144,30 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // =========================================================
+  // ---------------------------------------------------------
   // [UTIL] 서버 메시지 우선순위
-  // - 서버가 errorMessage / message / error 를 내려줄 수 있으니
-  //   가장 적절한 문구를 골라 출력한다.
-  // =========================================================
+  // - 서버 응답에 여러 키로 메시지가 올 수 있으니 우선순위를 정한다.
+  // - errorMessage > message > error > fallback
+  // ---------------------------------------------------------
   function pickServerMessage(data, fallback) {
     if (!data) return fallback;
     return data.errorMessage || data.message || data.error || fallback;
   }
 
-  // =========================================================
-  // [UTIL] 스크롤 최하단 고정
-  // - 메시지 추가 시 항상 최신 메시지가 보이도록 한다.
-  // =========================================================
+  // ---------------------------------------------------------
+  // [UTIL] 메시지 영역 스크롤을 항상 아래로 고정
+  // - 새 메시지를 붙일 때마다 최신 메시지가 보이게 하는 용도.
+  // ---------------------------------------------------------
   function scrollToBottom() {
     if (!messages) return;
     messages.scrollTop = messages.scrollHeight;
   }
 
-  // =========================================================
+  // ---------------------------------------------------------
   // [UTIL] 메시지 초기화(quick 영역 유지)
-  // - reset/open 때 메시지들을 싹 비우지만,
-  //   quick chips 컨테이너(#chataiQuick)는 유지한다.
-  // =========================================================
+  // - /open이나 /reset에서 화면을 "깨끗하게" 만들 때 사용.
+  // - quick chips 컨테이너(#chataiQuick)는 유지한다.
+  // ---------------------------------------------------------
   function clearMessagesKeepQuick() {
     if (!messages) return;
 
@@ -181,11 +179,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // =========================================================
-  // [UTIL] 추천 이후 액션바 표시 제어
-  // - 기본은 hidden=true
-  // - 추천 카드가 출력된 이후에만 showActions()
-  // =========================================================
+  // ---------------------------------------------------------
+  // [UTIL] 추천 후 액션바(더추천/조건바꾸기) 표시 제어
+  // - 추천이 찍히기 전에는 숨겨두고, 추천 후에만 노출한다.
+  // ---------------------------------------------------------
   function showActions() {
     if (actions) actions.hidden = false;
   }
@@ -193,11 +190,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (actions) actions.hidden = true;
   }
 
-  // =========================================================
-  // [RENDER] 말풍선 추가 (텍스트)
-  // who: 'user' | 'bot'
-  // - DOM 생성 → messages에 append → 스크롤 최하단
-  // =========================================================
+  // ---------------------------------------------------------
+  // [RENDER] 텍스트 말풍선
+  // - who: "user" | "bot"
+  // - textContent로 넣어서 HTML 주입(스크립트/태그) 위험을 막는다.
+  // ---------------------------------------------------------
   function appendTextBubble(who, text) {
     if (!messages) return null;
 
@@ -214,11 +211,11 @@ document.addEventListener('DOMContentLoaded', function () {
     return row;
   }
 
-  // =========================================================
-  // [RENDER] 로딩 버블
-  // - 서버 응답 전까지 유저에게 진행중임을 보여준다.
-  // - 완료 시 removeRow로 삭제한다.
-  // =========================================================
+  // ---------------------------------------------------------
+  // [RENDER] 로딩 말풍선
+  // - 서버 응답을 기다리는 동안 "진행 중" 느낌을 주기 위한 용도.
+  // - 완료되면 removeRow로 삭제한다.
+  // ---------------------------------------------------------
   function appendLoadingBubble(text) {
     if (!messages) return null;
 
@@ -235,16 +232,18 @@ document.addEventListener('DOMContentLoaded', function () {
     return row;
   }
 
-  // DOM row 제거(있으면)
+  // ---------------------------------------------------------
+  // [UTIL] 특정 row 제거(있을 때만)
+  // ---------------------------------------------------------
   function removeRow(row) {
     if (row && row.parentNode) row.parentNode.removeChild(row);
   }
 
-  // =========================================================
+  // ---------------------------------------------------------
   // [RENDER] quick chips 렌더
-  // - open/reset 시 호출
-  // - QUICK_LIST만 수정하면 칩 세트가 바뀐다.
-  // =========================================================
+  // - open/reset 시 다시 렌더해서 버튼을 최신 상태로 맞춘다.
+  // - 이벤트는 위임 방식이므로 여기서는 버튼만 만들어 끼운다.
+  // ---------------------------------------------------------
   function renderQuickChips() {
     if (!quick) return;
 
@@ -262,29 +261,20 @@ document.addEventListener('DOMContentLoaded', function () {
       quick.appendChild(btn);
     }
   }
-  
-  // =========================================================
-  // ✅ [추가] 서버 /open 응답 복원 유틸
-  // ---------------------------------------------------------
-  // 목적:
-  // - open 응답이 "새 대화"인지 "기존 대화 복원"인지 판별
-  // - chatHistory / lastRecommendedAnimes 를 화면에 재렌더
-  //
-  // 왜 필요한가?
-  // - 페이지 이동 시 JS 메모리 상태/DOM은 사라진다(정상)
-  // - 하지만 서버 세션에는 대화 상태가 남아 있을 수 있으므로
-  //   /open 응답을 기반으로 화면을 다시 그려야 한다.
-  // =========================================================
 
-  // ✅ 안전한 배열 변환
-  // - null/undefined/배열 아닌 값이 와도 빈 배열로 처리
+  // ---------------------------------------------------------
+  // [복원용 UTIL] 값이 배열이 아니면 빈 배열로 처리
+  // - /open 응답이 null이거나 스키마가 조금 달라도 안전하게 굴리기 위함.
+  // ---------------------------------------------------------
   function toArray(v) {
     return Array.isArray(v) ? v : [];
   }
 
-  // ✅ 히스토리 role 정규화
-  // - 백엔드 ChatMessage.role이 'assistant'일 수 있으므로
-  //   프론트 appendTextBubble('bot'|'user') 규칙으로 매핑한다.
+  // ---------------------------------------------------------
+  // [복원용 UTIL] chatHistory.role 정규화
+  // - 백엔드에서 role이 "assistant" 같은 값으로 올 수 있으니
+  //   프론트 렌더 규칙("bot"/"user")으로 맞춰준다.
+  // ---------------------------------------------------------
   function normalizeHistoryRole(role) {
     var r = String(role || '').toLowerCase();
 
@@ -293,13 +283,15 @@ document.addEventListener('DOMContentLoaded', function () {
     if (r === 'bot') return 'bot';
     if (r === 'system') return 'bot';
 
-    // 알 수 없는 role은 bot으로 처리(안전 폴백)
+    // 모르는 값이면 안전하게 bot 처리
     return 'bot';
   }
 
-  // ✅ chatHistory 말풍선 복원
-  // 기대 스키마:
-  //   [{ role: 'user'|'assistant', content: '...' }, ...]
+  // ---------------------------------------------------------
+  // [복원] chatHistory 말풍선 복원
+  // - 기대 스키마: [{ role, content }, ...]
+  // - 내용이 비어있는 항목은 스킵한다.
+  // ---------------------------------------------------------
   function restoreChatHistoryBubbles(historyList) {
     var list = toArray(historyList);
 
@@ -309,66 +301,59 @@ document.addEventListener('DOMContentLoaded', function () {
       var text = (item.content == null) ? '' : String(item.content);
       text = text.replace(/\r\n/g, '\n').trim();
 
-      // 내용 없는 히스토리 항목은 스킵
       if (!text) continue;
 
       appendTextBubble(normalizeHistoryRole(item.role), text);
     }
   }
 
-  // ✅ /open 응답 기반 화면 구성 (초기/복원 분기)
   // ---------------------------------------------------------
-  // 정책:
-  // 1) 항상 메시지 영역을 정리하고 quick chips는 다시 렌더
-  // 2) 복원 가능한 데이터가 있으면(chatHistory/lastRecommendedAnimes)
-  //    -> 복원 렌더
-  // 3) 아니면 기존처럼 환영 메시지 기반 초기 UI 렌더
+  // [복원/초기 분기] /open 응답을 기반으로 화면을 다시 구성
   //
-  // 참고:
-  // - resumed=true 가 기본 신호이지만,
-  //   방어적으로 history/recs 존재 여부도 함께 본다.
-  // =========================================================
+  // 기본 정책
+  // 1) 메시지 영역을 비우고(quick 제외) quick chips를 다시 렌더한다.
+  // 2) 복원 데이터(chatHistory / lastRecommendedAnimes)가 있으면 복원 렌더.
+  // 3) 복원할 게 없으면 환영 메시지 기반 초기 UI 렌더.
+  //
+  // 이유
+  // - 페이지 이동 시 프론트 DOM/JS 상태는 사라지는 게 정상.
+  // - 서버 세션엔 대화/추천 상태가 남아 있을 수 있으니,
+  //   /open 결과를 기준으로 화면을 다시 그려야 "이어하기"가 된다.
+  // ---------------------------------------------------------
   function restoreOpenState(data) {
-    // 1) 기본 UI 골격 재정리(중복 append 방지)
     clearMessagesKeepQuick();
     renderQuickChips();
 
-    // 2) 추천 관련 상태 초기화(복원하면서 다시 세팅될 수 있음)
+    // 새로 그리는 시점엔 추천 상태도 기본값으로 돌려놓고,
+    // 실제 추천 복원 데이터가 있으면 appendRecommendations에서 다시 켜진다.
     hasRecs = false;
     hideActions();
 
-    // 3) placeholder 갱신(서버가 내려주면 반영)
+    // 서버가 입력 힌트를 주면 placeholder에 반영
     if (data && data.initialPrompt && input) {
       input.placeholder = data.initialPrompt;
     }
 
-    // 4) 복원 데이터 추출(방어적으로 배열 처리)
     var historyList = toArray(data && data.chatHistory);
     var lastRecs = toArray(data && data.lastRecommendedAnimes);
 
-    // resumed=true 뿐 아니라 실제 복원 가능한 데이터 존재 여부도 함께 판단
+    // resumed 플래그가 없어도 history/recs가 있으면 복원으로 본다.
     var resumed = !!(data && data.resumed);
     var hasRestorableData = resumed || historyList.length > 0 || lastRecs.length > 0;
 
-    // 5) 복원 분기
     if (hasRestorableData) {
-      // (a) 텍스트 히스토리 복원
+      // 텍스트 히스토리 복원
       restoreChatHistoryBubbles(historyList);
 
-      // (b) 마지막 추천 카드 1세트 복원
-      //     appendRecommendations 내부에서:
-      //     - hasRecs = true
-      //     - showActions()
-      //     처리됨
+      // 마지막 추천 카드 복원
       if (lastRecs.length > 0) {
         appendRecommendations(lastRecs);
       } else {
-        // 추천 복원 데이터가 없으면 더추천 버튼은 숨김 유지
         hasRecs = false;
         hideActions();
       }
 
-      // (c) 복원 데이터가 매우 비어있는 예외 케이스 폴백
+      // 복원 플래그만 있고 실제 데이터가 비어있는 예외 케이스는 환영 문구로 폴백
       if (historyList.length === 0 && lastRecs.length === 0) {
         appendTextBubble('bot', (data && data.welcomeMessage) ? data.welcomeMessage : '안녕하세요. 무엇을 도와드릴까요?');
       }
@@ -376,25 +361,21 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // 6) 초기 진입 분기(기존 동작)
+    // 최초 진입(복원할 게 없음)
     appendTextBubble('bot', (data && data.welcomeMessage) ? data.welcomeMessage : '안녕하세요. 무엇을 도와드릴까요?');
   }
 
-  // =========================================================
+  // ---------------------------------------------------------
   // [RENDER] 추천 카드 렌더
-  // list 아이템 기대 스키마:
-  //   {
-  //     animeId: number|string,
-  //     title: string,
-  //     thumbnailUrl: string,
-  //     genres: string[],   (optional)
-  //     reason: string      (optional)
-  //   }
   //
-  // 주의:
-  // - animeId는 링크에 들어가므로 encodeURIComponent 처리한다.
-  // - title/genres/reason은 없을 수 있으니 방어적으로 처리한다.
-  // =========================================================
+  // 기대 스키마
+  // - animeId, title, thumbnailUrl
+  // - genres(옵션), reason(옵션)
+  //
+  // 포인트
+  // - animeId는 URL에 들어가므로 encodeURIComponent로 안전하게 처리한다.
+  // - 텍스트들은 방어적으로 비어있어도 깨지지 않게 처리한다.
+  // ---------------------------------------------------------
   function appendRecommendations(list) {
     if (!messages) return;
 
@@ -425,7 +406,7 @@ document.addEventListener('DOMContentLoaded', function () {
         genresText = a.genres.join(' · ');
       }
 
-      // 카드 전체가 링크가 되도록 <a>로 구성
+      // 카드 전체를 링크로 구성해서 클릭 영역을 크게 만든다.
       var item = document.createElement('a');
       item.className = 'chatai-rec-item';
       item.href = ctx + '/animeDetail?animeId=' + encodeURIComponent(animeId);
@@ -467,31 +448,29 @@ document.addEventListener('DOMContentLoaded', function () {
     messages.appendChild(row);
     scrollToBottom();
 
-    // 상태 전이:
-    // - 추천 카드가 한번이라도 찍히면 hasRecs=true (더 추천 허용)
+    // 추천이 한 번이라도 찍혔으면 더추천 가능 상태로 전환
     hasRecs = true;
 
-    // 추천 이후에만 액션바 표시
+    // 추천 후에만 액션바 노출
     showActions();
   }
 
-  // =========================================================
+  // ---------------------------------------------------------
   // [UI] 패널 열기/닫기
-  // - openPanel: .is-open 클래스 + aria-hidden 갱신
-  // - openedOnce=false일 때만 callOpen()
-  // =========================================================
+  // - openPanel: is-open 클래스 + aria-hidden 갱신
+  // - 열자마자 input에 포커스 준다.
+  // - openedOnce=false일 때만 /open 호출(첫 오픈 1회만)
+  // ---------------------------------------------------------
   function openPanel() {
     if (!panel) return;
 
     root.classList.add('is-open');
     panel.setAttribute('aria-hidden', 'false');
 
-    // UX: 열리자마자 입력 포커스
     setTimeout(function () {
       if (input) input.focus();
     }, 0);
 
-    // 최초 1회만 open 호출
     if (!openedOnce) {
       openedOnce = true;
       callOpen();
@@ -510,64 +489,39 @@ document.addEventListener('DOMContentLoaded', function () {
     else openPanel();
   }
 
-  // =========================================================
+  // ---------------------------------------------------------
   // [SEND] 공통 전송 함수
-  // - 입력/칩/조건바꾸기 흐름에서 재사용한다.
-  // - busy이면 즉시 return 해서 중복 요청 방지
-  // =========================================================
+  // - 입력 전송/칩 클릭 전송 모두 여기로 모은다.
+  // - busy 상태면 연타 방지 차단.
+  // ---------------------------------------------------------
   function sendUserMessage(text) {
     var msg = String(text || '').trim();
     if (!msg) return;
 
-    // 중복/연타 방지
     if (busy) return;
 
-    // UI에 사용자 메시지 출력
     appendTextBubble('user', msg);
 
-    // 입력창 비우기
     if (input) input.value = '';
 
-    // 서버 요청
     callMessage(msg);
   }
 
-  // =========================================================
+  // ---------------------------------------------------------
   // [API] /open
-  // GET base + '/open'
-  // 기대 응답:
-  //   {
-  //     welcomeMessage: string (optional),
-  //     initialPrompt: string (optional)
-  //   }
+  // - 위젯 최초 오픈 시 1회 호출되는 흐름.
+  // - 서버 세션 기준으로 "새 대화" 또는 "기존 대화 복원" 응답이 올 수 있다.
+  // - 프론트는 restoreOpenState(data)로 화면을 다시 구성한다.
   //
-  // 역할:
-  // - 서버 세션에서 대화 초기화/환영 메시지/힌트 제공
-  // - 프론트는 quick chips 렌더 + hasRecs false + actions hidden으로 초기 상태 정리
-  // =========================================================
-  // =========================================================
-  // ✅ [교체] [API] /open
-  // GET base + '/open'
-  // 기대 응답(복원 대응):
-  //   {
-  //     welcomeMessage: string (optional),
-  //     initialPrompt: string (optional),
-  //     resumed: boolean (optional),
-  //     chatHistory: array (optional),
-  //     moreCount: number (optional),
-  //     lastRecommendedAnimes: array (optional)
-  //   }
-  //
-  // 역할(변경점):
-  // - 기존: 항상 초기 UI 렌더
-  // - 변경: 서버 응답 기준으로 "초기/복원" 분기 렌더
-  // =========================================================
+  // 예외 처리
+  // - base가 비어있으면 안내 메시지를 띄우고 openedOnce를 false로 되돌린다.
+  //   -> 다음에 패널 열 때 다시 시도할 수 있게 하기 위함.
+  // ---------------------------------------------------------
   function callOpen() {
     if (busy) return;
 
     if (!base) {
       appendTextBubble('bot', 'endpoint 설정이 없어서 실행할 수 없어요. data-endpoint를 확인해주세요.');
-      // open이 실패했으니 다음에 패널 열 때 재시도 가능하게 롤백
       openedOnce = false;
       return;
     }
@@ -582,15 +536,12 @@ document.addEventListener('DOMContentLoaded', function () {
         return safeJson(res).then(function (data) {
           setBusy(false);
 
-          // HTTP 실패(4xx/5xx) 처리
           if (!res.ok) {
             appendTextBubble('bot', pickServerMessage(data, '초기화/복원에 실패했어요. 잠시 후 다시 시도해주세요.'));
             openedOnce = false;
             return;
           }
 
-          // ✅ [핵심 변경]
-          // /open 응답을 기반으로 "초기 진입" 또는 "복원 렌더"를 수행한다.
           restoreOpenState(data);
         });
       })
@@ -601,20 +552,11 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // =========================================================
+  // ---------------------------------------------------------
   // [API] /message
-  // POST base + '/message'
-  // body: { userMessage: string }
-  // 기대 응답:
-  //   {
-  //     recommendedAnimes: array (optional),
-  //     errorMessage: string (optional)
-  //   }
-  //
-  // 역할:
-  // - 유저 메시지를 서버로 보내고 추천 리스트를 받아 렌더링한다.
-  // - 추천이 없으면 안내 문구 출력
-  // =========================================================
+  // - 사용자가 입력한 메시지를 서버로 전송하고 추천 리스트를 받아 렌더한다.
+  // - 에러/추천없음/정상추천의 케이스를 분기 처리한다.
+  // ---------------------------------------------------------
   function callMessage(userMessage) {
     if (busy) return;
 
@@ -642,7 +584,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
           }
 
-          // 서버가 논리 에러를 errorMessage로 내려주는 경우
           if (data && data.errorMessage) {
             appendTextBubble('bot', data.errorMessage);
             return;
@@ -664,17 +605,12 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // =========================================================
+  // ---------------------------------------------------------
   // [API] /reset
-  // POST base + '/reset'
-  // 기대 응답:
-  //   { welcomeMessage?, initialPrompt? }
-  //
-  // 역할:
   // - 대화를 새로 시작한다.
-  // - UI는 즉시 초기화(사용자 체감 빠르게)
-  // - 서버 응답 후 환영 문구를 다시 출력
-  // =========================================================
+  // - 체감 속도를 위해 UI는 먼저 초기화하고 서버 호출을 한다.
+  // - 서버 응답이 오면 환영 문구/placeholder를 다시 세팅한다.
+  // ---------------------------------------------------------
   function callReset() {
     if (busy) return;
 
@@ -685,11 +621,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     setBusy(true);
 
-    // 즉시 UI 초기화
     clearMessagesKeepQuick();
     renderQuickChips();
 
-    // 추천 상태 초기화
     hasRecs = false;
     hideActions();
 
@@ -724,20 +658,14 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // =========================================================
+  // ---------------------------------------------------------
   // [API] /more
-  // POST base + '/more'
-  // 기대 응답:
-  //   { recommendedAnimes?, errorMessage? }
-  //
-  // 역할:
-  // - '추가 추천'만 수행한다.
-  // - 단, 추천을 받은 적이 없으면(hasRecs=false) 호출하지 않는다.
-  // =========================================================
+  // - "추가 추천"만 수행한다.
+  // - 추천을 한 번도 받은 적이 없으면(hasRecs=false) 서버 호출을 하지 않는다.
+  // ---------------------------------------------------------
   function callMore() {
     if (busy) return;
 
-    // 더추천 가드: 추천을 한번도 안 받았으면 의미가 없다.
     if (!hasRecs) {
       appendTextBubble('bot', '먼저 추천을 받아야 더 추천이 가능해요.');
       return;
@@ -786,18 +714,12 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // =========================================================
+  // ---------------------------------------------------------
   // [API] /change
-  // POST base + '/change'
-  // body: { userMessage: string }   // 새 조건 문장
-  // 기대 응답:
-  //   { recommendedAnimes?, errorMessage? }
-  //
-  // 역할:
-  // - 기존 추천 조건을 바꾸고 새 추천을 받는다.
-  // - '조건 바꾸기' 버튼은 현재 input 값을 사용한다.
-  // - msg가 비면 안내 후 종료한다.
-  // =========================================================
+  // - 현재 조건을 바꾸고 새 추천을 받는다.
+  // - 버튼 클릭 시 input 값을 그대로 조건 문장으로 사용한다.
+  // - 조건이 비어있으면 안내 후 종료한다.
+  // ---------------------------------------------------------
   function callChange(newCondition) {
     var msg = String(newCondition || '').trim();
 
@@ -812,7 +734,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // 사용자 메시지로도 남겨서 대화 맥락이 유지되게 한다.
+    // 조건 변경도 대화 흐름상 "사용자 발화"로 남겨두는 게 자연스럽다.
     appendTextBubble('user', msg);
     if (input) input.value = '';
 
@@ -856,15 +778,20 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // =========================================================
-  // [EVENT] 이벤트 연결
-  // - 클릭/ESC/바깥 클릭/폼 submit/칩 클릭 위임
-  // =========================================================
+  // ---------------------------------------------------------
+  // [EVENT] 이벤트 바인딩
+  // - FAB: 열기/닫기 토글
+  // - X 버튼: 닫기
+  // - reset/more/change: 각 API 호출
+  // - ESC: 닫기
+  // - 바깥 클릭: 닫기(패널 내부/버튼 클릭은 제외)
+  // - form submit(엔터): 메시지 전송
+  // - quick 영역: 이벤트 위임으로 칩 클릭 처리
+  // ---------------------------------------------------------
 
   if (fab) fab.addEventListener('click', togglePanel);
   if (closeBtn) closeBtn.addEventListener('click', closePanel);
 
-  // reset은 openedOnce와 무관하게 언제든 가능
   if (resetBtn) resetBtn.addEventListener('click', function () {
     callReset();
   });
@@ -878,12 +805,10 @@ document.addEventListener('DOMContentLoaded', function () {
     callChange(text);
   });
 
-  // ESC 닫기
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') closePanel();
   });
 
-  // 패널 외부 클릭 닫기
   document.addEventListener('click', function (e) {
     if (!root.classList.contains('is-open')) return;
     if (panel && panel.contains(e.target)) return;
@@ -891,12 +816,10 @@ document.addEventListener('DOMContentLoaded', function () {
     closePanel();
   });
 
-  // 엔터 전송(폼 submit)
   if (form) {
     form.addEventListener('submit', function (e) {
       e.preventDefault();
 
-      // busy면 submit 이벤트가 와도 전송 차단
       if (busy) return;
 
       var text = (input && input.value ? input.value : '').trim();
@@ -906,16 +829,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // 칩 클릭 위임
   if (quick) {
     quick.addEventListener('click', function (e) {
       var t = e.target;
       if (!t) return;
 
-      // busy 중이면 칩 클릭 무시
       if (busy) return;
 
-      // 칩 버튼이 아닌 요소 클릭 방지
+      // quick 영역 안에서 칩 버튼만 반응하게 한다.
       if (t.className && String(t.className).indexOf('chatai-chip') === -1) return;
 
       var text = t.getAttribute('data-text') || '';

@@ -200,7 +200,7 @@ public class NewsController {
   
 
 
-        //  추가
+        // xss 방어 로직 추가
         newsData.setNewsTitle(htmlSanitizer.sanitizePlainText(newsData.getNewsTitle()));
         newsData.setNewsContent(htmlSanitizer.sanitizeNewsHtml(newsData.getNewsContent()));
         newsData.setNewsThumbnailUrl(htmlSanitizer.sanitizeImageUrl(newsData.getNewsThumbnailUrl()));
@@ -341,7 +341,7 @@ public class NewsController {
         try {
             String thumbnailUrl = saveFile(thumbFile, "/upload/newsThumb/", request);
 
-            //  [유지] sanitize된 HTML 기준으로 첫 이미지 추출 (더 안전/일관적)
+            // sanitize된 HTML 기준으로 첫 이미지 추출 (더 안전/일관적)
             String newsImageUrl = htmlSanitizer.sanitizeImageUrl(extractFirstImgSrc(newsContent));
 
             NewsDTO insertDTO = new NewsDTO();
@@ -432,7 +432,7 @@ public class NewsController {
             return "message";
         }
 
-        // [추가] 수정 화면 진입 시에도 본문 sanitize
+        //  수정 화면 진입 시에도 본문 sanitize
         // - 레거시 데이터/이상 HTML이 textarea로 그대로 내려가는 것 방지
         // - boardEditPage에서 한 방식과 동일한 방어
         newsData.setNewsTitle(htmlSanitizer.sanitizePlainText(newsData.getNewsTitle()));

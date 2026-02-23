@@ -3,6 +3,9 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
+<%-- 공통 컨텍스트 경로
+     정적 리소스(css/js/img), 링크, form action 경로를 한 기준으로 맞추기 위한 값.
+     프로젝트 경로가 바뀌어도 여기 ctx 기준으로 쓰면 상대경로 깨짐을 줄일 수 있다. --%>
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
 
 <!DOCTYPE html>
@@ -22,7 +25,7 @@
 	href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700;800;900&display=swap"
 	rel="stylesheet">
 
-<!-- 상대경로 깨짐 방지 -->
+<!-- 상대경로 대신 ctx 기준으로 불러와서 상세/목록/하위경로 진입 시 CSS 경로 깨짐 방지 -->
 <link rel="stylesheet" href="${ctx}/css/bootstrap.min.css" type="text/css">
 <link rel="stylesheet" href="${ctx}/css/font-awesome.min.css" type="text/css">
 <link rel="stylesheet" href="${ctx}/css/elegant-icons.css" type="text/css">
@@ -46,7 +49,8 @@
   position: relative;
   border-radius: 22px;
 
-  /* bd-card 톤 */
+  /* 상세 카드 기본 톤(반투명 + 글래스 느낌)
+     별도 박스를 많이 겹치지 않고 본문 전체를 하나의 카드로 보이게 맞춘다. */
   background: rgba(255,255,255,0.035);
   border: 1px solid rgba(255,255,255,0.10);
   backdrop-filter: blur(18px) saturate(120%);
@@ -56,7 +60,8 @@
   overflow: hidden;
 }
 
-/* bd-card 대각 광택 */
+/* 카드 상단 대각 광택 효과
+   pseudo 요소로 처리해서 실제 컨텐츠 레이아웃에는 영향 없이 분위기만 추가 */
 .news-article::before{
   content:"";
   position:absolute;
@@ -74,7 +79,8 @@
   z-index:0;
 }
 
-/* bd-card 그라데이션 보더 */
+/* 카드 외곽 보더를 단색 대신 그라데이션으로 표현
+   실제 border를 쓰는 대신 마스크 기법으로 내부 컨텐츠 영역과 분리 */
 .news-article::after{
   content:"";
   position:absolute;
@@ -97,13 +103,14 @@
   z-index:0;
 }
 
-/* 카드 내용은 pseudo 위로 */
+/* 카드 내부 실제 내용은 pseudo 장식보다 위 레이어에 오도록 고정 */
 .news-article > *{
   position: relative;
   z-index: 1;
 }
 
-/* TOPBAR (상단 메뉴) = bd-topbar + btn-sm2 톤 */
+/* 상단 바(목록/수정/삭제 버튼 영역)
+   sticky로 두어 긴 본문에서도 주요 액션 접근성을 유지 */
 .news-topbar{
   padding: 14px 16px;
   display:flex;
@@ -144,7 +151,8 @@
   flex-wrap:wrap;
 }
 
-/* pill-btn => bd의 btn-sm2 톤으로 변경 */
+/* 공통 pill 버튼 톤
+   링크(a)와 button을 같은 스타일로 맞추기 위해 클래스 기반으로 통일 */
 .pill-btn{
   display:inline-flex;
   align-items:center;
@@ -186,7 +194,7 @@
   box-shadow: 0 0 0 3px rgba(140,200,255,0.35);
 }
 
-/* danger 버튼 = bd btn-danger2 톤 */
+/* 삭제 버튼만 위험 액션으로 눈에 띄게 분리 */
 .pill-btn--danger{
   background: linear-gradient(135deg,
     rgba(255,90,120,0.35),
@@ -202,7 +210,8 @@
 
 .inline-form{ display:inline; margin:0; }
 
-/* "뉴스 전체 목록" hover 시 파란색으로 변하는 문제 방지 */
+/* 링크 버튼(a) 상태별 색상 강제 고정
+   템플릿 기본 a:hover/a:visited 색이 먹어서 파란색으로 바뀌는 문제 방지 */
 .news-topbar-actions .pill-btn,
 .news-topbar-actions .pill-btn:visited,
 .news-topbar-actions .pill-btn:hover,
@@ -213,7 +222,8 @@
 }
 .news-topbar-actions .pill-btn i{ color: inherit !important; }
 
-/* COVER (썸네일) */
+/* 커버(썸네일 히어로 영역)
+   background-image로 깔고, 텍스트는 오버레이 레이어 위에 배치 */
 .news-cover{
   position: relative;
   min-height: 360px;
@@ -226,7 +236,8 @@
   .news-cover{ min-height: 290px; }
 }
 
-/* cover 오버레이 */
+/* 커버 오버레이
+   이미지 위에 텍스트 대비를 확보하기 위한 밝기/그라데이션 레이어 */
 .news-cover::before{
   content:"";
   position:absolute;
@@ -271,7 +282,8 @@
   .news-cover__title{ font-size: 26px; }
 }
 
-/* BODY (본문) - 추가 카드 없이 그대로 출력 */
+/* 본문 영역 배경
+   본문 자체는 CKEditor HTML을 그대로 출력하되, 바깥 패널에서 톤만 잡아준다. */
 .news-body{
   padding: 34px 18px 44px;
   background: linear-gradient(
@@ -290,7 +302,7 @@
   max-width: 920px;
   margin: 0 auto;
 
-  /* 내부 카드 제거 */
+  /* 내부 카드 제거: 에디터에서 들어온 HTML 자체를 자연스럽게 보이게 */
   padding: 0;
   border: 0;
   background: transparent;
@@ -308,7 +320,7 @@
   color: rgba(255,255,255,.92) !important;
 }
 
-/* 타이포 그림자 제거 */
+/* 템플릿/에디터 기본 text-shadow가 남아 글자 번져보이는 현상 방지 */
 #newsContent.news-prose,
 #newsContent.news-prose *{
   text-shadow: none !important;
@@ -321,7 +333,7 @@
   }
 }
 
-/* 리드 문단 (첫 문단) */
+/* 첫 문단은 리드 문단처럼 조금 더 강조해서 읽기 시작점 명확하게 */
 #newsContent.news-prose p:first-of-type{
   font-size: 16.5px;
   line-height: 2.1;
@@ -333,7 +345,7 @@
   margin-bottom: 10px !important;
 }
 
-/* 제목 */
+/* 제목 계층 */
 #newsContent.news-prose h1,
 #newsContent.news-prose h2,
 #newsContent.news-prose h3{
@@ -350,7 +362,7 @@
   font-weight: 800;
 }
 
-/* hr */
+/* 구분선 */
 #newsContent.news-prose hr{
   border:none;
   height:1px;
@@ -370,7 +382,7 @@
 }
 #newsContent.news-prose a:hover{ opacity:.9; }
 
-/* 인용 */
+/* 인용문 */
 #newsContent.news-prose blockquote{
   margin: 18px 0;
   padding: 12px 14px;
@@ -380,7 +392,7 @@
   color: rgba(255,255,255,.92);
 }
 
-/* 리스트 */
+/* 목록 */
 #newsContent.news-prose ul,
 #newsContent.news-prose ol{ margin: 10px 0 16px 22px; }
 #newsContent.news-prose li{
@@ -403,7 +415,8 @@
   overflow:auto;
 }
 
-/* CKEditor 이미지/figure (라운드 제거) */
+/* CKEditor 이미지/figure 기본 스타일 보정
+   뉴스 본문에서는 이미지를 깔끔하게 보여주기 위해 라운드/그림자 제거 */
 #newsContent.news-prose img{
   max-width: 100%;
   height: auto;
@@ -414,7 +427,7 @@
   box-shadow: none;
   background: transparent;
 
-  /* 직각 */
+  /* 직각으로 통일 */
   border-radius: 0 !important;
 
   cursor: zoom-in;
@@ -437,7 +450,8 @@
   opacity: .95;
 }
 
-/* CKEditor 정렬 */
+/* CKEditor 정렬 클래스 대응
+   에디터에서 좌/우/중앙 정렬된 이미지를 상세 페이지에서도 의도대로 보여주기 */
 #newsContent.news-prose figure.image.image-style-align-left{
   float:left;
   max-width:46%;
@@ -454,7 +468,7 @@
   max-width:92%;
 }
 
-/* float 정리 */
+/* float 이미지 뒤 본문 흐름 정리 */
 #newsContent.news-prose::after{
   content:"";
   display:block;
@@ -469,7 +483,7 @@
   }
 }
 
-/* 테이블 */
+/* 테이블 스타일 */
 #newsContent.news-prose table{
   width:100%;
   border-collapse: collapse;
@@ -489,7 +503,8 @@
   color: rgba(255,255,255,.92);
 }
 
-/* RELATED (관련 애니) - bd 톤 */
+/* 관련 애니 영역
+   본문과 분리되지만 전체 카드 톤은 유지하도록 하단 섹션처럼 처리 */
 .news-related{
   padding: 16px;
   border-top: 1px solid rgba(255,255,255,.10);
@@ -510,7 +525,8 @@
   font-size: 12px;
 }
 
-/* 읽기 진행바 */
+/* 읽기 진행바
+   긴 뉴스에서 현재 읽은 위치를 시각적으로 보여주기 위한 상단 고정 바 */
 .reading-progress{
   position: fixed;
   left: 0;
@@ -532,7 +548,8 @@
   .pill-btn{ transition: none; }
 }
 
-/* 이미지 라이트박스 */
+/* 이미지 라이트박스
+   본문 이미지를 클릭했을 때 원본 확인용 오버레이 */
 .img-lightbox{
   position: fixed;
   inset: 0;
@@ -559,7 +576,7 @@
   max-height: 78vh;
   object-fit: contain;
 
-  /* 직각 */
+  /* 라이트박스에서도 직각 스타일 유지 */
   border-radius: 0 !important;
 
   background: rgba(0,0,0,.20);
@@ -601,12 +618,16 @@
 			<div class="row d-flex justify-content-center">
 				<div class="col-lg-10">
 
-					<%-- ✅ (FIX) backUrl: param / requestScope 둘 다 대응 + c:url로 안전하게 URL 인코딩/컨텍스트 처리 --%>
-					<c:set var="pageVal" value="${not empty param.page ? param.page : requestScope.page}" /> <%-- ✅ --%>
-					<c:set var="conditionVal" value="${not empty param.condition ? param.condition : requestScope.condition}" /> <%-- ✅ --%>
-					<c:set var="keywordVal" value="${not empty param.keyword ? param.keyword : requestScope.keyword}" /> <%-- ✅ --%>
+					<%-- 목록 복귀 URL 구성용 파라미터 복원
+					     상세 진입 경로에 따라 param 또는 requestScope에 값이 있을 수 있어서 둘 다 대응한다.
+					     이렇게 해두면 목록으로 돌아갈 때 페이지/검색조건이 유지된다. --%>
+					<c:set var="pageVal" value="${not empty param.page ? param.page : requestScope.page}" />
+					<c:set var="conditionVal" value="${not empty param.condition ? param.condition : requestScope.condition}" />
+					<c:set var="keywordVal" value="${not empty param.keyword ? param.keyword : requestScope.keyword}" />
 
-					<c:url var="backUrl" value="/newsList"> <%-- ✅ (FIX) newslist 오타 제거 + newsList로 통일 --%>
+					<%-- 목록 복귀 URL 생성
+					     c:url + c:param 조합으로 만들면 컨텍스트 경로/URL 인코딩을 JSTL이 맡아줘서 안전하다. --%>
+					<c:url var="backUrl" value="/newsList">
 						<c:if test="${not empty pageVal}">
 							<c:param name="page" value="${pageVal}" />
 						</c:if>
@@ -618,7 +639,10 @@
 						</c:if>
 					</c:url>
 
-					<%-- 썸네일 URL 보정 (커버는 무조건 썸네일) --%>
+					<%-- 뉴스 썸네일 URL 정규화
+					     DB 저장값 형태가 여러 가지일 수 있어서(절대URL / ctx포함 / 루트상대 / 상대경로)
+					     화면 출력 전에 한 번 정리해둔다.
+					     커버 영역은 이 썸네일을 그대로 사용한다. --%>
 					<c:set var="thumbRaw" value="${newsData.newsThumbnailUrl}" />
 					<c:set var="thumbSrc" value="${thumbRaw}" />
 					<c:if test="${not empty thumbRaw}">
@@ -627,7 +651,7 @@
 								<c:set var="thumbSrc" value="${thumbRaw}" />
 							</c:when>
 
-							<%-- DB값이 이미 /ANIMale/... 형태면 그대로 사용 --%>
+							<%-- DB값이 이미 /ANIMale/... 같은 ctx 포함 경로면 그대로 사용 --%>
 							<c:when test="${fn:startsWith(thumbRaw, ctx)}">
 								<c:set var="thumbSrc" value="${thumbRaw}" />
 							</c:when>
@@ -642,12 +666,12 @@
 						</c:choose>
 					</c:if>
 
-					<%-- 커버는 무조건 썸네일 --%>
+					<%-- 커버 이미지는 뉴스 썸네일 기준으로 고정 --%>
 					<c:set var="coverSrc" value="${thumbSrc}" />
 
 					<div class="news-article">
 
-						<!-- TOPBAR (우측 상단: 목록/수정/삭제) -->
+						<!-- 상단 액션 바 (목록 / 관리자 수정·삭제) -->
 						<div class="news-topbar">
 							<div class="news-crumb">
 								<a href="${backUrl}">NEWS</a>
@@ -680,7 +704,7 @@
 							</div>
 						</div>
 
-						<!-- COVER HERO -->
+						<!-- 커버 히어로 영역 (배경=썸네일, 제목/메타 오버레이) -->
 						<div class="news-cover"
 							style="<c:if test='${not empty coverSrc}'>background-image:url('<c:out value='${coverSrc}'/>');</c:if>">
 							<div class="news-cover__content">
@@ -689,14 +713,16 @@
 							</div>
 						</div>
 
-						<!-- BODY: 본문은 CKEditor HTML 그대로 (이미지/텍스트 섞여 출력) -->
+						<!-- 본문 영역
+						     newsContent는 CKEditor HTML을 그대로 출력(escapeXml=false)하고,
+						     CSS/JS에서 표시 스타일/이미지 보정/라이트박스 기능을 붙인다. -->
 						<div class="news-body">
 							<div id="newsContent" class="news-prose" data-cover="<c:out value='${coverSrc}'/>">
 								<c:out value="${newsData.newsContent}" escapeXml="false" />
 							</div>
 						</div>
 
-						<!-- RELATED -->
+						<!-- 관련 애니 섹션 -->
 						<div class="news-related">
 							<c:choose>
 								<c:when test="${not empty newsData.animeId and newsData.animeId > 0}">
@@ -715,6 +741,8 @@
 												</c:if>
 											</div>
 
+											<%-- 관련 애니 썸네일 URL도 뉴스 썸네일과 같은 방식으로 정규화
+											     ctx가 이미 포함된 저장값도 그대로 허용해서 중복 ctx 붙는 문제를 막는다. --%>
 											<c:set var="aThumbRaw" value="${newsData.animeThumbnailUrl}" />
 											<c:set var="aThumbSrc" value="" />
 											<c:if test="${not empty aThumbRaw}">
@@ -723,7 +751,7 @@
 														<c:set var="aThumbSrc" value="${aThumbRaw}" />
 													</c:when>
 
-													<c:when test="${fn:startsWith(aThumbRaw, ctx)}"> <%-- ✅ (FIX) ctx 포함 저장값 방어 추가 --%>
+													<c:when test="${fn:startsWith(aThumbRaw, ctx)}">
 														<c:set var="aThumbSrc" value="${aThumbRaw}" />
 													</c:when>
 
@@ -776,10 +804,21 @@ document.addEventListener("DOMContentLoaded", function () {
   const box = document.getElementById("newsContent");
   if (!box) return;
 
+  /*
+    JSP에서 계산한 ctx/cover 값을 JS에서도 그대로 사용한다.
+    - ctx: 본문 이미지 src 보정용
+    - cover: 본문 안 중복 커버 이미지 제거 비교용
+  */
   const ctx = "<c:out value='${ctx}'/>";
   const cover = (box.dataset.cover || "").trim();
 
-  // sticky top offset 계산
+  /*
+    sticky top 기준값 계산
+    상단 헤더가 fixed일 때만 그 높이를 읽어서
+    - sticky topbar 위치
+    - 읽기 진행바 위치
+    와 겹치지 않게 맞춘다.
+  */
   function computeStickyTop(){
     const header = document.querySelector(".header") || document.querySelector("header");
     if (!header) return 0;
@@ -791,6 +830,10 @@ document.addEventListener("DOMContentLoaded", function () {
     return Math.round(header.getBoundingClientRect().height);
   }
 
+  /*
+    계산한 값을 CSS 변수(--news-sticky-top)로 내려서
+    CSS sticky 요소와 JS 생성 요소(진행바/라이트박스 닫기 버튼)가 같은 기준을 쓰게 한다.
+  */
   function setStickyTopVar(){
     const top = computeStickyTop();
     document.documentElement.style.setProperty("--news-sticky-top", top + "px");
@@ -799,17 +842,30 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let headerOffset = setStickyTopVar();
 
-  // ✅ (FIX) 본문 img src 경로 보정: "/upload", "upload", "ANIMale/upload"(ctx 누락 저장)까지 방어
-  const ctxNoSlash = ctx ? ctx.replace(/^\//,'') : ""; // ✅
+  /*
+    본문 이미지 src 경로 보정
+    저장 시점/버전 차이로 src 형태가 제각각일 수 있어서 출력 전에 한 번 정리한다.
+
+    그대로 두는 경우:
+    - http/https 절대URL
+    - data: URL (에디터/붙여넣기 이미지)
+    - 이미 ctx가 붙은 경로
+
+    보정하는 경우:
+    - /upload/...
+    - upload/...
+    - ANIMale/upload/... (ctx 앞 슬래시가 빠진 저장값)
+  */
+  const ctxNoSlash = ctx ? ctx.replace(/^\//,'') : "";
   box.querySelectorAll("img").forEach(img => {
     const raw = (img.getAttribute("src") || "").trim();
     if (!raw) return;
 
     if (/^https?:\/\//i.test(raw)) return;
-    if (/^data:/i.test(raw)) return; // ✅ (보강) dataURL도 그대로 유지
+    if (/^data:/i.test(raw)) return;
     if (raw.startsWith(ctx + "/")) return;
 
-    // ✅ (보강) "ANIMale/upload/..." 같이 ctx의 슬래시가 빠진 저장값 방어
+    // "ANIMale/upload/..."처럼 ctx 문자열만 저장되고 앞 슬래시가 빠진 경우 보정
     if (ctxNoSlash && (raw === ctxNoSlash || raw.startsWith(ctxNoSlash + "/"))) {
       img.setAttribute("src", "/" + raw);
       return;
@@ -825,7 +881,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // 2) 커버 중복 제거: 이미지 2장 이상일 때만
+  /*
+    커버 중복 제거
+    뉴스 상세 상단 커버에서 이미 썸네일을 보여주고 있는데,
+    본문 첫 이미지로 같은 썸네일이 또 들어있는 경우가 있어서 중복 노출을 줄인다.
+
+    단, 본문 이미지가 1장뿐이면 기사 구성 자체일 수 있으므로
+    이미지가 2장 이상일 때만 제거 로직을 적용한다.
+  */
   if (cover) {
     const norm = (u) => {
       try { return new URL(u, window.location.href).pathname; }
@@ -847,7 +910,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // 3) 이미지 라이트박스
+  /*
+    이미지 라이트박스 생성
+    본문 이미지 클릭 시 확대해서 볼 수 있게 오버레이 UI를 동적으로 만든다.
+    페이지에 이미 마크업을 고정 배치하지 않는 이유는, 뉴스 상세가 아닌 화면 재사용 가능성과
+    초기 HTML 복잡도 감소 때문이다.
+  */
   const lightbox = (function createLightbox(){
     const el = document.createElement("div");
     el.className = "img-lightbox";
@@ -883,10 +951,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     closeBtn.addEventListener("click", close);
 
+    // 배경 클릭 시 닫기 (이미지/패널 클릭은 유지)
     el.addEventListener("click", (e) => {
       if (e.target === el) close();
     });
 
+    // ESC 닫기 지원
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && el.classList.contains("is-open")) close();
     });
@@ -894,6 +964,11 @@ document.addEventListener("DOMContentLoaded", function () {
     return { open, close };
   })();
 
+  /*
+    본문 이미지 클릭 이벤트 위임
+    개별 img마다 핸들러를 달지 않고 newsContent 컨테이너 하나에 위임해서
+    에디터 HTML 구조가 바뀌어도 대응하기 쉽게 만든다.
+  */
   box.addEventListener("click", (e) => {
     const img = e.target && e.target.tagName === "IMG" ? e.target : null;
     if (!img) return;
@@ -901,6 +976,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const src = (img.getAttribute("src") || "").trim();
     if (!src) return;
 
+    // figcaption 우선, 없으면 alt 텍스트를 캡션으로 사용
     let caption = "";
     const fig = img.closest ? img.closest("figure") : null;
     if (fig) {
@@ -912,7 +988,11 @@ document.addEventListener("DOMContentLoaded", function () {
     lightbox.open(src, caption);
   });
 
-  // 4) 읽기 진행바
+  /*
+    읽기 진행바 생성
+    뉴스 본문(box) 기준으로 현재 스크롤 위치를 퍼센트로 계산해서 scaleX로 표시한다.
+    requestAnimationFrame을 사용해 scroll 이벤트 과호출에 의한 렌더링 부담을 줄인다.
+  */
   const progress = (function createProgress(){
     let wrap = document.querySelector(".reading-progress");
     if (!wrap) {
@@ -942,6 +1022,7 @@ document.addEventListener("DOMContentLoaded", function () {
       bar.style.transform = `scaleX(${p})`;
     }
 
+    // scroll 시 rAF로 한 프레임에 한 번만 update 실행
     let ticking = false;
     function onScroll(){
       if (ticking) return;
@@ -959,10 +1040,15 @@ document.addEventListener("DOMContentLoaded", function () {
     return { update };
   })();
 
+  // 이미지/폰트 로딩 완료 후 높이 변동 반영용 1회 추가 업데이트
   window.addEventListener("load", () => progress.update(), { passive: true });
 });
 
-// 삭제 confirm
+/*
+  삭제 확인 함수
+  삭제 버튼은 type="button"이라서 여기서 확인 후에만 실제 form submit 되게 만든다.
+  (실수 클릭으로 바로 삭제 요청 나가는 것 방지)
+*/
 function confirmDelete() {
   if (confirm("정말로 이 뉴스를 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.")) {
     document.getElementById("deleteForm").submit();
