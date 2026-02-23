@@ -44,20 +44,30 @@ public class BoardDAO {
          + ") l ON l.board_id = b.board_id " + "WHERE b.board_category = ? AND m.member_role = 'ADMIN' "
          + "ORDER BY b.board_id DESC";
 
-   private static final String SELECT_MY_BOARD_WRITE_LIST = "SELECT " + "  b.board_id, b.member_id, "
-         + "  m.member_role AS writer_role, "
-         + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' ELSE m.member_nickname END AS writer_nickname, "
-         + "  b.board_title, b.board_views, b.board_category, " + "  IFNULL(l.like_cnt, 0) AS like_cnt "
-         + "FROM board b " + "JOIN member m ON m.member_id = b.member_id " + "LEFT JOIN (" + LIKE_COUNT_SUBQUERY
-         + ") l ON l.board_id = b.board_id " + "WHERE b.member_id = ? " + "ORDER BY b.board_id DESC";
+   private static final String SELECT_MY_BOARD_WRITE_LIST = "SELECT "
+	        + "  b.board_id, b.member_id, "
+	        + "  m.member_role AS writer_role, "
+	        + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' ELSE m.member_nickname END AS writer_nickname, "
+	        + "  b.board_title, b.board_views, b.board_category, b.board_status, "  // board_status 추가
+	        + "  IFNULL(l.like_cnt, 0) AS like_cnt "
+	        + "FROM board b "
+	        + "JOIN member m ON m.member_id = b.member_id "
+	        + "LEFT JOIN (" + LIKE_COUNT_SUBQUERY + ") l ON l.board_id = b.board_id "
+	        + "WHERE b.member_id = ? "
+	        + "ORDER BY b.board_id DESC";
 
-   private static final String SELECT_MY_BOARD_LIKE_LIST = "SELECT " + "  b.board_id, b.member_id, "
-         + "  m.member_role AS writer_role, "
-         + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' ELSE m.member_nickname END AS writer_nickname, "
-         + "  b.board_title, b.board_views, b.board_category, " + "  IFNULL(l.like_cnt, 0) AS like_cnt "
-         + "FROM board_like bl " + "JOIN board b ON b.board_id = bl.board_id "
-         + "JOIN member m ON m.member_id = b.member_id " + "LEFT JOIN (" + LIKE_COUNT_SUBQUERY
-         + ") l ON l.board_id = b.board_id " + "WHERE bl.member_id = ? " + "ORDER BY bl.board_like_id DESC";
+   private static final String SELECT_MY_BOARD_LIKE_LIST = "SELECT "
+	        + "  b.board_id, b.member_id, "
+	        + "  m.member_role AS writer_role, "
+	        + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' ELSE m.member_nickname END AS writer_nickname, "
+	        + "  b.board_title, b.board_views, b.board_category, b.board_status, "  // board_status 추가
+	        + "  IFNULL(l.like_cnt, 0) AS like_cnt "
+	        + "FROM board_like bl "
+	        + "JOIN board b ON b.board_id = bl.board_id "
+	        + "JOIN member m ON m.member_id = b.member_id "
+	        + "LEFT JOIN (" + LIKE_COUNT_SUBQUERY + ") l ON l.board_id = b.board_id "
+	        + "WHERE bl.member_id = ? "
+	        + "ORDER BY bl.board_like_id DESC";
 
    private static final String SELECT_BOARD_LIKE_MEMBER_LIST = "SELECT " + "  bl.member_id, "
          + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' ELSE m.member_nickname END AS like_member_nickname "
@@ -101,13 +111,47 @@ public class BoardDAO {
 
    // =========================================================
    // SELECT ONE
-   private static final String SELECT_BOARD_DETAIL = "SELECT " + "  b.board_id, b.member_id, "
-         + "  m.member_role AS writer_role, "
-         + "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' ELSE m.member_nickname END AS writer_nickname, "
-         + "  b.board_title, b.board_content, b.board_views, b.board_category, "
-         + "  IFNULL(l.like_cnt, 0) AS like_cnt " + "FROM board b " + "JOIN member m ON m.member_id = b.member_id "
-         + "LEFT JOIN (" + LIKE_COUNT_SUBQUERY + ") l ON l.board_id = b.board_id " + "WHERE b.board_id = ?";
-
+   // board_status, board_created_at, board_updated_at 추가
+   private static final String SELECT_BOARD_DETAIL = 
+		    "SELECT " +
+		    "  b.board_id, b.member_id, " +
+		    "  m.member_role AS writer_role, " +
+		    "  CASE WHEN m.member_role = 'WITHDRAWN' THEN '탈퇴한 회원' ELSE m.member_nickname END AS writer_nickname, " +
+		    "  b.board_title, b.board_content, b.board_views, b.board_category, " +
+		    "  b.board_status, " +
+		    "  b.board_created_at, " +
+		    "  b.board_updated_at, " +
+		    "  IFNULL(l.like_cnt, 0) AS like_cnt, " +
+		    
+		    // isLiked 계산 (좋아요 눌렀는지)
+		    "  CASE " +
+		    "    WHEN ? IS NULL THEN 0 " +
+		    "    ELSE (SELECT COUNT(*) FROM board_like " +
+		    "          WHERE board_id = b.board_id AND member_id = ?) " +
+		    "  END AS is_liked, " +
+		    
+		    // isReported 계산 (신고했는지)
+		    "  CASE " +
+		    "    WHEN ? IS NULL THEN 0 " +
+		    "    ELSE (SELECT COUNT(*) FROM board_report " +
+		    "          WHERE board_id = b.board_id " +
+		    "          AND reporter_member_id = ? " +
+		    "          AND status = 'PENDING') " +
+		    "  END AS is_reported, " +
+		    
+		    // isEdited 계산 (수정되었는지)
+		    "  CASE " +
+		    "    WHEN b.board_updated_at IS NULL THEN 0 " +
+		    "    WHEN b.board_created_at = b.board_updated_at THEN 0 " +
+		    "    ELSE 1 " +
+		    "  END AS is_edited " +
+		    
+		    
+		    "FROM board b " +
+		    "JOIN member m ON m.member_id = b.member_id " +
+		    "LEFT JOIN (" + LIKE_COUNT_SUBQUERY + ") l ON l.board_id = b.board_id " +
+		    "WHERE b.board_id = ?";
+   
    private static final String SELECT_BOARD_EXISTS = "SELECT board_id FROM board WHERE board_id = ?";
 
    // =========================================================
@@ -120,19 +164,18 @@ public class BoardDAO {
 
    private static final String DELETE_BOARD = "DELETE FROM board WHERE board_id = ? AND member_id = ?";
 
-   // [수정] RowMapper 분리: 목록용(내용 X) / 상세용(내용 O)
+   // RowMapper 분리: 목록용(내용 X) / 상세용(내용 O)
 
    
    // =========================================================
    // RowMapper 대체: JdbcTemplate 람다 매핑 (공통)
-
    // =========================================================
    // selectAll
    public ArrayList<BoardDTO> selectAll(BoardDTO boardDTO) {
 
        String condition = boardDTO.getCondition();
 
-       // CHANGED: 람다(mapBoardRowList) 제거 → RowMapper 클래스로 통일
+       // 람다(mapBoardRowList) 제거 → RowMapper 클래스로 통일
        final BoardListRowMapper listMapper = new BoardListRowMapper();
 
        
@@ -157,7 +200,7 @@ public class BoardDAO {
    
        List<BoardDTO> list;
 
-       // [수정] selectAll은 전부 listMapper 사용 (board_content 읽지 않음)
+       // selectAll은 전부 listMapper 사용 (board_content 읽지 않음)
        if ("CATEGORY_LIST".equals(condition)) {
            list = jdbcTemplate.query(SELECT_CATEGORY_LIST, listMapper, boardDTO.getBoardCategory());
 
@@ -201,16 +244,21 @@ public class BoardDAO {
        try {
            if ("BOARD_DETAIL".equals(condition)) {
 
-               // ✅ CHANGED: 람다(mapBoardRowDetail) 제거 → 상세 RowMapper 사용(board_content 포함)
+               // 파라미터 순서 중요
+               Integer currentMemberId = boardDTO.getMemberId();  // DTO에서 가져옴
+               
                return jdbcTemplate.queryForObject(
                        SELECT_BOARD_DETAIL,
                        new BoardDetailRowMapper(),
-                       boardDTO.getBoardId()
+                       currentMemberId,           // isLiked 계산용 (? IS NULL)
+                       currentMemberId,           // isLiked 계산용 (member_id = ?)
+                       currentMemberId,           // isReported 계산용 (? IS NULL)
+                       currentMemberId,           // isReported 계산용 (reporter_member_id = ?)
+                       boardDTO.getBoardId()      // WHERE b.board_id = ?
                );
            }
 
            if ("BOARD_EXISTS".equals(condition)) {
-               // ✅ (선택) 기존 stream 방식보다 queryForObject가 더 깔끔함
                Integer id = jdbcTemplate.queryForObject(
                        SELECT_BOARD_EXISTS,
                        (rs, rowNum) -> rs.getInt("board_id"),
@@ -230,10 +278,10 @@ public class BoardDAO {
            return null;
        }
    }
-   // insertReturnId / update / delete 는 그대로
+   // update / delete 는 그대로
 
    // =========================================================
-   // insertReturnId (getGeneratedKeys -> KeyHolder)
+   // insert (getGeneratedKeys -> KeyHolder)
    public boolean insert(BoardDTO boardDTO) {
 
        if (!"BOARD_INSERT".equals(boardDTO.getCondition())) {
@@ -256,7 +304,7 @@ public class BoardDAO {
        Number key = keyHolder.getKey();
        if (key == null) return false;
 
-       boardDTO.setBoardId(key.intValue());  // ✅ 여기 핵심
+       boardDTO.setBoardId(key.intValue());  // 핵심
        return true;
    }
 
@@ -296,52 +344,62 @@ public class BoardDAO {
    
    
    // =========================================================
-      // ✅ 리스트용 RowMapper (board_content 읽지 않음)
+      // 리스트용 RowMapper (board_content 읽지 않음)
       // =========================================================
-      class BoardListRowMapper implements RowMapper<BoardDTO> {
+   class BoardListRowMapper implements RowMapper<BoardDTO> {
+
+	    @Override
+	    public BoardDTO mapRow(ResultSet rs, int rowNum) throws SQLException {
+	        BoardDTO data = new BoardDTO();
+
+	        data.setBoardId(rs.getInt("board_id"));
+	        data.setMemberId(rs.getInt("member_id"));
+	        data.setWriterRole(rs.getString("writer_role"));
+	        data.setWriterNickname(rs.getString("writer_nickname"));
+	        data.setBoardTitle(rs.getString("board_title"));
+	        data.setBoardViews(getIntOrZero(rs, "board_views"));
+	        data.setBoardCategory(rs.getString("board_category"));
+	        data.setLikeCnt(getIntOrZero(rs, "like_cnt"));
+
+	        // board_status: MY 쿼리에만 있으므로 없는 경우 무시
+	        try { data.setBoardStatus(rs.getString("board_status")); }
+	        catch (SQLException ignored) {}
+
+	        return data;
+	    }
+
+	    private int getIntOrZero(ResultSet rs, String colName) throws SQLException {
+	        Object obj = rs.getObject(colName);
+	        if (obj == null) return 0;
+	        return ((Number) obj).intValue();
+	    }
+	}
+
+      // =========================================================
+      // 상세용 RowMapper (board_content + board_status + created_at + updated_at 포함)
+      // =========================================================
+      class BoardDetailRowMapper implements RowMapper<BoardDTO> {
+          private final BoardListRowMapper base = new BoardListRowMapper();
 
           @Override
           public BoardDTO mapRow(ResultSet rs, int rowNum) throws SQLException {
-              BoardDTO data = new BoardDTO();
-
-              data.setBoardId(rs.getInt("board_id"));
-              data.setMemberId(rs.getInt("member_id"));
-
-              data.setWriterRole(rs.getString("writer_role"));
-              data.setWriterNickname(rs.getString("writer_nickname"));
-
-              data.setBoardTitle(rs.getString("board_title"));
-              // ✅ board_content는 목록 쿼리에 없으므로 여기서 절대 읽지 않음
-
-              data.setBoardViews(getIntOrZero(rs, "board_views"));
-              data.setBoardCategory(rs.getString("board_category"));
-
-              data.setLikeCnt(getIntOrZero(rs, "like_cnt")); // LEFT JOIN이면 NULL일 수 있어서 안전 처리
-
+              BoardDTO data = base.mapRow(rs, rowNum);
+              data.setBoardContent(rs.getString("board_content"));
+              data.setBoardStatus(rs.getString("board_status"));
+              data.setBoardCreatedAt(rs.getString("board_created_at"));
+              data.setBoardUpdatedAt(rs.getString("board_updated_at"));
+              
+              data.setIsLiked(getIntOrZero(rs, "is_liked"));
+              data.setIsReported(getIntOrZero(rs, "is_reported"));
+              data.setIsEdited(getIntOrZero(rs, "is_edited"));
+              
               return data;
           }
-
+          
           private int getIntOrZero(ResultSet rs, String colName) throws SQLException {
               Object obj = rs.getObject(colName);
               if (obj == null) return 0;
               return ((Number) obj).intValue();
           }
       }
-
-      // =========================================================
-      // ✅ 상세용 RowMapper (board_content 포함)
-      // =========================================================
-      class BoardDetailRowMapper implements RowMapper<BoardDTO> {
-
-          // 목록 공통 필드 재사용(원하는 방식 유지)
-          private final BoardListRowMapper base = new BoardListRowMapper();
-
-          @Override
-          public BoardDTO mapRow(ResultSet rs, int rowNum) throws SQLException {
-              BoardDTO data = base.mapRow(rs, rowNum);          // ✅ 목록 공통 필드 세팅
-              data.setBoardContent(rs.getString("board_content")); // ✅ 상세에서만 읽음
-              return data;
-          }
-      }
 }
-

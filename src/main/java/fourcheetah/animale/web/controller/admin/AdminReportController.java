@@ -20,7 +20,7 @@ public class AdminReportController {
     /**
      * 신고 목록 페이지 (STEP 3: 실제 데이터 표시)
      */
-    @GetMapping
+    @GetMapping("")
     public String reportList(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "desc") String sortOrder,
@@ -69,7 +69,7 @@ public class AdminReportController {
         System.out.println("[Controller] JSP로 이동: admindashboardreport.jsp");
         System.out.println("========================================");
         
-        return "admindashboardreport";
+        return "adminreportboard";
     }
     
     /**

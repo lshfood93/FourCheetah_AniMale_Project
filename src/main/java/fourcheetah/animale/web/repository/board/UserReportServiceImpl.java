@@ -34,7 +34,7 @@ public class UserReportServiceImpl implements UserReportService {
         try {
             // 1. 중복 신고 체크
             System.out.println("[Service] 중복 신고 체크 시작");
-            boolean isDuplicate = boardReportDAO.checkDuplicateReport(boardId, reporterMemberId);
+            boolean isDuplicate = boardReportDAO.isDuplicateReport(boardId, reporterMemberId);
             
             if (isDuplicate) {
                 System.out.println("[Service] 중복 신고 - 실패");
@@ -45,7 +45,7 @@ public class UserReportServiceImpl implements UserReportService {
             
             // 2. 신고 접수 (INSERT)
             System.out.println("[Service] 신고 접수 시작");
-            boolean insertSuccess = boardReportDAO.insertUserReport(boardId, reporterMemberId, reasonCode);
+            boolean insertSuccess = boardReportDAO.insertReport(boardId, reporterMemberId, reasonCode);
             
             if (!insertSuccess) {
                 System.out.println("[Service] 신고 접수 실패");

@@ -1,0 +1,572 @@
+/* =========================================================
+   ChatAI Widget UI (chatai.jsp 전용) - 상세 주석판
+   ---------------------------------------------------------
+   [설계 목표]
+   1) 어떤 페이지에서도 우하단에 FAB 고정
+   2) FAB 클릭 시 패널이 'FAB 위에' 떠서 대화 가능
+   3) 패널은 미니 챗(카톡 느낌) 크기: 400x600 기본
+   4) .chatai 범위로만 스타일 적용(전역 오염 방지)
+   5) JS가 .chatai에 .is-open 붙이면 열림(상태 단일화)
+
+   [구조]
+   .chatai (루트, fixed / pointer-events 제어)
+     ├─ .chatai-fab (FAB 버튼)
+     └─ .chatai-panel (대화 패널)
+         ├─ header
+         ├─ messages(스크롤)
+         ├─ actions(추천 이후)
+         └─ inputbar
+   ========================================================= */
+
+/* =========================================================
+   0) 위젯 전용 CSS 변수(테마/크기/위치 튜닝 포인트)
+   ---------------------------------------------------------
+   - 여기만 바꾸면 전체 톤이 같이 바뀜
+   - '패널 위치'는 FAB 기준으로 계산되도록 구성
+   ========================================================= */
+.chatai{
+  --chatai-accent: #e53637;
+
+  /* FAB(아이콘 버튼) 크기 */
+  --chatai-fab-size: 72px;
+
+  /* ✅ FAB 위치: 우하단에서 얼마나 띄울지 */
+  --chatai-fab-right: 34px;  /* 오른쪽 여백 */
+  --chatai-fab-bottom: 44px; /* 아래 여백 */
+
+  /* ✅ 패널 크기(데스크탑 기본) */
+  --chatai-panel-w: 400px;
+  --chatai-panel-h: 600px;
+
+  /* ✅ 패널 위치: FAB 위로 뜨게 */
+  --chatai-panel-right: 24px;
+
+  /* 패널 bottom은 FAB bottom + FAB 높이 + 여백(16px) */
+  --chatai-panel-bottom: calc(var(--chatai-fab-bottom) + var(--chatai-fab-size) + 16px);
+
+  /* 둥글기 / 그림자 / 레이어(z-index) */
+  --chatai-radius: 18px;
+  --chatai-shadow: 0 22px 60px rgba(0,0,0,0.55);
+  --chatai-z: 9000;
+
+  /* 배경 톤(유리 느낌) */
+  --chatai-bg: rgba(7, 7, 32, 0.92);
+  --chatai-border: rgba(255,255,255,0.14);
+  --chatai-text: rgba(255,255,255,0.92);
+  --chatai-muted: rgba(255,255,255,0.62);
+  --chatai-surface: rgba(255,255,255,0.06);
+
+  /* iOS safe-area 대응(하단 홈바 영역) */
+  --chatai-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* =========================================================
+   1) 위젯 루트(.chatai)
+   ---------------------------------------------------------
+   - position: fixed로 '화면' 기준 고정
+   - pointer-events: none
+     -> 루트 영역이 화면 전체를 덮어도 클릭을 막지 않게 함
+     -> 실제 클릭 가능한 요소(FAB/패널)만 pointer-events: auto로 복구
+   ========================================================= */
+.chatai{
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  z-index: var(--chatai-z);
+  pointer-events: none;
+  font-family: 'Mulish', sans-serif;
+}
+
+/* =========================================================
+   2) FAB 버튼
+   ---------------------------------------------------------
+   - fixed: 화면 우하단 고정
+   - pointer-events: auto: 루트가 막아둔 클릭을 여기서만 허용
+   - hover/active로 '살짝 뜨는' 인터랙션 제공
+   ========================================================= */
+.chatai .chatai-fab{
+  position: fixed;
+  right: var(--chatai-fab-right);
+  bottom: calc(var(--chatai-fab-bottom) + var(--chatai-safe-bottom));
+  width: var(--chatai-fab-size);
+  height: var(--chatai-fab-size);
+  border-radius: 50%;
+  padding: 0;
+  overflow: hidden;
+
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.22);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.35);
+
+  cursor: pointer;
+  pointer-events: auto;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* FAB 이미지: 꽉 차게, 원형 유지 */
+.chatai .chatai-fab-img{
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.chatai .chatai-fab:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 18px 38px rgba(0,0,0,0.42);
+}
+
+.chatai .chatai-fab:active{
+  transform: translateY(0);
+}
+
+/* =========================================================
+   3) 패널(기본: 닫힘 상태)
+   ---------------------------------------------------------
+   - display:flex + column: header/messages/actions/inputbar 수직 배치
+   - overflow:hidden: 패널 내부 라운드 모서리 밖으로 내용이 새지 않게
+   - 닫힘 상태에서:
+     opacity 0 + transform 살짝 내려가며 scale 0.98
+     visibility hidden + pointer-events none
+     -> "안 보이고 클릭도 안 됨"이 확실해짐
+   ========================================================= */
+.chatai .chatai-panel{
+  position: fixed;
+  right: var(--chatai-panel-right);
+  bottom: calc(var(--chatai-panel-bottom) + var(--chatai-safe-bottom));
+  width: var(--chatai-panel-w);
+  height: var(--chatai-panel-h);
+  border-radius: var(--chatai-radius);
+
+  background: var(--chatai-bg);
+  border: 1px solid var(--chatai-border);
+  box-shadow: var(--chatai-shadow);
+
+  /* 유리 효과 */
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+}
+
+/* =========================================================
+   4) 열림 상태(.is-open)
+   ---------------------------------------------------------
+   - JS가 root(.chatai)에 is-open을 붙임
+   - 이 클래스 하나로 패널 열림/닫힘을 결정
+   ========================================================= */
+.chatai.is-open .chatai-panel{
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.chatai.is-open .chatai-fab{
+  border-color: rgba(255,255,255,0.26);
+}
+
+/* =========================================================
+   5) 패널 헤더
+   ---------------------------------------------------------
+   - 좌: 타이틀
+   - 우: reset/close 버튼 영역
+   - 헤더는 고정 높이로 '상단 바 느낌' 유지
+   ========================================================= */
+.chatai .chatai-panel-header{
+  height: 54px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.08) 0%,
+    rgba(255,255,255,0.02) 100%
+  );
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+
+.chatai .chatai-title{
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: var(--chatai-text);
+}
+
+/* 닫기 버튼(단일) */
+.chatai .chatai-close{
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.86);
+  cursor: pointer;
+  pointer-events: auto;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.chatai .chatai-close:hover{
+  background: rgba(229,54,55,0.18);
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   6) 메시지 영역(스크롤)
+   ---------------------------------------------------------
+   - flex:1로 남는 높이 전체 차지
+   - overflow:auto로 내부만 스크롤
+   - overscroll-behavior: contain 으로
+     패널 끝에서 스크롤이 페이지 전체로 튀는 느낌 완화
+   ========================================================= */
+.chatai .chatai-messages{
+  flex: 1;
+  padding: 14px 14px 10px;
+  overflow: auto;
+  overscroll-behavior: contain;
+
+  /* 메시지 배경은 밝게(가독성) */
+  background: #e9edf3;
+}
+
+/* 크롬 계열 스크롤바 커스텀(선택사항) */
+.chatai .chatai-messages::-webkit-scrollbar{ width: 10px; }
+.chatai .chatai-messages::-webkit-scrollbar-track{ background: transparent; }
+.chatai .chatai-messages::-webkit-scrollbar-thumb{
+  background: rgba(11,12,42,0.18);
+  border-radius: 999px;
+  border: 3px solid rgba(0,0,0,0);
+  background-clip: padding-box;
+}
+
+/* =========================================================
+   7) 말풍선 레이아웃
+   ---------------------------------------------------------
+   - bot: 좌측 정렬
+   - user: 우측 정렬
+   - bubble 최대 너비 제한으로 '채팅 느낌' 유지
+   ========================================================= */
+.chatai .chatai-msg{ display: flex; margin: 10px 0; }
+.chatai .chatai-msg-bot{ justify-content: flex-start; }
+.chatai .chatai-msg-user{ justify-content: flex-end; }
+
+.chatai .chatai-bubble{
+  max-width: 78%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+
+  color: rgba(255,255,255,0.92);
+  background: rgba(11,12,42,0.92);
+  border: 1px solid rgba(255,255,255,0.14);
+
+  /* 긴 단어/URL도 줄바꿈되게 */
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* bot 말풍선 톤 */
+.chatai .chatai-msg-bot .chatai-bubble{
+  background: rgba(22, 24, 58, 0.86);
+  border-color: rgba(255,255,255,0.18);
+}
+
+/* user 말풍선 톤(포인트 컬러 테두리) */
+.chatai .chatai-msg-user .chatai-bubble{
+  background: rgba(11,12,42,0.92);
+  border-color: rgba(229,54,55,0.55);
+}
+
+/* =========================================================
+   8) 입력 바
+   ---------------------------------------------------------
+   - 하단 고정 영역 느낌: border-top
+   - input은 pill 형태, 버튼도 pill 형태
+   - focus 시 box-shadow로 입력 중임을 명확히 표시
+   ========================================================= */
+.chatai .chatai-inputbar{
+  height: 62px;
+  padding: 10px 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+
+  border-top: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.10);
+}
+
+.chatai .chatai-input{
+  flex: 1;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(11,12,42,0.55);
+  color: rgba(255,255,255,0.92);
+  padding: 0 14px;
+  outline: none;
+  font-size: 13px;
+}
+
+.chatai .chatai-input::placeholder{ color: rgba(255,255,255,0.50); }
+
+.chatai .chatai-input:focus{
+  border-color: rgba(229,54,55,0.55);
+  box-shadow: 0 0 0 3px rgba(229,54,55,0.14);
+}
+
+.chatai .chatai-send{
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(229,54,55,0.60);
+  background: rgba(229,54,55,0.92);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.chatai .chatai-send:hover{
+  background: rgba(255,76,76,0.95);
+  transform: translateY(-1px);
+}
+
+.chatai .chatai-send:active{ transform: translateY(0); }
+
+/* =========================================================
+   9) 모바일 대응
+   ---------------------------------------------------------
+   - 작은 화면에서는 패널을 화면 폭에 맞춰 확장
+   - 높이는 70vh로 너무 길지 않게
+   ========================================================= */
+@media (max-width: 480px){
+  .chatai{
+    --chatai-fab-right: 16px;
+    --chatai-fab-bottom: 16px;
+
+    --chatai-panel-w: calc(100vw - 24px);
+    --chatai-panel-h: 70vh;
+    --chatai-panel-right: 12px;
+  }
+  .chatai .chatai-bubble{ max-width: 84%; }
+}
+
+/* =========================================================
+   10) 모션 최소화 환경 대응
+   ---------------------------------------------------------
+   - OS에서 '모션 줄이기' 설정이면 transition 제거
+   ========================================================= */
+@media (prefers-reduced-motion: reduce){
+  .chatai .chatai-fab,
+  .chatai .chatai-panel,
+  .chatai .chatai-close,
+  .chatai .chatai-send{
+    transition: none !important;
+  }
+}
+
+/* =========================================================
+   ChatAI 추천 카드 UI
+   ---------------------------------------------------------
+   - 추천 출력은 bot 말풍선 내부에 카드 리스트로 렌더링됨
+   - 썸네일 + 제목 + 장르 + 추천 이유
+   ========================================================= */
+.chatai .chatai-rec-title{
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  opacity: 0.9;
+}
+
+.chatai .chatai-rec-list{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chatai .chatai-rec-item{
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  text-decoration: none;
+
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.chatai .chatai-rec-item:hover{ background: rgba(255,255,255,0.12); }
+
+.chatai .chatai-rec-thumb{
+  width: 56px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: rgba(0,0,0,0.25);
+  flex: 0 0 auto;
+}
+
+.chatai .chatai-rec-meta{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0; /* 텍스트 ellipsis가 안정적으로 동작하게 */
+}
+
+.chatai .chatai-rec-name{
+  font-size: 13px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.94);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chatai .chatai-rec-genres{
+  font-size: 11px;
+  color: rgba(255,255,255,0.70);
+}
+
+.chatai .chatai-rec-reason{
+  font-size: 11px;
+  color: rgba(255,255,255,0.78);
+  margin-top: 2px;
+}
+
+/* =========================================================
+   추가 UI: 헤더 액션 / 예시 칩 / 추천 후 액션바
+   ---------------------------------------------------------
+   - 헤더: reset/close 버튼 묶음
+   - 칩: 추천 예시를 빠르게 보내는 버튼
+   - 액션바: 추천 이후에만 노출(더추천/조건바꾸기)
+   ========================================================= */
+.chatai .chatai-header-actions{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chatai .chatai-header-btn{
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.86);
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.chatai .chatai-header-btn:hover{
+  background: rgba(229,54,55,0.18);
+  transform: translateY(-1px);
+}
+
+/* 예시 칩: messages 최상단에 렌더링됨 */
+.chatai .chatai-quick{
+  padding: 10px 10px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chatai .chatai-chip{
+  border: 1px solid rgba(11,12,42,0.18);
+  background: rgba(255,255,255,0.82);
+  color: rgba(11,12,42,0.92);
+
+  font-size: 12px;
+  font-weight: 800;
+  padding: 7px 10px;
+  border-radius: 999px;
+
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.chatai .chatai-chip:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,0.92);
+}
+
+/* 추천 이후 액션바 */
+.chatai .chatai-actions{
+  padding: 8px 10px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+  align-items: center;
+
+  border-top: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.06);
+}
+
+/* hidden 속성을 display:none으로 강제(브라우저 차이 방지) */
+.chatai .chatai-actions[hidden]{
+  display: none !important;
+}
+
+.chatai .chatai-action-btn{
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.90);
+
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.chatai .chatai-action-btn:hover{
+  background: rgba(255,255,255,0.10);
+  transform: translateY(-1px);
+}
+
+/* JS busy 중 disabled 처리 시 시각적으로도 비활성 표시 */
+.chatai .chatai-action-btn:disabled{
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* JS setBusy(true)일 때 칩 영역 클릭 차단 */
+.chatai .chatai-quick.is-disabled{
+  opacity: 0.55;
+  pointer-events: none;
+}

@@ -1,0 +1,839 @@
+/* ✅ FINAL: /css/boarddetail.css
+   AniMale - boarddetail.css (FINAL + Legacy Compat)
+   scope: body.board-detail-page
+========================================================= */
+
+/* =========================
+   0) Page Scope / Variables
+========================= */
+.board-detail-page{
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-weak: rgba(255, 255, 255, 0.10);
+  --glass-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+
+  --text-main: rgba(255, 255, 255, 0.92);
+  --text-sub: rgba(255, 255, 255, 0.75);
+
+  --btn-bg: rgba(255, 255, 255, 0.08);
+  --btn-border: rgba(255, 255, 255, 0.16);
+  --btn-bg-hover: rgba(255, 255, 255, 0.12);
+  --btn-border-hover: rgba(255, 255, 255, 0.26);
+
+  --accent-bg: linear-gradient(135deg, rgba(120, 190, 255, 0.45), rgba(255, 255, 255, 0.08));
+  --accent-border: rgba(120, 190, 255, 0.35);
+
+  --danger-bg: linear-gradient(135deg, rgba(255, 70, 95, 0.55), rgba(0, 0, 0, 0.18));
+  --danger-border: rgba(255, 90, 120, 0.55);
+
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --radius-pill: 999px;
+
+  --gap-1: 10px;
+  --gap-2: 14px;
+  --pad-card: 28px;
+}
+
+.board-detail-page .header__right__icons .icon_search{ display:none !important; }
+.product.spad.board-detail-wrap{ padding-top:120px; }
+.product.spad.bd-detail-wrap{ padding-top:120px; }
+
+/* =========================
+   1) Post Card (Glass)
+========================= */
+.board-detail-page .bd-card{
+  position: relative;
+  border-radius: var(--radius-lg);
+  padding: var(--pad-card);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-weak);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  overflow: hidden;
+}
+.board-detail-page .bd-card::before{
+  content:'';
+  position:absolute;
+  top:-55%;
+  left:-35%;
+  width:70%;
+  height:110%;
+  transform:rotate(18deg);
+  background: radial-gradient(circle at 28% 28%,
+    rgba(255,255,255,0.22),
+    rgba(255,255,255,0.00) 62%);
+  pointer-events:none;
+  opacity:0.50;
+  filter:blur(4px);
+  z-index:0;
+}
+.board-detail-page .bd-card::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius: var(--radius-lg);
+  padding:1px;
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.35),
+    rgba(255,255,255,0.08),
+    rgba(120,190,255,0.18),
+    rgba(255,255,255,0.10));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask-composite:exclude;
+  pointer-events:none;
+  opacity:0.85;
+  z-index:0;
+}
+.board-detail-page .bd-card > *{ position:relative; z-index:1; }
+
+/* =========================
+   2) Header / Meta
+========================= */
+.board-detail-page .bd-head{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-bottom:14px;
+}
+.board-detail-page .bd-title{
+  margin:0;
+  font-weight:900;
+  font-size:22px;
+  line-height:1.35;
+  letter-spacing:-0.02em;
+  color:#fff;
+}
+.board-detail-page .bd-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
+.board-detail-page .meta-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 14px;
+  border-radius: var(--radius-pill);
+  font-size:13px;
+  font-weight:800;
+  background: rgba(255,255,255,0.10);
+  border:1px solid rgba(255,255,255,0.10);
+  color:#fff;
+  white-space:nowrap;
+}
+.board-detail-page .meta-chip i{ opacity:0.9; }
+
+/* =========================
+   3) Content
+========================= */
+.board-detail-page .bd-body{ margin-top:10px; }
+.board-detail-page .bd-content{
+  width:100%;
+  border-radius: var(--radius-md);
+  padding:18px;
+  min-height:260px;
+  background: rgba(0,0,0,0.20);
+  border:1px solid rgba(255,255,255,0.10);
+  color: var(--text-main);
+  line-height:1.9;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  overflow:hidden;
+}
+.board-detail-page .bd-content p{ margin:0 0 12px; }
+.board-detail-page .bd-content ul,
+.board-detail-page .bd-content ol{ margin:0 0 12px 20px; }
+.board-detail-page .bd-content pre{
+  white-space: pre;
+  overflow:auto;
+  padding:12px 14px;
+  border-radius:12px;
+  background: rgba(0,0,0,0.28);
+  border:1px solid rgba(255,255,255,0.10);
+}
+.board-detail-page .bd-content code{
+  background: rgba(0,0,0,0.22);
+  padding:2px 6px;
+  border-radius:8px;
+}
+.board-detail-page .bd-content table{
+  width:100%;
+  border-collapse:collapse;
+  display:block;
+  overflow-x:auto;
+}
+.board-detail-page .bd-content th,
+.board-detail-page .bd-content td{
+  border:1px solid rgba(255,255,255,0.10);
+  padding:10px 12px;
+}
+.board-detail-page .bd-content img,
+.board-detail-page .bd-content video{
+  max-width:100% !important;
+  height:auto !important;
+  display:block;
+  margin:12px auto;
+  border-radius:0 !important;
+}
+.board-detail-page .bd-content iframe{
+  width:100% !important;
+  max-width:100% !important;
+  aspect-ratio:16/9;
+  height:auto !important;
+  border:0;
+  display:block;
+  margin:12px 0;
+}
+
+/* =========================
+   4) Buttons / Actions
+========================= */
+.board-detail-page .bd-actions{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: var(--gap-1);
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+.board-detail-page .bd-actions .left,
+.board-detail-page .bd-actions .right{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.board-detail-page .bd-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px 16px;
+  border-radius: var(--radius-pill);
+  font-size:14px;
+  font-weight:800;
+  letter-spacing:-0.01em;
+  text-decoration:none !important;
+  user-select:none;
+  border:1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color:#fff !important;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease, opacity .18s ease;
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  cursor:pointer;
+}
+.board-detail-page .bd-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 12px 28px rgba(0,0,0,0.35);
+  border-color: var(--btn-border-hover);
+  background: var(--btn-bg-hover);
+}
+.board-detail-page .bd-btn:active{ transform:translateY(0); box-shadow:none; }
+.board-detail-page .bd-btn:focus-visible{
+  outline:none;
+  box-shadow:0 0 0 3px rgba(140,200,255,0.35);
+}
+.board-detail-page .bd-btn.accent{
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+.board-detail-page .bd-btn.danger{
+  color: rgba(255,255,255,0.95) !important;
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  box-shadow:0 14px 34px rgba(255,70,95,0.18);
+}
+.board-detail-page .bd-btn:disabled,
+.board-detail-page .bd-btn[disabled]{
+  opacity:0.6;
+  cursor:not-allowed;
+  transform:none !important;
+  box-shadow:none !important;
+}
+
+/* =========================
+   5) Like UI
+========================= */
+/* ✅ CHANGED: like-pill을 bd-btn과 동일 크기/타이포로 */
+.board-detail-page .like-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:10px 16px;          /* ✅ bd-btn과 동일 */
+  min-height:44px;            /* ✅ 버튼 높이감 맞추기 */
+  border-radius: var(--radius-pill);
+  background: rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.88);
+  font-size:14px;             /* ✅ bd-btn과 동일 */
+  font-weight:800;            /* ✅ bd-btn과 동일 */
+  letter-spacing:-0.01em;
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+}
+.board-detail-page .like-pill .like-count{
+  font-weight:900;
+  color:#fff;
+}
+.board-detail-page .like-pill.is-liked{
+  background: linear-gradient(135deg, rgba(255,90,120,0.45), rgba(255,255,255,0.08));
+  border-color: rgba(255,90,120,0.55);
+  box-shadow:0 14px 34px rgba(255,75,75,0.18);
+}
+
+/* =========================
+   6) Reply Card
+========================= */
+.board-detail-page .reply-card{
+  margin-top:18px;
+  border-radius: var(--radius-lg);
+  padding: var(--pad-card);
+  background: var(--glass-bg);
+  border:1px solid var(--glass-border-weak);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  overflow: visible;
+  position:relative;
+}
+.board-detail-page .reply-card::before,
+.board-detail-page .reply-card::after{ display:none; }
+
+/* ✅ CHANGED: 댓글 헤더(정렬+총개수 우측 그룹) */
+.board-detail-page .reply-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+  position:relative;
+  z-index:50;
+}
+.board-detail-page .reply-head h4{
+  margin:0;
+  color:#fff;
+  font-weight:900;
+  letter-spacing:-0.02em;
+}
+.board-detail-page .reply-head-tools{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.board-detail-page .reply-count{
+  color: var(--text-sub);
+  font-size:13px;
+  font-weight:800;
+}
+
+/* 댓글 로그인 유도 */
+.board-detail-page .reply-login-hint{
+  padding:12px 14px;
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:14px;
+  background: rgba(0,0,0,0.18);
+  color: rgba(255,255,255,0.85);
+  margin-bottom:12px;
+}
+.board-detail-page .reply-login-hint a{
+  color:#fff;
+  text-decoration:underline;
+}
+
+/* ✅ CHANGED: 제재회원 안내 문구 가시성 강화 */
+.board-detail-page .ban-hint{
+  margin-bottom:12px;
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid rgba(255, 110, 140, 0.35);
+  background: linear-gradient(135deg,
+    rgba(255, 70, 95, 0.18),
+    rgba(255, 255, 255, 0.04));
+  color: rgba(255, 235, 240, 0.96);   /* ✅ 검은 배경에서 잘 보이게 밝게 */
+  font-weight:800;
+  line-height:1.6;
+  box-shadow: 0 8px 20px rgba(255, 70, 95, 0.12);
+}
+
+/* ✅ CHANGED: 제재 상태 댓글 폼(비활성) 가시성 보정 */
+.board-detail-page .reply-form.is-banned textarea{
+  background: rgba(0,0,0,0.28);
+  border-color: rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.88);
+  cursor: not-allowed;
+}
+
+/* ✅ CHANGED: disabled textarea는 브라우저 기본 흐림 때문에 글자가 안 보일 수 있어 강제 보정 */
+.board-detail-page .reply-form.is-banned textarea:disabled{
+  opacity: 1; /* ✅ 기본 disabled opacity 제거 */
+  color: rgba(255,255,255,0.88);
+  -webkit-text-fill-color: rgba(255,255,255,0.88); /* ✅ 크롬 계열 대응 */
+}
+
+.board-detail-page .reply-form.is-banned textarea::placeholder{
+  color: rgba(255,255,255,0.68);
+}
+
+.board-detail-page .reply-form.is-banned .bd-btn[disabled]{
+  opacity: .72;
+  color: rgba(255,255,255,0.92) !important;
+  border-color: rgba(255,255,255,0.18);
+}
+
+
+/* Reply Form */
+.board-detail-page .reply-form{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  width:100%;
+  align-items:flex-end; /* ✅ CHANGED: 등록 버튼을 textarea 하단에 맞춤 */
+}
+.board-detail-page .reply-form textarea{
+  flex:1;
+  min-width:260px;
+  border-radius:14px;
+  padding:12px 14px;
+  border:1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.22);
+  color:#fff;
+  outline:none;
+  resize:vertical;
+  min-height:74px;
+}
+.board-detail-page .reply-form textarea::placeholder{
+  color: rgba(255,255,255,0.60);
+}
+.board-detail-page .reply-form .bd-btn.accent{
+  height:44px;
+  padding:10px 18px;
+}
+
+/* Reply List / Item */
+.board-detail-page .reply-list{ margin-top:14px; }
+.board-detail-page .reply-empty{
+  color: rgba(255,255,255,0.75);
+  font-size:13px;
+  margin-top:10px;
+}
+.board-detail-page .reply-item{
+  background: rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.14);
+  border-radius: var(--radius-md);
+  padding:14px 16px;
+  margin-bottom:10px;
+  box-shadow:0 10px 28px rgba(0,0,0,0.22);
+
+  /* ✅ CHANGED: 프로필 영역 확장 변수(댓글 단위로 관리) */
+  --avatar-size: 56px;
+  --avatar-gap: 14px;
+}
+
+/* ✅ CHANGED: 상단 라인(왼쪽 프로필 + 오른쪽 액션) */
+.board-detail-page .reply-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+  flex-wrap:wrap; /* ✅ 좁아지면 액션이 아래로 자연스럽게 떨어지게 */
+}
+
+/* ✅ NEW: 왼쪽 프로필 영역(폭 확보) */
+.board-detail-page .reply-left{
+  display:flex;
+  align-items:flex-start;
+  gap: var(--avatar-gap);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ✅ NEW: 아바타 슬롯(고정폭/높이) */
+.board-detail-page .reply-avatar-slot{
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  flex: 0 0 var(--avatar-size);
+  position: relative;
+}
+
+/* ✅ CHANGED: 아바타(사진/이니셜) 공통 - 슬롯을 꽉 채움 */
+.board-detail-page .reply-avatar{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  object-fit:cover;
+  display:block;
+  border:2px solid rgba(255,255,255,0.16); /* ✅ 링을 조금 더 두껍게 */
+  background: rgba(0,0,0,0.18);
+}
+
+/* ✅ NEW: 이니셜 fallback(크기/원형은 reply-avatar가 담당) */
+.board-detail-page .reply-avatar--fallback{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  font-size:16px;
+  color:#fff;
+}
+
+/* ✅ NEW: 닉네임/시간 메타 컬럼 */
+.board-detail-page .reply-meta-col{ min-width:0; }
+
+/* 닉네임(꾸밈 클래스 부착 지점) */
+.board-detail-page .reply-writer{
+  font-weight:900;
+  color: rgba(255,255,255,0.92);
+  line-height:1.2;
+  margin-top:4px;
+  font-size:15px; /* ✅ CHANGED: 꾸밈 체감 살짝 키움 */
+}
+
+/* ✅ NEW: 레인보우 닉네임(관리자/레인보우 꾸밈용) */
+.board-detail-page .reply-writer.is-rainbow{
+  background: linear-gradient(90deg,
+    #ff4c4c, #ff8a00, #ffc107, #25d366, #3b82f6, #1e3a8a, #a855f7);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color: transparent;
+}
+
+/* ✅ NEW: 레인보우 아바타 링(관리자 보정용) - img/div 자체는 ::after 불가라 래퍼 사용 */
+.board-detail-page .reply-avatar-ring{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  position:relative;
+  display:block;
+}
+.board-detail-page .reply-avatar-ring.is-rainbow{
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.06);
+}
+.board-detail-page .reply-avatar-ring.is-rainbow::after{
+  content:'';
+  position:absolute;
+  inset:-8px;
+  border-radius:999px;
+  pointer-events:none;
+  background: conic-gradient(from 90deg,
+    #ff4c4c, #ff8a00, #ffc107, #25d366, #3b82f6, #1e3a8a, #a855f7, #ff4c4c);
+  filter: blur(10px);
+  opacity: 0.55;
+  z-index:-1;
+}
+.board-detail-page .reply-times{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  font-size:12px;
+  color: rgba(255,255,255,0.70);
+  margin-top:6px;
+}
+
+.board-detail-page .reply-actions-wrap{
+  flex:0 0 auto;
+  white-space:nowrap;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.board-detail-page .reply-actions,
+.board-detail-page .reply-edit-actions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.board-detail-page .reply-actions button,
+.board-detail-page .reply-edit-actions button{
+  border:0;
+  background:transparent;
+  color: rgba(255,255,255,0.88);
+  font-size:12px;
+  font-weight:900;
+  padding:2px 6px;
+  cursor:pointer;
+  border-radius:10px;
+}
+.board-detail-page .reply-actions button:hover,
+.board-detail-page .reply-edit-actions button:hover{
+  text-decoration:underline;
+}
+.board-detail-page .reply-actions button:focus-visible,
+.board-detail-page .reply-edit-actions button:focus-visible{
+  outline:none;
+  box-shadow:0 0 0 3px rgba(140,200,255,0.30);
+}
+
+/* ✅ CHANGED: 인라인 편집 textarea */
+.board-detail-page .reply-inline-textarea{
+  width:100%;
+  border-radius:14px;
+  padding:12px 14px;
+  border:1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.22);
+  color:#fff;
+  outline:none;
+  resize:vertical;
+  min-height:74px;
+  line-height:1.7;
+  box-sizing:border-box;
+}
+
+/* ✅ CHANGED: 본문을 프로필 오른쪽 라인에 맞춰 들여쓰기 */
+.board-detail-page .reply-content{
+  margin-top:10px;
+  margin-left: calc(var(--avatar-size) + var(--avatar-gap)); /* ✅ 핵심 */
+  color: rgba(255,255,255,0.95);
+  line-height:1.8;
+  font-size:14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* =========================
+   7) nice-select (replySort)
+========================= */
+.board-detail-page .nice-select{
+  background: rgba(255,255,255,0.08) !important;
+  border:1px solid rgba(255,255,255,0.16) !important;
+  color:#fff !important;
+  border-radius: var(--radius-pill) !important;
+  height:42px !important;
+  line-height:40px !important;
+  padding-left:16px !important;
+  padding-right:36px !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  position:relative;
+  z-index:60;
+}
+.board-detail-page .nice-select:after{
+  border-bottom:2px solid rgba(255,255,255,0.65) !important;
+  border-right:2px solid rgba(255,255,255,0.65) !important;
+  right:14px !important;
+}
+.board-detail-page .nice-select.open{ z-index:9999 !important; }
+.board-detail-page .nice-select.open .list{ z-index:9999 !important; }
+.board-detail-page .nice-select .list{
+  background: rgba(10,10,35,0.92) !important;
+  border:1px solid rgba(255,255,255,0.14) !important;
+  border-radius:14px !important;
+  overflow:hidden;
+}
+.board-detail-page .nice-select .option{ color: rgba(255,255,255,0.92) !important; }
+.board-detail-page .nice-select .option:hover,
+.board-detail-page .nice-select .option.focus,
+.board-detail-page .nice-select .option.selected{
+  background: rgba(255,255,255,0.08) !important;
+}
+.board-detail-page #replySort{
+  background: rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.16);
+  color:#fff;
+  border-radius: var(--radius-pill);
+  height:42px;
+  padding:0 14px;
+  outline:none;
+}
+
+/* =========================
+   8) Modal (Report + LikeUsers 공통)
+========================= */
+.board-detail-page .modal-content{
+  background: rgba(20,20,45,0.92);
+  color:#fff;
+  border:1px solid rgba(255,255,255,0.14);
+  border-radius:16px;
+}
+.board-detail-page .modal-header,
+.board-detail-page .modal-footer{
+  border-color: rgba(255,255,255,0.10);
+}
+.board-detail-page .modal-title{ font-weight:900; }
+
+.board-detail-page #reportReason,
+.board-detail-page #reportContent{
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.22);
+  color:#fff;
+  padding:10px 12px;
+  outline:none;
+}
+.board-detail-page #reportContent::placeholder{
+  color: rgba(255,255,255,0.60);
+}
+
+/* ✅ CHANGED: Like Users Modal */
+.board-detail-page .like-users-wrap{
+  max-height: 360px;
+  overflow:auto;
+  padding-right:4px;
+}
+.board-detail-page .like-users-empty{
+  font-size:13px;
+  opacity:.8;
+}
+.board-detail-page .like-users-list{
+  list-style:none;
+  padding:0;
+  margin:0;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.board-detail-page .like-user-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:14px;
+  background: rgba(0,0,0,0.18);
+  border:1px solid rgba(255,255,255,0.10);
+}
+.board-detail-page .like-user-avatar{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  object-fit:cover;
+  border:1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.08);
+  flex:0 0 auto;
+}
+.board-detail-page .like-user-avatar--fallback{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+}
+.board-detail-page .like-user-name{
+  font-weight:900;
+  color: rgba(255,255,255,0.92);
+}
+
+/* =========================
+   9) Responsive
+========================= */
+@media (max-width:768px){
+  .board-detail-page .bd-card,
+  .board-detail-page .reply-card{
+    padding:20px;
+  }
+
+  .board-detail-page .bd-title{ font-size:20px; }
+
+  .board-detail-page .reply-head{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:10px;
+  }
+
+  .board-detail-page .reply-head-tools{
+    width:100%;
+    justify-content:space-between;
+  }
+
+  .board-detail-page .reply-form{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .board-detail-page .reply-form textarea{
+    min-width:0;
+    width:100%;
+  }
+
+  .board-detail-page .reply-form .bd-btn.accent{
+    width:100%;
+  }
+
+  /* ✅ 모바일에서는 아바타 살짝 줄이고, 본문 들여쓰기 해제 */
+  .board-detail-page .reply-item{
+    --avatar-size: 44px;
+    --avatar-gap: 12px;
+  }
+
+  .board-detail-page .reply-content{
+    margin-left:0;
+  }
+}
+
+/* =========================
+   10) Deleted Post Guard (403 Modal)
+========================= */
+.board-detail-page .bd-btn.is-blocked,
+.board-detail-page .like-pill.is-blocked{
+  opacity: .55;
+  pointer-events: none;
+  filter: grayscale(.15);
+}
+
+.board-detail-page .deleted-guard-modal .modal-dialog{
+  max-width: 520px;
+}
+
+.board-detail-page .deleted-guard-modal .modal-content{
+  background: rgba(20,20,45,0.92);
+  color:#fff;
+  border:1px solid rgba(255,255,255,0.14);
+  border-radius:16px;
+}
+
+.board-detail-page .deleted-guard-modal .modal-header,
+.board-detail-page .deleted-guard-modal .modal-footer{
+  border-color: rgba(255,255,255,0.10);
+}
+
+.board-detail-page .deleted-guard-modal .modal-title{
+  font-weight: 900;
+}
+
+.board-detail-page .deleted-guard-modal .dg-text{
+  color: rgba(255,255,255,0.88);
+  line-height: 1.7;
+}
+
+/* =========================
+   FIX: 댓글 포커스 시 상단 버튼 덮임(z-index) 문제
+========================= */
+
+/* ✅ 카드 레이어 순서 명확화: 게시글 카드가 댓글 카드보다 위 */
+.board-detail-page .bd-card{
+  position: relative;
+  z-index: 30;
+}
+
+.board-detail-page .reply-card{
+  position: relative;
+  z-index: 10;
+}
+
+/* ✅ 버튼 영역은 게시글 카드 안에서도 최상단 */
+.board-detail-page .bd-actions{
+  position: relative;
+  z-index: 40;
+}
+
+/* ✅ 댓글 헤더는 드롭다운 때문에 필요 최소한만 */
+.board-detail-page .reply-head{
+  position: relative;
+  z-index: 20;
+}
+
+/* ✅ 카드 장식 레이어가 클릭/포커스 방해하지 않도록 */
+.board-detail-page .bd-card::before,
+.board-detail-page .bd-card::after,
+.board-detail-page .reply-card::before,
+.board-detail-page .reply-card::after{
+  pointer-events: none;
+}
+

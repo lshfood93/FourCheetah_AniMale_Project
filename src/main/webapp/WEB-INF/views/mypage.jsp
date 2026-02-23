@@ -1,13 +1,63 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
 
+<%-- 현재 앱 컨텍스트 경로를 공통으로 잡아둠
+     (정적 리소스, 링크, form action 전부 여기 기준으로 맞추기 위해) --%>
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
 
-<%-- 1) 로그인 세션 없으면 로그인 페이지로 --%>
+<%-- 로그인 안 된 상태에서 마이페이지 접근하면 바로 로그인 페이지로 보냄
+     마이페이지는 세션(memberId) 있는 사용자만 들어오게 막는 1차 가드 역할 --%>
 <c:if test="${empty sessionScope.memberId}">
 	<c:redirect url="${ctx}/login" />
 </c:if>
+
+<%-- =========================================================
+   프로필 이미지 경로 보정
+   ---------------------------------------------------------
+   DB에 저장 형식이 섞여 있어서 여기서 한 번 정리해둠.
+
+   1) 값이 비어있음
+      -> 기본 프로필 이미지 사용
+
+   2) '/...' 로 시작함 (신버전)
+      -> DB에 경로까지 저장된 상태라서 ctx만 앞에 붙이면 됨
+
+   3) 파일명만 저장됨 (구버전)
+      -> '/uploads/profile/' 경로를 여기서 붙여서 완성
+
+   이렇게 한 번 profileSrc로 통일해두면 아래 img src 쪽에서 분기 안 해도 됨.
+   ========================================================= --%>
+<c:choose>
+	<c:when test="${empty memberData.memberProfileImage}">
+		<c:set var="profileSrc" value="${ctx}/img/profile-default.jpg" />
+	</c:when>
+	<c:when test="${fn:startsWith(memberData.memberProfileImage, '/')}">
+		<%-- 신버전: 이미 /uploads/profile/... 형태로 들어있는 경우 --%>
+		<c:set var="profileSrc" value="${ctx}${memberData.memberProfileImage}" />
+	</c:when>
+	<c:otherwise>
+		<%-- 구버전: 파일명만 저장된 경우라 업로드 경로를 붙여서 사용 --%>
+		<c:set var="profileSrc" value="${ctx}/uploads/profile/${memberData.memberProfileImage}" />
+	</c:otherwise>
+</c:choose>
+
+<%-- 캐시 값이 null이면 화면/계산에서 불편하니까 0으로 안전하게 맞춤 --%>
+<c:set var="cashSafe" value="${empty memberData.memberCash ? 0 : memberData.memberCash}" />
+
+<%-- 화면 표시용 캐시 포맷(천단위 콤마) --%>
+<fmt:formatNumber value="${cashSafe}" type="number" var="cashFmt" />
+
+<%-- 꾸미기 초기값 세팅
+     null 그대로 넘기면 JS 비교나 스타일 적용에서 분기 늘어나서
+     빈 문자열로 통일해 둠 --%>
+<c:set var="nickColorInit" value="${empty memberData.memberNicknameColor ? '' : memberData.memberNicknameColor}" />
+<c:set var="borderColorInit" value="${empty memberData.memberProfileColor ? '' : memberData.memberProfileColor}" />
+
+<%-- 프로필 테두리 미리보기용 스타일 값
+     값이 없으면 transparent로 넣어서 CSS 변수 적용 시 깨지지 않게 처리 --%>
+<c:set var="borderColorStyle" value="${empty borderColorInit ? 'transparent' : borderColorInit}" />
 
 <!DOCTYPE html>
 <html lang="ko">
@@ -18,523 +68,39 @@
 
 <link rel="icon" type="image/png" href="${ctx}/favicon.png">
 
-<link
-	href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap"
-	rel="stylesheet">
-<link
-	href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700;800;900&display=swap"
-	rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="${ctx}/css/bootstrap.min.css">
 <link rel="stylesheet" href="${ctx}/css/font-awesome.min.css">
 <link rel="stylesheet" href="${ctx}/css/style.css">
 
-<style>
-/* MyPage */
-.mypage-title { margin-top: 24px; text-align: center; }
-.mypage-title__h1 { font-weight: 800; margin: 0; }
-.mypage-spad { padding-top: 60px; padding-bottom: 80px; }
-
-/* 마이페이지 카드 (좌/우 공통 베이스) */
-.login-box-clean {
-	background: rgba(255, 255, 255, 0.02);
-	border-radius: 18px;
-	padding: 28px;
-	box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
-}
-
-/* Buttons */
-.mypage-btn {
-	display: block;
-	width: 100%;
-	text-align: center;
-	padding: 14px 18px;
-	border-radius: 999px;
-	font-weight: 600;
-	color: #fff;
-	background: rgba(255, 255, 255, 0.08);
-	border: none;
-	transition: .2s;
-	position: relative;
-	overflow: hidden;
-	box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
-	transform: translateY(0);
-}
-.mypage-btn:hover { background: rgba(255, 255, 255, 0.12); transform: translateY(-1px); }
-.mypage-btn:active { transform: translateY(0); }
-.mypage-btn::after {
-	content: "";
-	position: absolute;
-	top: -40%;
-	left: -60%;
-	width: 60%;
-	height: 180%;
-	background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%,
-		rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0) 100%);
-	transform: skewX(-18deg);
-	transition: left .45s ease;
-	pointer-events: none;
-}
-.mypage-btn:hover::after { left: 120%; }
-
-.primary-red {
-	background: linear-gradient(135deg, #ff4c4c 0%, #e53637 55%, #c92c2d 100%) !important;
-	color: #fff !important;
-}
-.primary-red:hover { filter: brightness(1.04); }
-.disabled-btn { opacity: 0.45; pointer-events: none; }
-
-/* Profile Image (Loader) */
-.profile-img-wrap {
-	width: 256px;
-	height: 256px;
-	margin: 0 auto 16px;
-	border-radius: 18px;
-	overflow: hidden;
-	position: relative;
-	background: #0b0c2a;
-}
-.profile-img-wrap img {
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-	object-position: center;
-	display: block;
-	opacity: 1;
-	transition: opacity .2s ease;
-}
-.profile-img-wrap.is-loading {
-	background: linear-gradient(110deg, rgba(255, 255, 255, .03) 20%,
-		rgba(255, 255, 255, .07) 40%, rgba(255, 255, 255, .03) 60%), #0b0c2a;
-	background-size: 220% 100%;
-	animation: skeletonShimmer 1.15s ease-in-out infinite;
-}
-.profile-img-wrap.is-loading img { opacity: 0; }
-
-.profile-loader {
-	position: absolute;
-	inset: 0;
-	display: none;
-	align-items: center;
-	justify-content: center;
-	flex-direction: column;
-	gap: 10px;
-	background: rgba(11, 12, 42, .80);
-	backdrop-filter: blur(4px);
-	-webkit-backdrop-filter: blur(4px);
-}
-.profile-img-wrap.is-loading .profile-loader { display: flex; }
-
-.loader-bar { width: 54px; height: 54px; border-radius: 999px; position: relative; }
-.loader-bar::before {
-	content: "";
-	position: absolute;
-	inset: 0;
-	border-radius: 999px;
-	border: 5px solid rgba(255, 255, 255, .14);
-	border-top-color: rgba(255, 255, 255, .90);
-	border-right-color: rgba(229, 54, 55, .85);
-	animation: spin .9s linear infinite;
-}
-.loader-bar::after {
-	content: "";
-	position: absolute;
-	inset: 13px;
-	border-radius: 999px;
-	background: rgba(255, 255, 255, .07);
-	box-shadow: 0 0 18px rgba(255, 255, 255, .08);
-	animation: pulse 1.1s ease-in-out infinite;
-}
-.loader-text {
-	font-size: 12px;
-	font-weight: 900;
-	color: rgba(255, 255, 255, .78);
-	letter-spacing: .2px;
-	animation: textPulse 1.2s ease-in-out infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes pulse { 0%,100%{ transform: scale(.98); opacity: .75; } 50%{ transform: scale(1.03); opacity: 1; } }
-@keyframes textPulse { 0%,100%{ opacity: .65; } 50%{ opacity: 1; } }
-@keyframes skeletonShimmer { 0%{ background-position: 120% 0; } 100%{ background-position: -80% 0; } }
-
-@media (prefers-reduced-motion: reduce) {
-	.profile-img-wrap.is-loading, .loader-bar::before, .loader-bar::after, .loader-text {
-		animation: none !important;
-	}
-}
-
-/* 프로필 버튼 */
-.mypage-btn.profile-btn {
-	width: 256px !important;
-	height: auto !important;
-	padding: 14px 18px !important;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	line-height: 1.2;
-	font-size: inherit;
-	font-weight: 600;
-	margin-left: auto;
-	margin-right: auto;
-	cursor: pointer;
-}
-.mypage-btn.profile-btn .btn-text { font-size: 16px; font-weight: inherit; line-height: 1.2; }
-
-/* 안내문구 */
-.msg-area { margin-top: 10px; font-size: 13px; line-height: 1.35; }
-.msg-ok { color: #25d366; font-weight: 800; }
-.msg-error { color: #ff4c4c; font-weight: 800; }
-.msg-info { color: rgba(255, 255, 255, 0.75); }
-
-.cost-hint { text-align: center; }
-.cost-hint__text { display: inline-block; line-height: 1.35; }
-.cost-hint__text b { line-height: 1; }
-
-:root {
-	--accent: 229, 54, 55;
-	--hud-bg: rgba(255, 255, 255, 0.030);
-	--hud-border: rgba(255, 255, 255, 0.095);
-	--hud-ink: rgba(255, 255, 255, 0.92);
-	--hud-muted: rgba(255, 255, 255, 0.62);
-}
-
-.split-pill {
-	height: 52px;
-	border-radius: 16px;
-	display: flex;
-	align-items: center;
-	overflow: hidden;
-	position: relative;
-	background: var(--hud-bg);
-	border: 1px solid var(--hud-border);
-	backdrop-filter: blur(10px);
-	-webkit-backdrop-filter: blur(10px);
-	box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-	margin-bottom: 14px;
-}
-.split-pill::before, .split-pill::after { content: none !important; display: none !important; }
-
-.split-label {
-	width: 154px;
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 0 14px 0 16px;
-	position: relative;
-	z-index: 1;
-}
-.split-label::after {
-	content: "";
-	position: absolute;
-	right: 0;
-	top: 10px;
-	bottom: 10px;
-	width: 1px;
-	background: rgba(255, 255, 255, 0.06);
-}
-
-.split-label .split-icon {
-	width: 34px;
-	height: 34px;
-	border-radius: 12px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: rgba(255, 255, 255, 0.035);
-	border: 1px solid rgba(var(--accent), 0.22);
-	box-shadow: 0 10px 18px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-.split-label svg {
-	width: 16px;
-	height: 16px;
-	stroke: rgba(var(--accent), 0.90);
-	stroke-width: 2;
-	fill: none;
-	stroke-linecap: round;
-	stroke-linejoin: round;
-}
-.split-label .split-text {
-	font-size: 12px;
-	font-weight: 700;
-	padding-left: 4px;
-	letter-spacing: 0.45px;
-	color: rgba(255, 255, 255, 0.58);
-	white-space: nowrap;
-}
-
-.split-value {
-	flex: 1;
-	display: flex;
-	align-items: center;
-	padding: 0 18px;
-	position: relative;
-	z-index: 1;
-}
-.split-value input {
-	width: 100%;
-	height: 52px;
-	border: 0;
-	outline: 0;
-	background: transparent;
-	padding-left: 12px;
-	font-size: 14.5px;
-	font-weight: 620;
-	letter-spacing: -0.25px;
-	color: rgba(255, 255, 255, 0.90);
-}
-.split-value input[readonly] { color: rgba(255, 255, 255, 0.86); }
-#cashDisplay { font-variant-numeric: tabular-nums; letter-spacing: -0.15px; }
-
-body.mypage-editing .split-pill--editable {
-	border-color: rgba(var(--accent), 0.22);
-	box-shadow: 0 12px 28px rgba(0, 0, 0, 0.26),
-		inset 0 1px 0 rgba(255, 255, 255, 0.05),
-		0 0 0 3px rgba(var(--accent), 0.08);
-}
-
-.split-row {
-	display: grid;
-	grid-template-columns: 1fr 128px;
-	gap: 12px;
-	align-items: center;
-	margin-bottom: 14px;
-}
-.split-row .split-pill { margin-bottom: 0; }
-
-.nick-check-btn {
-	height: 52px;
-	border-radius: 16px;
-	font-weight: 800;
-	letter-spacing: .2px;
-	background: linear-gradient(135deg, rgba(255, 76, 76, 0.18) 0%,
-		rgba(229, 54, 55, 0.10) 55%, rgba(201, 44, 45, 0.08) 100%);
-	border: 1px solid rgba(var(--accent), 0.28);
-	color: rgba(255, 255, 255, 0.92);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: .18s ease;
-	box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-.nick-check-btn:hover { filter: brightness(1.05); border-color: rgba(var(--accent), 0.36); }
-.nick-check-btn.disabled-btn { opacity: .45; pointer-events: none; }
-
-#nicknameMsg { margin: 6px 0 6px !important; }
-#nicknameMsg:empty { display: none; margin: 0 !important; }
-
-.cost-box {
-	margin-top: 18px;
-	background: rgba(255, 255, 255, 0.035);
-	border: 1px solid rgba(255, 255, 255, 0.06);
-	border-radius: 16px;
-	padding: 18px;
-}
-.cost-row {
-	display: flex;
-	justify-content: space-between;
-	padding: 10px 0;
-	border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-	font-size: 14.5px;
-	line-height: 1.2;
-}
-.cost-row:last-child { border-bottom: none; }
-.cost-row .label { color: rgba(255, 255, 255, 0.78); font-weight: 600; }
-.cost-row .value { color: #fff; font-size: 14.5px; font-weight: 800; }
-#cashWarn { word-break: keep-all; }
-
-.edit-actions { margin-top: 20px; display: flex; gap: 12px; }
-.edit-actions .mypage-btn { width: 100%; }
-
-/* Modal */
-.modal-backdrop-custom {
-	position: fixed;
-	left: 0;
-	top: 0;
-	width: 100%;
-	height: 100%;
-	background: rgba(0, 0, 0, 0.65);
-	backdrop-filter: blur(0.3px);
-	-webkit-backdrop-filter: blur(0.3px);
-	display: none;
-	align-items: center;
-	justify-content: center;
-	z-index: 20000;
-	padding: 14px;
-	box-sizing: border-box;
-}
-.modal-box {
-	width: min(560px, 96vw);
-	background: rgba(15, 20, 60, 0.98);
-	border-radius: 18px;
-	box-shadow: 0 16px 60px rgba(0, 0, 0, 0.55);
-	padding: 32px 34px 24px;
-	box-sizing: border-box;
-	max-height: 90vh;
-	overflow-y: auto;
-}
-.modal-title {
-	font-size: 21px;
-	font-weight: 900;
-	color: #fff;
-	margin-bottom: 6px;
-	line-height: 1.25;
-	word-break: keep-all;
-}
-.modal-desc {
-	font-size: 14px;
-	color: rgba(255, 255, 255, 0.78);
-	margin-bottom: 14px;
-	line-height: 1.5;
-	word-break: keep-all;
-}
-.modal-cost {
-	background: rgba(255, 255, 255, 0.05);
-	border-radius: 14px;
-	padding: 18px 20px;
-	margin-bottom: 14px;
-	box-sizing: border-box;
-}
-.modal-cost .row {
-	margin: 0 !important;
-	padding: 10px 8px;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 12px;
-}
-.modal-cost .row .l {
-	color: rgba(255, 255, 255, 0.78);
-	font-weight: 650;
-	font-size: 14px;
-	min-width: 0;
-	flex: 1;
-}
-.modal-cost .row .r {
-	color: #fff;
-	font-weight: 850;
-	font-size: 14.5px;
-	white-space: nowrap;
-	flex: 0 0 auto;
-	background: rgba(255, 255, 255, 0.06);
-	border: 1px solid rgba(255, 255, 255, 0.08);
-	padding: 5px 10px;
-	border-radius: 999px;
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-.modal-actions { display: flex; gap: 10px; }
-.modal-btn {
-	flex: 1;
-	border: none;
-	border-radius: 999px;
-	padding: 12px 14px;
-	font-weight: 900;
-	color: #fff;
-	background: rgba(255, 255, 255, 0.10);
-	transition: .2s;
-}
-.modal-btn:hover { background: rgba(255, 255, 255, 0.16); }
-.modal-btn.yes {
-	background: linear-gradient(135deg, #ff4c4c 0%, #e53637 55%, #c92c2d 100%) !important;
-}
-
-/* LEFT MENU */
-.side-menu {
-	list-style: none;
-	padding-left: 0;
-	margin: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-.side-menu .menu-item { width: 100%; }
-.side-menu .menu-link, .side-menu .menu-btn {
-	width: 100%;
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	padding: 12px 14px;
-	border-radius: 14px;
-	color: rgba(255, 255, 255, 0.88);
-	background: rgba(255, 255, 255, 0.03);
-	border: 1px solid rgba(255, 255, 255, 0.06);
-	font-weight: 600;
-	transition: 0.18s ease;
-}
-.side-menu .menu-link i, .side-menu .menu-btn i { width: 18px; text-align: center; opacity: 0.9; }
-.side-menu .menu-link:hover, .side-menu .menu-btn:hover {
-	background: rgba(255, 255, 255, 0.06);
-	border-color: rgba(255, 255, 255, 0.10);
-	transform: translateY(-1px);
-}
-.side-menu .menu-link.is-active {
-	background: rgba(229, 54, 55, 0.10);
-	border-color: rgba(229, 54, 55, 0.22);
-	color: #fff;
-}
-.side-menu .menu-btn.danger {
-	color: #ff6b6b;
-	background: rgba(229, 54, 55, 0.06);
-	border-color: rgba(229, 54, 55, 0.18);
-}
-.side-menu .menu-btn.danger:hover {
-	background: rgba(229, 54, 55, 0.10);
-	border-color: rgba(229, 54, 55, 0.26);
-}
-
-/* Layout fix */
-.mypage-col-left { padding-right: 28px !important; }
-.mypage-col-right { padding-left: 28px !important; }
-
-.mypage-side-card { position: relative; z-index: 2; overflow: visible; }
-.mypage-right-card {
-	position: relative;
-	z-index: 1;
-	overflow: hidden;
-	border: 1px solid rgba(255, 255, 255, 0.06);
-	box-shadow: 0 18px 60px rgba(0, 0, 0, .35);
-}
-body.mypage-editing .mypage-right-card {
-	border-color: rgba(229, 54, 55, .18);
-	box-shadow: 0 18px 60px rgba(0, 0, 0, .45);
-}
-.mypage-side-card.text-center { display: flex; flex-direction: column; align-items: center; }
-
-/* 모바일 */
-@media (max-width: 991.98px) {
-	.mypage-col-left { padding-right: 0 !important; margin-bottom: 18px; }
-	.mypage-col-right { padding-left: 0 !important; }
-	.split-row { grid-template-columns: 1fr; }
-	.nick-check-btn { width: 100%; }
-	.split-label { width: 128px; }
-	.split-value { padding: 0 14px; }
-	.split-value input { padding-left: 10px; }
-	.modal-actions { flex-direction: column; }
-	.profile-img-wrap { width: 100%; max-width: 256px; height: auto; aspect-ratio: 1/1; }
-}
-
-/* "닉네임 변경 시 300원..." 문구 정렬 */
-#nickCostMsg {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	min-height: 22px;
-	margin: 8px 0 14px;
-	line-height: 1;
-}
-#nickCostMsg b { line-height: 1; }
-</style>
+<%-- 마이페이지 화면에서만 쓰는 전용 스타일
+     공통 style.css와 분리해둬서 다른 페이지 영향 최소화 --%>
+<link rel="stylesheet" href="${ctx}/css/mypage.css">
 </head>
 
-<body>
+<body class="mypage-page"
+	data-ctx="${ctx}"
+	data-url-profile-upload="${ctx}/member/profile/upload"
+	data-url-nick-check="${ctx}/MemberNickNameCheck"
+	data-url-apply-decoration="${ctx}/member/apply-decoration"
+	data-cost-nick="300"
+	data-cost-profile="500"
+	data-cost-nick-decor="200"
+	data-cost-border-decor="200">
+
+	<%-- 공통 헤더 include --%>
 	<%@ include file="/WEB-INF/common/header.jsp"%>
 
+	<%-- 서버에서 전달한 안내 메시지(경고/실패/알림)를 상단에 출력
+	     c:out으로 출력해서 문자열 그대로 보여주고 HTML 해석은 막음 --%>
 	<c:if test="${not empty msg}">
 		<div class="container" style="margin-top: 18px;">
-			<div class="alert alert-warning" style="border-radius: 14px;">${msg}</div>
+			<div class="alert alert-warning" style="border-radius: 14px;"><c:out value="${msg}" /></div>
 		</div>
 	</c:if>
-
+	
 	<div class="container mypage-title">
 		<h1 class="mypage-title__h1">마이페이지</h1>
 	</div>
@@ -543,33 +109,42 @@ body.mypage-editing .mypage-right-card {
 		<div class="container">
 			<div class="row">
 
+				<%-- =========================
+				     왼쪽 영역
+				     - 프로필 미리보기/업로드
+				     - 사이드 메뉴(비번변경, 내글, 탈퇴)
+				     ========================= --%>
 				<div class="col-12 col-lg-4 mypage-col-left">
 					<div class="login-box-clean mypage-side-card text-center">
 
-						<%-- ✅ 프로필 src를 항상 채움: 프로필 없으면 기본 이미지로 --%>
-						<c:set var="profileSrc"
-							value="${not empty memberData.memberProfileImage
-								? ctx.concat(memberData.memberProfileImage)
-								: ctx.concat('/img/profile-default.jpg')}" />
-
-						<div class="profile-img-wrap is-loading" id="profileWrap">
+						<%-- 프로필 이미지 래퍼
+						     CSS 변수(--profile-border-color)로 현재 테두리색 바로 반영
+						     처음엔 is-loading 상태로 시작해서 JS에서 로딩 완료 후 클래스 정리하는 흐름 --%>
+						<div class="profile-img-wrap is-loading" id="profileWrap"
+							style="--profile-border-color: ${borderColorStyle};">
 							<img id="profilePreview" alt="프로필 이미지"
-								data-real-src="${profileSrc}"
-								data-initial-src="${profileSrc}"
-								data-default-src="${ctx}/img/profile-default.jpg"
+								data-real-src="<c:out value='${profileSrc}'/>"
+								data-initial-src="<c:out value='${profileSrc}'/>"
+								data-default-src="<c:out value='${ctx}/img/profile-default.jpg'/>"
 								src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
 
+							<%-- 실제 이미지 로딩 전 표시할 로더 UI
+							     src는 1x1 투명 gif로 먼저 넣어두고 JS에서 data-real-src로 교체 --%>
 							<div class="profile-loader" role="status" aria-live="polite">
 								<div class="loader-bar" aria-hidden="true"></div>
 								<div class="loader-text">이미지 불러오는 중</div>
 							</div>
 						</div>
 
+						<%-- 파일 input은 숨기고 label을 버튼처럼 사용
+						     초기에는 수정모드가 아니므로 disabled 스타일로 시작 --%>
 						<label id="profileBtnLabel" class="mypage-btn profile-btn disabled-btn">
 							<span class="btn-text">프로필 사진 변경</span>
 							<input type="file" id="profileInput" accept="image/*" hidden>
 						</label>
 
+						<%-- 프로필 사진 변경 비용 안내
+						     실제 변경 감지되었을 때 JS에서 표시/숨김 제어 --%>
 						<div class="msg-area msg-info cost-hint" id="profileCostMsg"
 							style="margin-top: 10px; display: none;">
 							<span class="cost-hint__text">
@@ -595,6 +170,8 @@ body.mypage-editing .mypage-right-card {
 							</li>
 
 							<li class="menu-item">
+								<%-- 탈퇴는 GET 링크가 아니라 POST form으로 처리
+								     실수 클릭 방지용 confirm 1차 확인 포함 --%>
 								<form action="${ctx}/member/withdraw" method="post"
 									style="margin: 0;"
 									onsubmit="return confirm('정말 탈퇴하시겠습니까?\n탈퇴 후에는 복구할 수 없습니다.');">
@@ -607,15 +184,34 @@ body.mypage-editing .mypage-right-card {
 					</div>
 				</div>
 
+				<%-- =========================
+				     오른쪽 영역
+				     - 내 정보 표시/수정
+				     - 닉네임/프로필/꾸미기 비용 계산
+				     ========================= --%>
 				<div class="col-12 col-lg-8 mypage-col-right">
 					<div class="login-box-clean mypage-right-card">
 						<h5 style="margin-bottom: 24px;">내 정보</h5>
 
+						<%-- 메인 수정 폼
+						     프로필 이미지 토큰, 꾸미기 색상 값, 최종 저장값까지 같이 전송 --%>
 						<form id="mypageForm" action="${ctx}/member/profile" method="post">
+							<%-- 프로필 업로드를 먼저 비동기로 처리했을 때 서버가 발급한 임시 토큰 저장용 --%>
 							<input type="hidden" id="temporaryProfileImageToken"
 								name="temporaryProfileImageToken" value="" />
 
-							<!-- 아이디 -->
+							<%-- 수정 전 원본값
+							     JS에서 변경 여부 판단(비용 계산/저장 버튼 활성화)할 때 비교 기준으로 사용 --%>
+							<input type="hidden" id="originNicknameColor" value="${nickColorInit}">
+							<input type="hidden" id="originBorderColor" value="${borderColorInit}">
+
+							<%-- 현재 선택값(최종 서버 바인딩용)
+							     꾸미기 UI에서 선택/변경할 때 이 hidden 값이 같이 바뀌고 submit 시 서버로 전달됨 --%>
+							<input type="hidden" id="nicknameColorInput" name="memberNicknameColor" value="${nickColorInit}">
+							<input type="hidden" id="borderColorInput" name="memberProfileColor" value="${borderColorInit}">
+
+							<%-- 아이디: 식별값이라 읽기 전용
+							     수정 대상이 아니므로 readonly input으로만 표시 --%>
 							<div class="split-pill" id="idPill">
 								<div class="split-label">
 									<span class="split-icon" aria-hidden="true">
@@ -627,11 +223,12 @@ body.mypage-editing .mypage-right-card {
 									<span class="split-text">아이디</span>
 								</div>
 								<div class="split-value">
-									<input id="idInput" type="text" value="${memberData.memberName}" readonly>
+									<input id="idInput" type="text" value="<c:out value='${memberData.memberName}'/>" readonly>
 								</div>
 							</div>
 
-							<!-- 이메일 -->
+							<%-- 이메일: 현재 화면에서는 표시 전용(readonly)
+							     나중에 이메일 수정 기능 붙이면 이 구간만 편집 가능 상태로 바꾸면 됨 --%>
 							<div class="split-pill" id="emailPill">
 								<div class="split-label">
 									<span class="split-icon" aria-hidden="true">
@@ -643,11 +240,13 @@ body.mypage-editing .mypage-right-card {
 									<span class="split-text">이메일</span>
 								</div>
 								<div class="split-value">
-									<input id="emailInput" type="email" value="${memberData.memberEmail}" readonly>
+									<input id="emailInput" type="email" value="<c:out value='${memberData.memberEmail}'/>" readonly>
 								</div>
 							</div>
 
-							<!-- 닉네임 + 중복확인 -->
+							<%-- 닉네임 + 중복확인 버튼
+							     수정모드 전에는 readonly/disabled 상태로 두고,
+							     수정모드 진입 시 JS에서 입력/중복확인 버튼을 활성화하는 구조 --%>
 							<div class="split-row">
 								<div class="split-pill split-pill--editable" id="nicknamePill">
 									<div class="split-label">
@@ -662,8 +261,7 @@ body.mypage-editing .mypage-right-card {
 										<span class="split-text">닉네임</span>
 									</div>
 									<div class="split-value">
-										<input id="nicknameInput" name="memberNickname" type="text"
-											value="${memberData.memberNickname}" readonly>
+										<input id="nicknameInput" type="text" value="<c:out value='${memberData.memberNickname}'/>" readonly>
 									</div>
 								</div>
 
@@ -671,17 +269,104 @@ body.mypage-editing .mypage-right-card {
 									type="button">중복 확인</button>
 							</div>
 
+							<%-- 닉네임 검증/중복확인 결과 메시지 출력 영역 (성공/실패 문구 공용) --%>
 							<div class="msg-area" id="nicknameMsg"></div>
 
+							<%-- 닉네임 변경 비용 안내
+							     닉네임이 실제로 바뀐 경우에만 JS에서 노출하는 용도 --%>
 							<div class="msg-area msg-info" id="nickCostMsg" style="display: none;">
 								※ 닉네임 변경 시 <b>300원</b>이 차감됩니다.
 							</div>
 
-							<c:set var="cashSafe"
-								value="${empty memberData.memberCash ? 0 : memberData.memberCash}" />
-							<fmt:formatNumber value="${cashSafe}" type="number" var="cashFmt" />
+							<%-- =========================
+							     꾸미기 섹션
+							     - 닉네임 색상
+							     - 프로필 테두리 색상
+							     둘 다 비용 계산과 연결됨
+							     ========================= --%>
+							<div class="decorate-wrap" id="decorateWrap">
+								<div class="decorate-headline">꾸미기</div>
 
-							<!-- 보유 캐시 -->
+								<%-- 닉네임 꾸미기 카드
+								     프리셋 버튼 + color picker + 미리보기로 구성 --%>
+								<div class="decorate-card" id="decorNickCard" data-kind="nickname">
+									<div class="decorate-top">
+										<div class="decorate-name">닉네임 꾸미기</div>
+										<div class="decorate-price">200원</div>
+									</div>
+
+									<div class="decorate-body">
+										<%-- 프리셋 색상 목록
+										     data-kind / data-color 기준으로 JS가 선택 처리 --%>
+										<div class="decorate-presets" data-kind="nickname">
+											<button type="button" class="color-chip chip-none" data-color="" disabled>기본</button>
+											<button type="button" class="color-chip" data-color="#e53637" style="--chip:#e53637" title="빨강" disabled></button>
+											<button type="button" class="color-chip" data-color="#ff8a00" style="--chip:#ff8a00" title="주황" disabled></button>
+											<button type="button" class="color-chip" data-color="#ffc107" style="--chip:#ffc107" title="노랑" disabled></button>
+											<button type="button" class="color-chip" data-color="#25d366" style="--chip:#25d366" title="초록" disabled></button>
+											<button type="button" class="color-chip" data-color="#3b82f6" style="--chip:#3b82f6" title="파랑" disabled></button>
+											<button type="button" class="color-chip" data-color="#1e3a8a" style="--chip:#1e3a8a" title="남색" disabled></button>
+											<button type="button" class="color-chip" data-color="#a855f7" style="--chip:#a855f7" title="보라" disabled></button>
+										</div>
+
+										<%-- 커스텀 색상 입력
+										     color picker에서 고른 값을 '커스텀 적용' 버튼으로 반영하는 흐름 --%>
+										<div class="decorate-custom">
+											<input type="color" id="nickColorPicker" class="color-picker" value="#e53637" disabled>
+											<button type="button" class="mini-btn custom-apply" data-kind="nickname" disabled>커스텀 적용</button>
+										</div>
+
+										<%-- 닉네임 색상 미리보기
+										     실제 입력값 바꾸기 전에 사용자 눈으로 확인하는 영역 --%>
+										<div class="decorate-preview">
+											<span class="preview-label">미리보기</span>
+											<span id="nickDecorPreview" class="preview-nickname"><c:out value="${memberData.memberNickname}" /></span>
+										</div>
+									</div>
+								</div>
+
+								<%-- 프로필 테두리 꾸미기 카드
+								     닉네임 꾸미기와 같은 패턴으로 구성 (프리셋/커스텀/미리보기) --%>
+								<div class="decorate-card" id="decorBorderCard" data-kind="border">
+									<div class="decorate-top">
+										<div class="decorate-name">프로필 테두리</div>
+										<div class="decorate-price">200원</div>
+									</div>
+
+									<div class="decorate-body">
+										<div class="decorate-presets" data-kind="border">
+											<button type="button" class="color-chip chip-none" data-color="" disabled>기본</button>
+											<button type="button" class="color-chip" data-color="#e53637" style="--chip:#e53637" title="빨강" disabled></button>
+											<button type="button" class="color-chip" data-color="#ff8a00" style="--chip:#ff8a00" title="주황" disabled></button>
+											<button type="button" class="color-chip" data-color="#ffc107" style="--chip:#ffc107" title="노랑" disabled></button>
+											<button type="button" class="color-chip" data-color="#25d366" style="--chip:#25d366" title="초록" disabled></button>
+											<button type="button" class="color-chip" data-color="#3b82f6" style="--chip:#3b82f6" title="파랑" disabled></button>
+											<button type="button" class="color-chip" data-color="#1e3a8a" style="--chip:#1e3a8a" title="남색" disabled></button>
+											<button type="button" class="color-chip" data-color="#a855f7" style="--chip:#a855f7" title="보라" disabled></button>
+										</div>
+
+										<div class="decorate-custom">
+											<input type="color" id="borderColorPicker" class="color-picker" value="#e53637" disabled>
+											<button type="button" class="mini-btn custom-apply" data-kind="border" disabled>커스텀 적용</button>
+										</div>
+
+										<%-- 테두리는 색상칩(스와치) 형태로 현재 선택값만 간단히 보여줌 --%>
+										<div class="decorate-preview">
+											<span class="preview-label">현재 선택</span>
+											<span id="borderDecorSwatch" class="preview-swatch"></span>
+										</div>
+									</div>
+								</div>
+
+								<%-- 꾸미기 항목 비용 안내
+								     닉네임/테두리 각각 변경 여부에 따라 총액 계산할 때 참고용 안내 --%>
+								<div class="msg-area msg-info" id="decorCostMsg" style="display:none;">
+									※ 꾸미기 변경 시 항목당 <b>200원</b>이 차감됩니다.
+								</div>
+							</div>
+
+							<%-- 보유 캐시 표시
+							     화면 표시용(cashDisplay)과 계산용 원본값(cashRaw)을 분리해둠 --%>
 							<div class="split-pill" id="cashPill">
 								<div class="split-label">
 									<span class="split-icon" aria-hidden="true">
@@ -699,6 +384,9 @@ body.mypage-editing .mypage-right-card {
 								</div>
 							</div>
 
+							<%-- 비용 계산 요약 박스
+							     수정모드에서 실제 변경사항이 생기면 JS에서 노출하고,
+							     항목별 비용/총액/차감 후 잔액/부족 경고까지 여기서 한 번에 보여줌 --%>
 							<div class="cost-box" id="costBox" style="display: none;">
 								<div class="cost-row">
 									<div class="label">닉네임 변경</div>
@@ -707,6 +395,14 @@ body.mypage-editing .mypage-right-card {
 								<div class="cost-row">
 									<div class="label">프로필 사진 변경</div>
 									<div class="value" id="costProfile">0원</div>
+								</div>
+								<div class="cost-row">
+									<div class="label">닉네임 꾸미기</div>
+									<div class="value" id="costNickDecor">0원</div>
+								</div>
+								<div class="cost-row">
+									<div class="label">프로필 테두리</div>
+									<div class="value" id="costBorderDecor">0원</div>
 								</div>
 								<div class="cost-row">
 									<div class="label">총 차감 캐시</div>
@@ -720,6 +416,9 @@ body.mypage-editing .mypage-right-card {
 									style="display: none; margin-top: 10px;">보유 캐시를 확인해주세요.</div>
 							</div>
 
+							<%-- 기본 보기 모드 버튼 영역
+							     - 내 정보 수정: 수정모드 진입
+							     - 캐시 충전: 별도 페이지 이동 --%>
 							<div class="row" style="margin-top: 30px;" id="viewActions">
 								<div class="col-md-6">
 									<button id="editBtn" type="button" class="mypage-btn">내 정보 수정</button>
@@ -729,6 +428,8 @@ body.mypage-editing .mypage-right-card {
 								</div>
 							</div>
 
+							<%-- 수정 모드 버튼 영역
+							     처음에는 숨김 상태, 수정모드 진입 시 viewActions와 교체 표시 --%>
 							<div class="edit-actions" id="editActions" style="display: none;">
 								<button id="saveBtn" type="button"
 									class="mypage-btn primary-red disabled-btn">수정 완료</button>
@@ -743,14 +444,18 @@ body.mypage-editing .mypage-right-card {
 		</div>
 	</section>
 
+	<%-- 공통 푸터 include --%>
 	<%@ include file="/WEB-INF/common/footer.jsp"%>
 
-	<!-- 확인 모달 -->
+	<%-- 수정 완료 전 최종 확인 모달
+	     비용 요약을 한 번 더 보여주고 사용자가 직접 확인/취소 선택하도록 함 --%>
 	<div id="modalBackdrop" class="modal-backdrop-custom">
 		<div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
 			<div class="modal-title" id="modalTitle">정말 수정하시겠습니까?</div>
 			<div class="modal-desc">수정 완료 시 캐시가 차감되며 되돌릴 수 없습니다.</div>
 
+			<%-- 모달 안 비용 요약
+			     본문 costBox 값과 동일 내용을 최종 확인용으로 다시 보여주는 영역 --%>
 			<div class="modal-cost">
 				<div class="row">
 					<div class="l">닉네임 변경</div>
@@ -759,6 +464,14 @@ body.mypage-editing .mypage-right-card {
 				<div class="row">
 					<div class="l">프로필 사진 변경</div>
 					<div class="r" id="mCostProfile">0원</div>
+				</div>
+				<div class="row">
+					<div class="l">닉네임 꾸미기</div>
+					<div class="r" id="mCostNickDecor">0원</div>
+				</div>
+				<div class="row">
+					<div class="l">프로필 테두리</div>
+					<div class="r" id="mCostBorderDecor">0원</div>
 				</div>
 				<div class="row"
 					style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 6px; padding-top: 10px;">
@@ -774,393 +487,13 @@ body.mypage-editing .mypage-right-card {
 		</div>
 	</div>
 
+	<%-- 공통 라이브러리 스크립트 --%>
 	<script src="${ctx}/js/jquery-3.3.1.min.js"></script>
 	<script src="${ctx}/js/bootstrap.min.js"></script>
 
-	<script>
-		/* ✅ 프로필 이미지 로딩/재시도 (real이 비어도 로더 유지, DOMContentLoaded 레이스 방지) */
-		(function() {
-			function addCacheBust(url) {
-				if (!url) return url;
-				const sep = url.includes("?") ? "&" : "?";
-				return url + sep + "v=" + Date.now();
-			}
-
-			function initProfileLoader() {
-				const wrap = document.getElementById("profileWrap");
-				const img = document.getElementById("profilePreview");
-				if (!wrap || !img) return;
-
-				const real = (img.dataset.realSrc || "").trim();
-				const initial = (img.dataset.initialSrc || img.dataset.defaultSrc || "").trim();
-				const fallback = (img.dataset.defaultSrc || initial || "").trim();
-
-				// 로더 ON (이미 HTML에 is-loading 있어도 안전)
-				wrap.classList.add("is-loading");
-
-				// 최종 목표 URL(빈값이면 fallback)
-				const target = real || initial || fallback;
-
-				if (!target) {
-					// 표시할 게 아예 없으면 로더만 끄고 종료
-					wrap.classList.remove("is-loading");
-					return;
-				}
-
-				const INTERVAL_MS = 250;
-				const MAX_WAIT_MS = 15000;
-				const startAt = Date.now();
-
-				function preload(url, onOk, onFail) {
-					const pre = new Image();
-					pre.onload = onOk;
-					pre.onerror = onFail;
-					pre.src = url;
-				}
-
-				function done(src) {
-					img.src = src;
-					wrap.classList.remove("is-loading");
-				}
-
-				function tryLoad(urlToTry) {
-					const elapsed = Date.now() - startAt;
-
-					// 시간이 초과되면 fallback로 1회 전환
-					if (elapsed >= MAX_WAIT_MS) {
-						const fb = fallback || urlToTry;
-						const fbSrc = addCacheBust(fb);
-						preload(
-							fbSrc,
-							function() { done(fbSrc); },
-							function() { done(fbSrc); } // fallback도 실패하면 그냥 끔
-						);
-						return;
-					}
-
-					const testSrc = addCacheBust(urlToTry);
-					preload(
-						testSrc,
-						function() { done(testSrc); },
-						function() { setTimeout(function() { tryLoad(urlToTry); }, INTERVAL_MS); }
-					);
-				}
-
-				// 바로 시도
-				tryLoad(target);
-			}
-
-			if (document.readyState === "loading") {
-				document.addEventListener("DOMContentLoaded", initProfileLoader);
-			} else {
-				initProfileLoader();
-			}
-		})();
-	</script>
-
-	<script>
-		$(function() {
-
-			const URL_PROFILE_UPLOAD = "${ctx}/member/profile/upload";
-			const URL_NICK_CHECK = "${ctx}/MemberNickNameCheck";
-
-			const NICK_REGEX = /^[A-Za-z0-9가-힣]{2,12}$/;
-			const COST_NICK = 300;
-			const COST_PROFILE = 500;
-
-			let editMode = false;
-			let nicknameChecked = false;
-			let profileChanged = false;
-
-			const originalNickname = $("#nicknameInput").val().trim();
-			const originalProfileSrc = ($("#profilePreview").data("initialSrc") || "").toString();
-
-			function addCacheBust(url) {
-				if (!url) return url;
-				const sep = url.indexOf("?") >= 0 ? "&" : "?";
-				return url + sep + "v=" + Date.now();
-			}
-
-			function formatWon(num) {
-				return (num || 0).toLocaleString("ko-KR") + "원";
-			}
-
-			$("#editBtn").on("click", function() {
-				editMode = true;
-				$("body").addClass("mypage-editing");
-
-				$("#viewActions").hide();
-				$("#editActions").show();
-				$("#costBox").show();
-
-				$("#nicknameInput").prop("readonly", false);
-				$("#nickCheckBtn").removeClass("disabled-btn");
-				$("#profileBtnLabel").removeClass("disabled-btn");
-
-				$("#nickCostMsg").show();
-				$("#profileCostMsg").show();
-
-				nicknameChecked = false;
-				profileChanged = false;
-				$("#nicknameMsg").text("");
-
-				$("#temporaryProfileImageToken").val("");
-				$("#profileInput").val("");
-
-				updateCostAndButtons();
-			});
-
-			$("#cancelBtn").on("click", function() {
-				exitEditMode(true);
-			});
-
-			function exitEditMode(resetValues) {
-				editMode = false;
-				$("body").removeClass("mypage-editing");
-
-				if (resetValues) {
-					$("#nicknameInput").val(originalNickname);
-
-					// ✅ 원복 시에도 로더를 "이미지 로드 이벤트"로 끔
-					const base = (originalProfileSrc || "").split("?")[0];
-					const target = addCacheBust(base || $("#profilePreview").data("defaultSrc"));
-
-					$("#profileWrap").addClass("is-loading");
-
-					const $img = $("#profilePreview");
-					$img.off("load.__revert error.__revert");
-					$img.on("load.__revert error.__revert", function() {
-						$("#profileWrap").removeClass("is-loading");
-						$img.off("load.__revert error.__revert");
-					});
-					$img.attr("src", target);
-
-					$("#temporaryProfileImageToken").val("");
-					$("#profileInput").val("");
-				}
-
-				$("#nicknameInput").prop("readonly", true);
-				$("#nickCheckBtn").addClass("disabled-btn").text("중복 확인");
-				$("#profileBtnLabel").addClass("disabled-btn");
-
-				$("#nickCostMsg").hide();
-				$("#profileCostMsg").hide();
-
-				$("#costBox").hide();
-				$("#editActions").hide();
-				$("#viewActions").show();
-
-				$("#cashWarn").hide();
-				$("#nicknameMsg").text("");
-
-				nicknameChecked = false;
-				profileChanged = false;
-
-				updateCostAndButtons();
-			}
-
-			$("#nicknameInput").on("input", function() {
-				if (!editMode) return;
-
-				const val = $("#nicknameInput").val().trim();
-				if (val.length > 0 && !NICK_REGEX.test(val)) {
-					$("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
-						.text("닉네임은 2~12자, 한글/영문/숫자만 사용할 수 있습니다.");
-				} else {
-					$("#nicknameMsg").text("");
-				}
-
-				nicknameChecked = false;
-				$("#nickCheckBtn").text("중복 확인");
-				updateCostAndButtons();
-			});
-
-			$("#nickCheckBtn").on("click", function() {
-				if (!editMode) return;
-
-				const nickname = $("#nicknameInput").val().trim();
-
-				if (!NICK_REGEX.test(nickname)) {
-					$("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
-						.text("닉네임은 2~12자, 한글/영문/숫자만 사용할 수 있습니다.");
-					nicknameChecked = false;
-					updateCostAndButtons();
-					return;
-				}
-
-				if (nickname === originalNickname) {
-					$("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
-						.text("현재 닉네임과 동일합니다.");
-					nicknameChecked = false;
-					updateCostAndButtons();
-					return;
-				}
-
-				$.ajax({
-					url: URL_NICK_CHECK,
-					type: "GET",
-					dataType: "json",
-					data: { memberNickname: nickname },
-					success: function(res) {
-						if (!res || res.success !== true) {
-							$("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
-								.text((res && res.message) ? res.message : "중복확인에 실패했습니다.");
-							nicknameChecked = false;
-							$("#nickCheckBtn").text("중복 확인");
-							updateCostAndButtons();
-							return;
-						}
-
-						if (res.available === true) {
-							$("#nicknameMsg").removeClass("msg-error").addClass("msg-ok")
-								.text("사용 가능한 닉네임입니다.");
-							nicknameChecked = true;
-							$("#nickCheckBtn").text("확인 완료");
-						} else {
-							$("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
-								.text("이미 사용 중인 닉네임입니다.");
-							nicknameChecked = false;
-							$("#nickCheckBtn").text("중복 확인");
-						}
-						updateCostAndButtons();
-					},
-					error: function() {
-						$("#nicknameMsg").removeClass("msg-ok").addClass("msg-error")
-							.text("중복확인 서버 호출에 실패했습니다.");
-						nicknameChecked = false;
-						$("#nickCheckBtn").text("중복 확인");
-						updateCostAndButtons();
-					}
-				});
-			});
-
-			$("#profileInput").on("change", function() {
-				if (!editMode) return;
-
-				const file = this.files[0];
-				if (!file) return;
-
-				if (!file.type || !file.type.startsWith("image/")) {
-					alert("이미지 파일만 선택할 수 있습니다.");
-					$(this).val("");
-					return;
-				}
-
-				$("#profileWrap").addClass("is-loading");
-
-				const formData = new FormData();
-				formData.append("profileImageFile", file);
-
-				$.ajax({
-					url: URL_PROFILE_UPLOAD,
-					type: "POST",
-					data: formData,
-					processData: false,
-					contentType: false,
-					dataType: "json",
-					success: function(res) {
-						if (!res || res.result !== "SUCCESS") {
-							alert((res && res.errorMessage) ? res.errorMessage : "업로드에 실패했습니다.");
-							$("#profileInput").val("");
-							$("#profileWrap").removeClass("is-loading");
-							return;
-						}
-
-						const tempUrl = addCacheBust(res.temporaryProfileImageUrl);
-
-						// ✅ 업로드 후에도 이미지 load 이벤트로 로더 끔
-						const $img = $("#profilePreview");
-						$img.off("load.__upload error.__upload");
-						$img.on("load.__upload error.__upload", function() {
-							$("#profileWrap").removeClass("is-loading");
-							$img.off("load.__upload error.__upload");
-						});
-						$img.attr("src", tempUrl);
-
-						$("#temporaryProfileImageToken").val(res.temporaryProfileImageToken);
-
-						profileChanged = true;
-						updateCostAndButtons();
-					},
-					error: function(xhr) {
-						alert("프로필 업로드 실패(" + xhr.status + "). 다시 시도해주세요.");
-						$("#profileInput").val("");
-						$("#profileWrap").removeClass("is-loading");
-					}
-				});
-			});
-
-			function updateCostAndButtons() {
-				const currentCash = parseInt($("#cashRaw").val(), 10) || 0;
-				const newNickname = $("#nicknameInput").val().trim();
-				const token = $("#temporaryProfileImageToken").val().trim();
-
-				const nickChanged = editMode && (newNickname !== originalNickname);
-				const nickCost = nickChanged ? COST_NICK : 0;
-
-				const profileCost = (editMode && profileChanged && token.length > 0) ? COST_PROFILE : 0;
-
-				const totalCost = nickCost + profileCost;
-				const cashAfter = currentCash - totalCost;
-
-				$("#costNick").text(formatWon(nickCost));
-				$("#costProfile").text(formatWon(profileCost));
-				$("#costTotal").text(formatWon(totalCost));
-				$("#cashAfter").text(formatWon(Math.max(cashAfter, 0)));
-
-				let canSave = true;
-
-				if (!nickChanged && !(profileChanged && token.length > 0)) canSave = false;
-
-				if (nickChanged) {
-					if (!NICK_REGEX.test(newNickname)) canSave = false;
-					if (!nicknameChecked) canSave = false;
-				}
-
-				if (profileChanged && token.length === 0) canSave = false;
-
-				if (totalCost > currentCash) {
-					canSave = false;
-					$("#cashWarn").show();
-				} else {
-					$("#cashWarn").hide();
-				}
-
-				if (editMode && canSave) $("#saveBtn").removeClass("disabled-btn");
-				else $("#saveBtn").addClass("disabled-btn");
-
-				$("#mCostNick").text(formatWon(nickCost));
-				$("#mCostProfile").text(formatWon(profileCost));
-				$("#mCostTotal").text(formatWon(totalCost));
-			}
-
-			$("#saveBtn").on("click", function() {
-				if ($(this).hasClass("disabled-btn")) return;
-				$("#modalBackdrop").css("display", "flex");
-			});
-
-			function hideConfirmModal() {
-				$("#modalBackdrop").hide();
-			}
-
-			$(".modal-box").on("click", function(e) {
-				e.stopPropagation();
-			});
-
-			$("#modalNoBtn").on("click", function() {
-				hideConfirmModal();
-				exitEditMode(true);
-			});
-
-			$("#modalYesBtn").on("click", function() {
-				if ($("#saveBtn").hasClass("disabled-btn")) return;
-				$("#modalYesBtn").prop("disabled", true);
-				$("#mypageForm").submit();
-			});
-
-			updateCostAndButtons();
-		});
-	</script>
+	<%-- 마이페이지 전용 동작 스크립트
+	     수정모드 전환, 닉네임 체크, 비용 계산, 모달 제어 등 여기서 처리 --%>
+	<script src="${ctx}/js/mypage.js"></script>
 
 </body>
 </html>

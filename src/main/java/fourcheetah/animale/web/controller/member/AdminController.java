@@ -58,4 +58,9 @@ public class AdminController {
     public String admindashboard(HttpSession session) {
         return "admindashboard";
     }
+    
+    @GetMapping("/adminreportboard")
+    public String adminreportboard(HttpSession session) {
+        return "adminreportboard";
+    }
 }

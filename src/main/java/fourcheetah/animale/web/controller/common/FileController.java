@@ -90,34 +90,47 @@ public class FileController {
                 res.put("errorMessage", "파일이 없습니다.");
                 return res;
             }
+            
+            if (file.getSize() <= 0 || file.getSize() > MAX_BYTES) {
+                res.put("result", "FAIL");
+                res.put("errorMessage", "프로필 이미지는 최대 3MB까지 업로드 가능합니다.");
+                return res;
+            }
 
             String ct = file.getContentType();
-            if (ct == null || !ct.startsWith("image/")) {
+            if (ct == null || !ct.toLowerCase(Locale.ROOT).startsWith("image/")) {
                 res.put("result", "FAIL");
                 res.put("errorMessage", "이미지 파일만 업로드 가능합니다.");
                 return res;
             }
 
-            Path dir = Paths.get(profileTempDir);
+            Path dir = Paths.get(profileTempDir).toAbsolutePath().normalize();
             Files.createDirectories(dir);
 
             String original = StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : "";
-            String ext = "";
-            int dot = original.lastIndexOf('.');
-            if (dot >= 0) {
-                ext = original.substring(dot).toLowerCase();
-            }
+            String safeOriginal = Paths.get(original).getFileName().toString();
+            String ext = getExt(safeOriginal); // 기존 헬퍼 재사용 (jpg / png 형태)
+            
 
-            if (!(ext.equals(".jpg") || ext.equals(".jpeg") || ext.equals(".png") || ext.equals(".webp") || ext.isEmpty())) {
+            if (ext.isEmpty() || !ALLOWED_EXTENSION.contains(ext)) {
                 res.put("result", "FAIL");
-                res.put("errorMessage", "지원하지 않는 이미지 형식입니다.(jpg/jpeg/png/webp)");
+                res.put("errorMessage", "지원하지 않는 이미지 형식입니다. (jpg/jpeg/png)");
                 return res;
             }
+            
+            
+            
+            
+            String token = "m" + memberId + "_" + UUID.randomUUID().toString().replace("-", "") + "." + ext;
 
-            String token = "m" + memberId + "_" + UUID.randomUUID().toString().replace("-", "") + ext;
-
-            Path savePath = dir.resolve(token);
-            Files.copy(file.getInputStream(), savePath, StandardCopyOption.REPLACE_EXISTING);
+            Path savePath = dir.resolve(token).normalize();
+            if (!savePath.startsWith(dir)) {
+                res.put("result", "FAIL");
+                res.put("errorMessage", "잘못된 저장 경로입니다.");
+                return res;
+            }
+            
+            file.transferTo(savePath.toFile());
 
             String ctx = request.getContextPath();
             String url = ctx + "/uploads/profile_temp/" + token;
@@ -301,6 +314,7 @@ public class FileController {
     }
 
     private String escapeJson(String s) {
+        if (s == null) return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

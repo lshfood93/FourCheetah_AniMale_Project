@@ -25,9 +25,14 @@ public class MainPageController {
     private MemberService memberService;
 
     @Autowired
-    private NewsService newsService;   // 너가 가진 서비스/DAO 구조에 맞게 연결
+    private NewsService newsService;   
     @Autowired
-    private AnimeService animeService; // 너가 가진 서비스/DAO 구조에 맞게 연결
+    private AnimeService animeService; 
+    
+    @GetMapping("/chatAi")
+    public String aiChatPage() {
+        return "/chatAi"; // /WEB-INF/views/ai/chat.jsp
+    }
 
     @GetMapping({"/", "/mainPage"})
     public String mainPage(

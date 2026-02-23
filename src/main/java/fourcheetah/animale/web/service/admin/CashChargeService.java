@@ -1,5 +1,6 @@
 package fourcheetah.animale.web.service.admin;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -20,4 +21,15 @@ public interface CashChargeService {
 
     // 대시보드용(집계)
     Map<String, Object> getDashboardSummary(int year, int month);
+    
+    //  결제 승인 트랜잭션 처리(READY -> APPROVED + MEMBER 캐시 증가)
+    boolean approveChargeTx(int memberId, String partnerOrderId, int approvedTotal, LocalDateTime approvedAt);
+    
+ //  
+    boolean approveTossTx(int memberId, String orderId, String paymentKey, int amountFromQuery);
+
+	boolean cancelReadyTx(int memberId, String orderId, String provider);
+
+	boolean failReadyTx(int memberId, String orderId, String provider);
+    
 }

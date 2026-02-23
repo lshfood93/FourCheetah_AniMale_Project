@@ -19,8 +19,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import fourcheetah.animale.web.common.HtmlSanitizer;
 import fourcheetah.animale.web.dto.news.NewsDTO;
 import fourcheetah.animale.web.service.news.NewsService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
 /**
@@ -45,6 +47,9 @@ public class NewsController {
 
     @Autowired
     private NewsService newsService;
+    
+    @Autowired
+    private HtmlSanitizer htmlSanitizer;
 
     // ==================== 목록 ====================
     
@@ -191,7 +196,16 @@ public class NewsController {
             model.addAttribute("location", "/newsList");
             return "message";
         }
+        
+  
 
+
+        // xss 방어 로직 추가
+        newsData.setNewsTitle(htmlSanitizer.sanitizePlainText(newsData.getNewsTitle()));
+        newsData.setNewsContent(htmlSanitizer.sanitizeNewsHtml(newsData.getNewsContent()));
+        newsData.setNewsThumbnailUrl(htmlSanitizer.sanitizeImageUrl(newsData.getNewsThumbnailUrl()));
+        newsData.setNewsImageUrl(htmlSanitizer.sanitizeImageUrl(newsData.getNewsImageUrl()));
+        
         // 3) Model에 데이터 추가
         model.addAttribute("newsData", newsData);
         model.addAttribute("page", page);
@@ -248,6 +262,7 @@ public class NewsController {
             NewsDTO dto,
             @RequestParam("thumbFile") MultipartFile thumbFile,
             HttpSession session,
+            HttpServletRequest request,
             Model model,
             RedirectAttributes ra
     ) {
@@ -270,32 +285,47 @@ public class NewsController {
 
         // 3) 입력값 검증
         Integer animeId = dto.getAnimeId();
-        String newsTitle = (dto.getNewsTitle() == null) ? "" : dto.getNewsTitle().trim();
-        String newsContent = (dto.getNewsContent() == null) ? "" : dto.getNewsContent().trim();
+
+        String rawNewsTitle = (dto.getNewsTitle() == null) ? "" : dto.getNewsTitle().trim();
+        String rawNewsContent = (dto.getNewsContent() == null) ? "" : dto.getNewsContent().trim();
 
         // 제목 검증
-        if (newsTitle.isEmpty()) {
+        if (rawNewsTitle.isEmpty()) {
             model.addAttribute("msg", "제목은 필수입니다.");
             model.addAttribute("location", "/newsWrite");
             return "message";
         }
-        if (newsTitle.length() > 255) {
+        if (rawNewsTitle.length() > 255) {
             model.addAttribute("msg", "제목은 255자 이내로 작성해주세요.");
             model.addAttribute("location", "/newsWrite");
             return "message";
         }
 
-        // 내용 검증
-        if (newsContent.isEmpty()) {
+        // 내용 검증 (원본 기준)
+        if (rawNewsContent.isEmpty()) {
             model.addAttribute("msg", "내용은 필수입니다.");
             model.addAttribute("location", "/newsWrite");
             return "message";
         }
+        if (rawNewsContent.length() > 100000) {
+            model.addAttribute("msg", "내용이 너무 깁니다.");
+            model.addAttribute("location", "/newsWrite");
+            return "message";
+        }
 
-        // XSS 방지
-        String lowerContent = newsContent.toLowerCase();
-        if (lowerContent.contains("<script") || lowerContent.contains("javascript:")) {
-            model.addAttribute("msg", "허용되지 않는 내용이 포함되어 있습니다.");
+        //  [핵심] 서버측 HTML Sanitizing
+        String newsTitle = htmlSanitizer.sanitizePlainText(rawNewsTitle);
+        if (newsTitle.isEmpty()) {
+            model.addAttribute("msg", "제목은 필수입니다.");
+            model.addAttribute("location", "/newsWrite");
+            return "message";
+        }
+        
+        
+        // (보조) 문자열 기반 차단 - sanitize가 핵심 방어, 이건 보조 유지
+        String newsContent = htmlSanitizer.sanitizeNewsHtml(rawNewsContent);
+        if (newsContent.isEmpty()) {
+            model.addAttribute("msg", "내용은 필수입니다.");
             model.addAttribute("location", "/newsWrite");
             return "message";
         }
@@ -309,13 +339,15 @@ public class NewsController {
 
         // 4) 파일 업로드 + DB 저장
         try {
-            String thumbnailUrl = saveFile(thumbFile, "/upload/newsThumb/");
-            String newsImageUrl = extractFirstImgSrc(newsContent);
+            String thumbnailUrl = saveFile(thumbFile, "/upload/newsThumb/", request);
+
+            // sanitize된 HTML 기준으로 첫 이미지 추출 (더 안전/일관적)
+            String newsImageUrl = htmlSanitizer.sanitizeImageUrl(extractFirstImgSrc(newsContent));
 
             NewsDTO insertDTO = new NewsDTO();
             insertDTO.setAnimeId(animeId);
-            insertDTO.setNewsTitle(newsTitle);
-            insertDTO.setNewsContent(newsContent);
+            insertDTO.setNewsTitle(newsTitle);             //  normalize된 제목 저장
+            insertDTO.setNewsContent(newsContent);     //  sanitize된 본문 저장
             insertDTO.setNewsThumbnailUrl(thumbnailUrl);
             insertDTO.setNewsImageUrl(newsImageUrl);
             insertDTO.setCondition("NEWS_INSERT");
@@ -400,6 +432,14 @@ public class NewsController {
             return "message";
         }
 
+        //  수정 화면 진입 시에도 본문 sanitize
+        // - 레거시 데이터/이상 HTML이 textarea로 그대로 내려가는 것 방지
+        // - boardEditPage에서 한 방식과 동일한 방어
+        newsData.setNewsTitle(htmlSanitizer.sanitizePlainText(newsData.getNewsTitle()));
+        newsData.setNewsContent(htmlSanitizer.sanitizeNewsHtml(newsData.getNewsContent()));
+        newsData.setNewsThumbnailUrl(htmlSanitizer.sanitizeImageUrl(newsData.getNewsThumbnailUrl()));
+        newsData.setNewsImageUrl(htmlSanitizer.sanitizeImageUrl(newsData.getNewsImageUrl()));
+
         // 5) 수정 페이지 이동
         model.addAttribute("type", "NEWS");
         model.addAttribute("newsData", newsData);
@@ -423,6 +463,7 @@ public class NewsController {
             @RequestParam(value = "thumbFile", required = false) MultipartFile thumbFile,
             @RequestParam(value = "newsImageFile", required = false) MultipartFile newsImageFile,
             HttpSession session,
+            HttpServletRequest request,
             Model model,
             RedirectAttributes ra
     ) {
@@ -451,62 +492,77 @@ public class NewsController {
             return "message";
         }
 
-        // 4) 입력값 검증
-        String newsTitle = (dto.getNewsTitle() == null) ? "" : dto.getNewsTitle().trim();
-        String newsContent = (dto.getNewsContent() == null) ? "" : dto.getNewsContent().trim();
+        String rawNewsTitle = (dto.getNewsTitle() == null) ? "" : dto.getNewsTitle().trim();
+        String rawNewsContent = (dto.getNewsContent() == null) ? "" : dto.getNewsContent().trim();
 
         // 제목 검증
-        if (newsTitle.isEmpty()) {
+        if (rawNewsTitle.isEmpty()) {
             model.addAttribute("msg", "제목은 필수입니다.");
             model.addAttribute("location", "/newsEdit?newsId=" + newsId);
             return "message";
         }
-        if (newsTitle.length() > 255) {
+        if (rawNewsTitle.length() > 255) {
             model.addAttribute("msg", "제목은 255자 이내로 작성해주세요.");
             model.addAttribute("location", "/newsEdit?newsId=" + newsId);
             return "message";
         }
 
         // 내용 검증
+        if (rawNewsContent.isEmpty()) {
+            model.addAttribute("msg", "내용은 필수입니다.");
+            model.addAttribute("location", "/newsEdit?newsId=" + newsId);
+            return "message";
+        }
+        if (rawNewsContent.length() > 100000) {
+            model.addAttribute("msg", "내용이 너무 깁니다.");
+            model.addAttribute("location", "/newsEdit?newsId=" + newsId);
+            return "message";
+        }
+
+        //  [핵심] 서버측 HTML Sanitizing
+        String newsTitle = htmlSanitizer.sanitizePlainText(rawNewsTitle);
+        String newsContent = htmlSanitizer.sanitizeNewsHtml(rawNewsContent);
+
+        if (newsTitle.isEmpty()) {
+            model.addAttribute("msg", "제목은 필수입니다.");
+            model.addAttribute("location", "/newsEdit?newsId=" + newsId);
+            return "message";
+        }
+
         if (newsContent.isEmpty()) {
             model.addAttribute("msg", "내용은 필수입니다.");
             model.addAttribute("location", "/newsEdit?newsId=" + newsId);
             return "message";
         }
-
-        // XSS 방지
-        String lowerContent = newsContent.toLowerCase();
-        if (lowerContent.contains("<script") || lowerContent.contains("javascript:")) {
-            model.addAttribute("msg", "허용되지 않는 내용이 포함되어 있습니다.");
-            model.addAttribute("location", "/newsEdit?newsId=" + newsId);
-            return "message";
-        }
+        
+        existingThumbUrl = htmlSanitizer.sanitizeImageUrl(existingThumbUrl);
+        existingImageUrl = htmlSanitizer.sanitizeImageUrl(existingImageUrl);
 
         // 5) 파일 업로드 + DB 업데이트
         try {
             // 썸네일: 새 파일이 있으면 업로드, 없으면 기존 URL 유지
             String thumbnailUrl = existingThumbUrl;
             if (thumbFile != null && !thumbFile.isEmpty()) {
-                thumbnailUrl = saveFile(thumbFile, "/upload/newsThumb/");
+                thumbnailUrl = saveFile(thumbFile, "/upload/newsThumb/", request);
             }
 
             // 이미지: 새 파일이 있으면 업로드, 없으면 기존 URL 유지
             String newsImageUrl = existingImageUrl;
             if (newsImageFile != null && !newsImageFile.isEmpty()) {
-                newsImageUrl = saveFile(newsImageFile, "/upload/newsImage/");
+                newsImageUrl = saveFile(newsImageFile, "/upload/newsImage/", request);
             }
 
-            // 이미지 URL이 없으면 content에서 추출
+            // 이미지 URL이 없으면 content에서 추출 (sanitize 결과 기준)
             if (newsImageUrl == null || newsImageUrl.isEmpty()) {
-                newsImageUrl = extractFirstImgSrc(newsContent);
+            	newsImageUrl = htmlSanitizer.sanitizeImageUrl(extractFirstImgSrc(newsContent));
             }
 
             // DB 업데이트
             NewsDTO updateDTO = new NewsDTO();
             updateDTO.setNewsId(newsId);
             updateDTO.setAnimeId(dto.getAnimeId());
-            updateDTO.setNewsTitle(newsTitle);
-            updateDTO.setNewsContent(newsContent);
+            updateDTO.setNewsTitle(newsTitle);             // normalize된 제목 저장
+            updateDTO.setNewsContent(newsContent);     // sanitize된 본문 저장
             updateDTO.setNewsThumbnailUrl(thumbnailUrl);
             updateDTO.setNewsImageUrl(newsImageUrl);
             updateDTO.setCondition("NEWS_UPDATE");
@@ -530,7 +586,7 @@ public class NewsController {
             return "message";
         }
     }
-
+    
     // ==================== 삭제 ====================
     
     /**
@@ -594,13 +650,31 @@ public class NewsController {
      * @param webDir 웹 경로 (예: /upload/newsThumb/)
      * @return 저장된 파일의 웹 경로
      */
-    private String saveFile(MultipartFile file, String webDir) throws Exception {
+    private String saveFile(MultipartFile file, String webDir, HttpServletRequest request) throws Exception {
         // 확장자 추출
         String originalFilename = file.getOriginalFilename();
         String extension = "";
         if (originalFilename != null && originalFilename.contains(".")) {
             extension = originalFilename.substring(originalFilename.lastIndexOf("."));
         }
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("업로드 파일이 없습니다.");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
+            throw new IllegalArgumentException("이미지 파일만 업로드 가능합니다.");
+        }
+        
+        if (originalFilename == null || originalFilename.trim().isEmpty()) {
+            throw new IllegalArgumentException("파일명이 올바르지 않습니다.");
+        }
+        
+        String extLower = extension.toLowerCase();
+        if (!extLower.equals(".jpg") && !extLower.equals(".jpeg") && !extLower.equals(".png")) {
+            throw new IllegalArgumentException("허용되지 않은 확장자입니다. (jpg/jpeg/png)");
+        }
+        
 
         // UUID 기반 파일명 생성
         String savedName = UUID.randomUUID().toString() + extension;
@@ -618,7 +692,7 @@ public class NewsController {
             Files.copy(inputStream, savedPath, StandardCopyOption.REPLACE_EXISTING);
         }
 
-        return webDir + savedName;
+        return request.getContextPath() + webDir + savedName;
     }
 
     /**

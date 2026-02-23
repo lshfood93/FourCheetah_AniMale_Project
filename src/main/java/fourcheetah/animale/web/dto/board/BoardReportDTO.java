@@ -1,5 +1,8 @@
 package fourcheetah.animale.web.dto.board;
 
+import java.time.LocalDateTime;
+
+
 /**
  * 게시글 신고 DTO
  */
@@ -12,10 +15,9 @@ public class BoardReportDTO {
     private int boardReportId;          // 신고 ID
     private int boardId;                // 게시글 ID
     private int reporterId;             // 신고자 ID
-    private String reasonCode;          // 신고 사유 코드
-    private String reasonDetail;        // 신고 사유 상세
+    private String reasonCode;          // 신고 사유 코드 (SPAM/ABUSE/OBSCENE/ILLEGAL/ETC)
     private String status;              // 상태 (PENDING/APPROVED/REJECTED)
-    private String createdAt;           // 신고 일시
+    private LocalDateTime createdAt;    // 신고 일시
     private String handledAt;           // 처리 일시
     private int handledBy;              // 처리자 ID
     
@@ -88,14 +90,6 @@ public class BoardReportDTO {
         this.reasonCode = reasonCode;
     }
     
-    public String getReasonDetail() {
-        return reasonDetail;
-    }
-    
-    public void setReasonDetail(String reasonDetail) {
-        this.reasonDetail = reasonDetail;
-    }
-    
     public String getStatus() {
         return status;
     }
@@ -104,11 +98,11 @@ public class BoardReportDTO {
         this.status = status;
     }
     
-    public String getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
     
-    public void setCreatedAt(String createdAt) {
+    public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
     

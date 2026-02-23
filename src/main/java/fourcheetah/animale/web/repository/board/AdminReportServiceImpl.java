@@ -2,11 +2,20 @@ package fourcheetah.animale.web.repository.board;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import fourcheetah.animale.web.service.board.AdminReportService;
+import fourcheetah.animale.web.service.member.EmailService;
 import fourcheetah.animale.web.dto.board.BoardReportDTO;
+import fourcheetah.animale.web.dto.board.BoardDTO;
+import fourcheetah.animale.web.dto.member.MemberDTO;
+import fourcheetah.animale.web.dto.member.MemberWarningDTO;
 import fourcheetah.animale.web.repository.board.BoardReportDAO;
+import fourcheetah.animale.web.repository.board.BoardDAO;
+import fourcheetah.animale.web.repository.member.MemberDAO;
+import fourcheetah.animale.web.repository.member.MemberWarningDAO;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -14,6 +23,18 @@ public class AdminReportServiceImpl implements AdminReportService {
 
     @Autowired
     private BoardReportDAO boardReportDAO;
+    
+    @Autowired
+    private BoardDAO boardDAO;
+    
+    @Autowired
+    private MemberDAO memberDAO;
+    
+    @Autowired
+    private MemberWarningDAO memberWarningDAO;
+    
+    @Autowired
+    private EmailService emailService;
 
     /**
      * 신고 목록 조회 (STEP 3: 실제 DB 조회)
@@ -41,7 +62,7 @@ public class AdminReportServiceImpl implements AdminReportService {
             List<BoardReportDTO> reports = boardReportDAO.selectAll(dto);
             
             // DAO 호출 - 전체 건수 조회
-            int totalCount = boardReportDAO.selectTotalCount();
+            int totalCount = boardReportDAO.getTotalCount();
             
             System.out.println("[Service] DAO 호출 완료");
             System.out.println("  - 조회된 신고: " + reports.size() + "건");
@@ -93,15 +114,12 @@ public class AdminReportServiceImpl implements AdminReportService {
         System.out.println("  - boardId: " + boardId);
         
         try {
-            BoardReportDTO dto = new BoardReportDTO();
-            dto.setBoardId(boardId);
-            
-            BoardReportDTO result = boardReportDAO.selectOne(dto);
+            BoardReportDTO result = boardReportDAO.selectReportDetail(boardId);
             
             if (result == null) {
                 System.out.println("[Service] 신고 데이터 없음");
             } else {
-                System.out.println("[Service] 신고 상세 조회 완료");
+                System.out.println("[Service] 신고 상세 조회 완료 - writerId=" + result.getBoardWriterId());
             }
             
             return result;
@@ -114,7 +132,7 @@ public class AdminReportServiceImpl implements AdminReportService {
     }
 
     /**
-     * 신고 반려 (CRUD 통일)
+     * 신고 반려
      */
     @Override
     public boolean updateReportReject(int boardId, int handledBy) {
@@ -123,11 +141,7 @@ public class AdminReportServiceImpl implements AdminReportService {
         System.out.println("  - handledBy: " + handledBy);
         
         try {
-            BoardReportDTO dto = new BoardReportDTO();
-            dto.setBoardId(boardId);
-            dto.setHandledBy(handledBy);
-            
-            boolean result = boardReportDAO.update(dto);
+            boolean result = boardReportDAO.rejectReport(boardId, handledBy);
             
             if (result) {
                 System.out.println("[Service] 신고 반려 처리 완료");
@@ -145,18 +159,20 @@ public class AdminReportServiceImpl implements AdminReportService {
     }
 
     /**
-     * 신고 승인 (CRUD 통일)
-     * 
-     * 주의: boardWriterId를 따로 조회해야 함!
+     * ⭐ 신고 승인 (5단계 트랜잭션 + 제재 판정 + 이메일 발송)
      */
     @Override
+    @Transactional
     public boolean updateReportApprove(int boardId, int handledBy) {
+        System.out.println("========================================");
         System.out.println("[Service] updateReportApprove 호출됨");
         System.out.println("  - boardId: " + boardId);
         System.out.println("  - handledBy: " + handledBy);
         
         try {
-            // 1. 먼저 게시글 작성자 ID 조회
+            // ========================================
+            // 1단계 게시글 작성자 조회
+            // ========================================
             BoardReportDTO reportDetail = selectReportDetail(boardId);
             
             if (reportDetail == null) {
@@ -165,19 +181,99 @@ public class AdminReportServiceImpl implements AdminReportService {
             }
             
             int boardWriterId = reportDetail.getBoardWriterId();
-            System.out.println("[Service] 게시글 작성자 ID: " + boardWriterId);
+            System.out.println("[1단계] 게시글 작성자 ID: " + boardWriterId);
             
-            // 2. DAO의 트랜잭션 메서드 호출
-            boolean result = boardReportDAO.approveReport(boardId, boardWriterId, handledBy);
+            // ========================================
+            // 2단계 게시글 삭제 + 신고 승인
+            // ========================================
+            System.out.println("[2단계] BoardReportDAO.approveReport() 호출");
+            boolean daoResult = boardReportDAO.approveReport(boardId, boardWriterId, handledBy);
             
-            if (result) {
-                System.out.println("[Service] 신고 승인 처리 완료");
-                System.out.println("  - 게시글 삭제됨");
-                System.out.println("  - 작성자 경고 +1");
-                System.out.println("  - 경고 기록 생성");
+            if (!daoResult) {
+                System.out.println("[2단계] DAO 처리 실패");
+                return false;
             }
             
-            return result;
+            System.out.println("[2단계] DAO 처리 완료 (게시글 삭제 + 신고 승인 + 작성자 누적 +1)");
+            
+            // ========================================
+            // 3단계 작성자 정보 재조회 (누적 횟수 확인)
+            // ========================================
+            MemberDTO memberDTO = new MemberDTO();
+            memberDTO.setMemberId(boardWriterId);
+            memberDTO.setCondition("MEMBER_MYPAGE");
+            
+            MemberDTO member = memberDAO.selectOne(memberDTO);
+            
+            if (member == null) {
+                System.out.println("[3단계] 회원 정보 조회 실패");
+                return false;
+            }
+            
+            int newCount = member.getValidReportCount();
+            String memberEmail = member.getMemberEmail();
+            
+            System.out.println("[3단계] 작성자 누적 신고 횟수: " + newCount + "회");
+            System.out.println("[3단계] 작성자 이메일: " + memberEmail);
+            
+            // ========================================
+            // 4단계 제재 판정 (3회/5회/6회)
+            // ========================================
+            String warningType = null;
+            LocalDateTime endAt = null;
+            String reason = null;
+            
+            // 1~2회: 경고 / 3~4회: 7일 정지 / 5~6회: 30일 정지 / 7회+: 영구 정지
+            if (newCount >= 7) {
+                warningType = "BAN";
+                endAt = null;
+                reason = "유효 신고 누적 7회 이상 - 영구 정지";
+                System.out.println("[4단계] 제재 판정: 영구 정지");
+                
+            } else if (newCount >= 5) {
+                warningType = "SUSPEND_30D";
+                endAt = LocalDateTime.now().plusDays(30);
+                reason = "유효 신고 누적 5~6회 - 30일 정지";
+                System.out.println("[4단계] 제재 판정: 30일 정지");
+                
+            } else if (newCount >= 3) {
+                warningType = "SUSPEND_7D";
+                endAt = LocalDateTime.now().plusDays(7);
+                reason = "유효 신고 누적 3~4회 - 7일 정지";
+                System.out.println("[4단계] 제재 판정: 7일 정지");
+                
+            } else {
+                warningType = "WARNING";
+                endAt = LocalDateTime.now().plusDays(1);
+                reason = "게시글 신고 승인 - 경고 (누적 " + newCount + "회)";
+                System.out.println("[4단계] 제재 판정: 경고 (누적 " + newCount + "회)");
+            }
+            
+         // ========================================
+         // 5단계 이메일 발송
+         // ========================================
+         if (warningType != null) {
+             System.out.println("[5단계] 제재 알림 이메일 발송 시작");
+             
+             try {
+                 emailService.sendSanctionNotice(memberEmail, warningType, endAt, reason);
+                 System.out.println("[5단계] 이메일 발송 성공");
+                 
+             } catch (Exception e) {
+                 System.out.println("[5단계] 이메일 발송 실패: " + e.getMessage());
+                 // 이메일 실패해도 트랜잭션 롤백 안 함
+             }
+         }
+            
+            System.out.println("========================================");
+            System.out.println("[Service] 신고 승인 처리 완료");
+            System.out.println("  - 게시글 삭제됨");
+            System.out.println("  - 작성자 경고 +1");
+            System.out.println("  - 제재 타입: " + (warningType != null ? warningType : "없음"));
+            System.out.println("  - 경고 기록 생성됨");
+            System.out.println("========================================");
+            
+            return true;
             
         } catch (Exception e) {
             System.out.println("[Service 에러] " + e.getMessage());

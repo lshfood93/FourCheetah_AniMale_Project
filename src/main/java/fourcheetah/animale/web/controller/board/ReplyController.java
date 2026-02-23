@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 
 import fourcheetah.animale.web.dto.board.ReplyDTO;
 import fourcheetah.animale.web.service.board.ReplyService;
+import fourcheetah.animale.web.aop.SanctionCheck;
+import fourcheetah.animale.web.aop.DeletedBoardCheck;
+import fourcheetah.animale.web.common.HtmlSanitizer; // ✅ 추가
 import jakarta.servlet.http.HttpSession;
 
 /** 댓글 통합 컨트롤러
@@ -23,8 +26,13 @@ public class ReplyController {
     @Autowired
     private ReplyService replyService;
 
+    @Autowired
+    private HtmlSanitizer htmlSanitizer; // 추가 (댓글 입력값 XSS 방어용)
+
     // =========================================================
     // 1) 댓글 작성 (POST /replyWrite)
+    @SanctionCheck(allowTypes = {"WARNING"})  
+    @DeletedBoardCheck  
     @PostMapping("/replyWrite")
     public String replyWrite(
             ReplyDTO replyDTO,
@@ -53,25 +61,29 @@ public class ReplyController {
             return message(model, "잘못된 게시글 접근입니다.", "/mainPage");
         }
 
-        // 3) replyContent 검증
-        String replyContent = replyDTO.getReplyContent();
-        System.out.println("[댓글 작성 로그] replyContentParam=" + replyContent);
+        // 3) replyContent 검증 + XSS 방어
+        String rawReplyContent = replyDTO.getReplyContent();
+        System.out.println("[댓글 작성 로그] replyContentParam=" + rawReplyContent);
 
-        if (replyContent == null || replyContent.trim().isEmpty()) {
+        // 핵심: 댓글은 리치텍스트가 아니라 일반 텍스트 필드
+        //    -> 태그 제거 + 제어문자 정리 + trim 적용
+        String replyContent = htmlSanitizer.sanitizePlainText(rawReplyContent);
+
+        // sanitize 결과 기준으로 빈값 검증
+        if (replyContent.isEmpty()) {
             return message(model, "댓글 내용은 필수입니다.", "/boardDetail?boardId=" + boardId);
         }
 
-        replyContent = replyContent.trim();
-
+        // sanitize 결과 기준으로 길이 검증 (기존 정책 500자 유지)
         if (replyContent.length() > 500) {
             return message(model, "댓글은 500자 이내로 작성해주세요.", "/boardDetail?boardId=" + boardId);
         }
 
         // 4) DTO 세팅 + INSERT
-        replyDTO.setCondition("REPLY_INSERT");
+        replyDTO.setCondition("REPLY_INSERT");   // 기존 condition 유지
         replyDTO.setBoardId(boardId);
         replyDTO.setMemberId(memberId);
-        replyDTO.setReplyContent(replyContent);
+        replyDTO.setReplyContent(replyContent);  // sanitize된 값 저장
 
         boolean result = replyService.insert(replyDTO);
 
@@ -86,6 +98,7 @@ public class ReplyController {
 
     // =========================================================
     // 2) 댓글 수정 (POST /replyEdit)
+    @SanctionCheck(allowTypes = {"WARNING"})  
     @PostMapping("/replyEdit")
     public String replyEdit(
             ReplyDTO replyDTO,
@@ -123,25 +136,27 @@ public class ReplyController {
             return message(model, "잘못된 댓글 접근입니다.", "/boardDetail?boardId=" + boardId);
         }
 
-        // 4) replyContent 검증
-        String replyContent = replyDTO.getReplyContent();
-        System.out.println("[댓글 수정 로그] replyContentParam=" + replyContent);
+        // 4) replyContent 검증 + XSS 방어
+        String rawReplyContent = replyDTO.getReplyContent();
+        System.out.println("[댓글 수정 로그] replyContentParam=" + rawReplyContent);
 
-        if (replyContent == null || replyContent.trim().isEmpty()) {
+        // 핵심: 수정도 작성과 동일 정책 적용
+        String replyContent = htmlSanitizer.sanitizePlainText(rawReplyContent);
+
+        // sanitize 결과 기준 검증
+        if (replyContent.isEmpty()) {
             return message(model, "댓글 내용은 필수입니다.", "/boardDetail?boardId=" + boardId);
         }
-
-        replyContent = replyContent.trim();
 
         if (replyContent.length() > 500) {
             return message(model, "댓글은 500자 이내로 작성해주세요.", "/boardDetail?boardId=" + boardId);
         }
 
         // 5) UPDATE
-        replyDTO.setCondition("REPLY_UPDATE");
+        replyDTO.setCondition("REPLY_UPDATE");   // 기존 condition 유지
         replyDTO.setReplyId(replyId);
         replyDTO.setMemberId(memberId);          // 본인 확인용
-        replyDTO.setReplyContent(replyContent);  // trim 반영
+        replyDTO.setReplyContent(replyContent);  // sanitize 반영
 
         boolean result = replyService.update(replyDTO);
 
@@ -156,6 +171,7 @@ public class ReplyController {
 
     // =========================================================
     // 3) 댓글 삭제 (POST /replyDelete)
+    @SanctionCheck(allowTypes = {"WARNING"})  
     @PostMapping("/replyDelete")
     public String replyDelete(
             ReplyDTO replyDTO,
