@@ -28,7 +28,7 @@ public class AdminCashDashboardController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
- // [CHANGED] approved_at NULL 허용 → created_at로 fallback 해서 집계 안정화
+ // approved_at NULL 허용 → created_at로 fallback 해서 집계 안정화
     private static final String DASHBOARD_MONTH_APPROVED_COUNT =
         "SELECT COUNT(*) " +
         "FROM CASH_CHARGE " +
@@ -96,7 +96,7 @@ public class AdminCashDashboardController {
 
 
         // =========================================================
-        // 3) [CHANGED] 승인 건수(이번달/전월) 둘 다 계산
+        // 3) 승인 건수(이번달/전월) 둘 다 계산
         // =========================================================
         Integer cnt = jdbcTemplate.queryForObject(DASHBOARD_MONTH_APPROVED_COUNT, Integer.class, y, m);
         int approvedCount = (cnt == null) ? 0 : cnt;
@@ -155,7 +155,7 @@ public class AdminCashDashboardController {
         }
 
         // =========================================================
-        // 6) [CHANGED] 전월 데이터 유무 판정은 "전월 승인건수" 기반이 더 정확
+        // 6) 전월 데이터 유무 판정은 "전월 승인건수" 기반이 더 정확
         // =========================================================
         boolean hasPrev = lastMonthApprovedCount > 0;
         String direction = "NONE";
