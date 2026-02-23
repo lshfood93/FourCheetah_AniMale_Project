@@ -1,6 +1,6 @@
 // /js/boarddetail.js
 // =========================================================
-// Board Detail Page Script (ES5 + fetch / 주석 복습용 버전)
+// Board Detail Page Script (ES5 + fetch)
 //
 // 내가 여기서 하고 싶은 것
 // 1) 게시글 상세에서 좋아요/댓글/신고를 페이지 새로고침 없이 처리한다.

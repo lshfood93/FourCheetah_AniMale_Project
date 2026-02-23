@@ -1,10 +1,17 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 
-<%-- ✅ ctx는 include(header.jsp)에서도 쓰일 수 있으니 request scope로 내려줌 --%>
+<%-- 
+  이 페이지에서도 header.jsp에서 ctx를 쓸 수 있게 request scope로 내려둔다.
+  include된 JSP는 같은 request를 공유하니까 여기서 한 번만 잡아두면 편하다.
+--%>
 <c:set var="ctx" value="${pageContext.request.contextPath}" scope="request" />
 
-<%-- ✅ 관리자 전용 페이지: ADMIN 아니면 접근 차단(컨트롤러 차단이 1순위지만 JSP에서도 2중 안전장치) --%>
+<%-- 
+  관리자 전용 화면이라 JSP에서도 한 번 더 막아둔다.
+  실제 권한 차단 1순위는 컨트롤러지만, 화면 단에서도 방어막을 두면 실수 방지에 좋다.
+  세션에 role이 없거나 ADMIN이 아니면 메인으로 보낸다.
+--%>
 <c:if test="${empty sessionScope.memberRole or sessionScope.memberRole ne 'ADMIN'}">
   <c:redirect url="${ctx}/mainPage" />
 </c:if>
@@ -20,14 +27,17 @@
 
   <title>ANIMale | 애니 생성 페이지</title>
 
-  <link rel="icon" type="image/png" href="${ctx}/favicon.png"><%-- ✅ ctx 적용 --%>
+  <link rel="icon" type="image/png" href="${ctx}/favicon.png"><%-- favicon도 컨텍스트 경로 기준으로 맞춘다 --%>
 
   <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Css Styles -->
-  <%-- ✅ 상대경로(css/..) -> ctx 기반 절대경로로 통일(서브경로에서 404 방지) --%>
+  <%-- 
+    템플릿 리소스는 전부 ctx 기준 절대경로로 통일.
+    상대경로(css/...)로 두면 /admin/... 같은 하위 경로에서 404 나는 경우가 생긴다.
+  --%>
   <link rel="stylesheet" href="${ctx}/css/bootstrap.min.css" type="text/css">
   <link rel="stylesheet" href="${ctx}/css/font-awesome.min.css" type="text/css">
   <link rel="stylesheet" href="${ctx}/css/elegant-icons.css" type="text/css">
@@ -37,7 +47,11 @@
   <link rel="stylesheet" href="${ctx}/css/slicknav.min.css" type="text/css">
   <link rel="stylesheet" href="${ctx}/css/style.css" type="text/css">
 
-  <%-- ✅ 기존에 head 밖에 있던 style을 head 안으로 이동(HTML 구조 정상화) --%>
+  <%-- 
+    페이지 전용 스타일.
+    예전에 style이 head 밖에 있으면 HTML 구조가 애매해져서 여기로 모아두는 쪽이 안전하다.
+    템플릿 기본 룩은 유지하고, 생성 폼에 필요한 최소 보정만 넣는다.
+  --%>
   <style>
     .auth-bar{
       padding:10px 0;
@@ -108,13 +122,13 @@
     }
     .header__right .auth-link--muted:hover{ color:#fff; }
 
-    /* 생성 페이지용 최소 보강 (템플릿 룩 &필 유지) */
+    /* 생성 페이지 폼용 최소 보정 (템플릿 느낌 유지하면서 입력 UX만 정리) */
     .admin-form .form-control,
     .admin-form select.form-control,
     .admin-form textarea.form-control{
       border-radius:8px;
       height:46px;
-      line-height:46px; /* 핵심 */
+      line-height:46px; /* input/select 높이와 텍스트 세로 정렬감 맞추기 */
     }
 
     .admin-form textarea.form-control{
@@ -129,14 +143,14 @@
       margin-top:6px;
     }
 
-    /* 템플릿의 watch-btn / follow-btn를 button에도 자연스럽게 적용 */
+    /* 템플릿에서 a 태그 기준으로 잡힌 버튼 스타일을 button에도 자연스럽게 먹게 맞춤 */
     .anime__details__btn .watch-btn,
     .anime__details__btn .follow-btn{
       border:none;
       cursor:pointer;
     }
 
-    /* (A) watch-btn 오른쪽 흰 박스 제거: 아이콘 영역도 동일한 빨간색으로 통일 */
+    /* 등록 버튼(watch-btn) 오른쪽 아이콘 영역 색이 따로 놀지 않게 전체를 동일한 빨간색으로 통일 */
     .anime__details__btn .watch-btn,
     .anime__details__btn .watch-btn span,
     .anime__details__btn .watch-btn i{
@@ -144,7 +158,7 @@
       color:#fff !important;
     }
 
-    /* 아이콘 영역에 들어가던 분리선/여백 느낌까지 제거(있을 경우) */
+    /* 템플릿 기본 분리선/아이콘 영역 스타일이 남아 있으면 제거해서 한 덩어리 버튼처럼 보이게 처리 */
     .anime__details__btn .watch-btn i{ border-left:none !important; }
 
     .anime__details__btn .watch-btn[disabled]{
@@ -152,7 +166,7 @@
       cursor:not-allowed;
     }
 
-    /* 썸네일 미리보기 영역 */
+    /* 파일 선택 전 썸네일 미리보기 기본 박스 */
     .preview-fallback{
       background:#2a2a2a;
       display:flex;
@@ -165,7 +179,7 @@
 
     .admin-form label{ color:#fff !important; }
 
-    /* 썸네일 아래 도움말 글자색 고정 */
+    /* 썸네일 박스 바로 아래 도움말 색 고정 (템플릿 영향으로 흐려지는 것 방지) */
     #thumbBox + .help{ color:rgba(255,255,255,0.85) !important; }
 
     #thumbBox{
@@ -176,7 +190,7 @@
 
     #anime_quarter{
       height:46px;
-      line-height:46px; /* 핵심 */
+      line-height:46px; /* select 높이 맞췄을 때 텍스트가 위아래로 치우치지 않게 보정 */
       padding-top:10px;
       padding-bottom:10px;
     }
@@ -185,7 +199,7 @@
 
 <body>
 
-  <%-- header.jsp는 request scope ctx 사용 가능 --%>
+  <%-- header.jsp에서 requestScope.ctx를 그대로 사용할 수 있게 위에서 미리 세팅해둔 상태 --%>
   <jsp:include page="/WEB-INF/common/header.jsp" />
 
   <!-- Auth Bar Begin -->
@@ -193,7 +207,10 @@
     <div class="container">
       <c:choose>
 
-        <%-- ✅ 이 페이지는 ADMIN만 접근 가능하지만, 혹시 세션이 풀렸을 때를 대비해 링크도 ctx 적용 --%>
+        <%-- 
+          원칙적으로 이 화면까지 오기 전에 ADMIN 체크로 걸러지지만,
+          세션 만료/예외 상황까지 생각해서 링크 경로는 안전하게 ctx 기준으로 맞춘다.
+        --%>
         <c:when test="${empty sessionScope.memberId}">
           <ul class="auth-bar__menu">
             <li><a href="${ctx}/login">로그인</a></li>
@@ -207,7 +224,7 @@
             <c:out value="${sessionScope.memberName}" />
           </span>
 
-          <%-- ✅ 절대경로(/adminPage) -> ctx 기반으로 통일 --%>
+          <%-- 관리자 링크도 전부 ctx 기준으로 통일해서 배포 경로 바뀌어도 깨지지 않게 유지 --%>
           <a href="${ctx}/adminPage" style="margin-right:10px; color:#fff; font-size:14px;">관리자페이지</a>
           <a href="${ctx}/logout" style="color:#fff; font-size:14px;">로그아웃</a>
         </c:when>
@@ -217,7 +234,7 @@
             <c:out value="${sessionScope.memberName}" />님
           </span>
 
-          <%-- ✅ 절대경로(/myPage,/logout) -> ctx 기반으로 통일 --%>
+          <%-- 일반 사용자용 링크 분기 (혹시 화면 재사용/예외 흐름이 생겨도 경로는 동일 규칙 유지) --%>
           <a href="${ctx}/myPage" style="margin-right:10px; color:#fff; font-size:14px;">마이페이지</a>
           <a href="${ctx}/logout" style="color:#fff; font-size:14px;">로그아웃</a>
         </c:otherwise>
@@ -233,7 +250,7 @@
       <div class="row">
         <div class="col-lg-12">
           <div class="breadcrumb__links">
-            <%-- ✅ href="/mainPage" 같은 절대경로 -> ctx 기반으로 통일 --%>
+            <%-- 브레드크럼 링크도 모두 ctx 기준으로 맞춰서 하위 경로 접근 시 경로 꼬임 방지 --%>
             <a href="${ctx}/mainPage"><i class="fa fa-home"></i> 홈</a>
             <a href="${ctx}/adminPage">관리자</a>
             <span>애니 추가</span>
@@ -251,7 +268,7 @@
       <div class="anime__details__content">
         <div class="row">
 
-          <!-- LEFT: 썸네일 미리보기 (템플릿 구조 유지) -->
+          <!-- LEFT: 썸네일 미리보기 (템플릿 좌측 비주얼 영역 구조 재사용) -->
           <div class="col-lg-3">
             <div id="thumbBox"
                  class="anime__details__pic set-bg"
@@ -261,7 +278,7 @@
             <div class="help">이미지 파일을 선택하면 좌측 미리보기에 즉시 반영됩니다.</div>
           </div>
 
-          <!-- RIGHT: 폼 영역 -->
+          <!-- RIGHT: 입력 폼 영역 -->
           <div class="col-lg-9">
             <div class="anime__details__text">
 
@@ -270,7 +287,7 @@
                 <span>필수 항목을 입력한 뒤 등록을 완료하세요.</span>
               </div>
 
-              <%-- 서버에서 에러 메시지를 내려주는 경우 표시(선택) --%>
+              <%-- 서버 검증 실패 등으로 에러 메시지가 내려오면 화면 상단에 바로 표시 --%>
               <c:if test="${not empty errorMsg}">
                 <div class="alert alert-danger" style="margin-top:16px;">
                   ${errorMsg}
@@ -278,10 +295,11 @@
               </c:if>
 
               <div class="admin-form" style="margin-top:18px;">
-                <%--
-                  Submit 서비스 형태
-                  - action은 /animeWrite로 통일 (POST에서 insert 처리)
-                  - 성공 시: /animeDetail?animeId=... 로 redirect(프로젝트 정책에 맞게)
+                <%-- 
+                  등록 폼 동작 메모
+                  - POST /animeWrite 로 전송
+                  - enctype은 파일 업로드 때문에 multipart/form-data 사용
+                  - 성공 후 이동 경로는 컨트롤러 정책(예: 상세페이지 redirect)에 따름
                 --%>
                 <form id="animeWriteForm"
                       action="${ctx}/animeWrite"
@@ -290,7 +308,7 @@
 
                   <div class="row">
 
-                    <!-- anime_title -->
+                    <!-- anime_title: 사용자에게 보여줄 제목 -->
                     <div class="col-lg-12">
                       <div class="form-group" style="margin-bottom:16px;">
                         <label style="display:block; margin-bottom:8px;">
@@ -306,7 +324,7 @@
                       </div>
                     </div>
 
-                    <!-- original_title -->
+                    <!-- original_title: 원제(일본어/영문 등 원본 표기 저장용) -->
                     <div class="col-lg-12">
                       <div class="form-group" style="margin-bottom:16px;">
                         <label style="display:block; margin-bottom:8px;">
@@ -322,7 +340,7 @@
                       </div>
                     </div>
 
-                    <!-- anime_year -->
+                    <!-- anime_year: 방영 연도 -->
                     <div class="col-lg-6 col-md-6">
                       <div class="form-group" style="margin-bottom:16px;">
                         <label style="display:block; margin-bottom:8px;">
@@ -339,7 +357,7 @@
                       </div>
                     </div>
 
-                    <!-- anime_quarter -->
+                    <!-- anime_quarter: 방영 분기 -->
                     <div class="col-lg-6 col-md-6">
                       <div class="form-group" style="margin-bottom:16px;">
                         <label style="display:block; margin-bottom:8px;">
@@ -358,7 +376,7 @@
                       </div>
                     </div>
 
-                    <!-- anime_thumbnail_file -->
+                    <!-- thumbFile: 업로드할 썸네일 이미지 파일 -->
                     <div class="col-lg-12">
                       <div class="form-group" style="margin-bottom:16px;">
                         <label style="display:block; margin-bottom:8px;">
@@ -377,7 +395,7 @@
                       </div>
                     </div>
 
-                    <!-- anime_story -->
+                    <!-- anime_story: 작품 소개/줄거리 -->
                     <div class="col-lg-12">
                       <div class="form-group" style="margin-bottom:16px;">
                         <label style="display:block; margin-bottom:8px;">
@@ -394,14 +412,14 @@
 
                   </div>
 
-                  <!-- 버튼 영역: 템플릿의 anime__details__btn 영역 활용 -->
+                  <!-- 버튼 영역: 템플릿 버튼 영역 클래스 재사용 -->
                   <div class="anime__details__btn" style="margin-top:10px;">
                     <button type="submit" id="submitBtn" class="watch-btn" disabled>
                       <span>등록 완료</span>
                       <i class="fa fa-check"></i>
                     </button>
 
-                    <%-- ✅ 절대경로(/animeList) -> ctx 기반으로 통일 --%>
+                    <%-- 목록으로 돌아가는 링크도 ctx 기준으로 유지 --%>
                     <a href="${ctx}/animeList" class="follow-btn" style="margin-left:10px;">
                       <i class="fa fa-times"></i>
                       등록 취소
@@ -424,7 +442,10 @@
   <%@ include file="/WEB-INF/common/footer.jsp"%>
 
   <!-- Js Plugins -->
-  <%-- ✅ 상대경로(js/..) -> ctx 기반 절대경로로 통일(서브경로에서 404 방지) --%>
+  <%-- 
+    JS 파일도 CSS와 같은 이유로 ctx 기준 절대경로 사용.
+    페이지 경로 깊이에 따라 상대경로가 틀어지는 문제를 미리 막는다.
+  --%>
   <script src="${ctx}/js/jquery-3.3.1.min.js"></script>
   <script src="${ctx}/js/bootstrap.min.js"></script>
   <script src="${ctx}/js/player.js"></script>
@@ -434,9 +455,10 @@
   <script src="${ctx}/js/owl.carousel.min.js"></script>
   <script src="${ctx}/js/main.js"></script>
 
-  <!-- 페이지 전용 JS: 버튼 활성화 + 썸네일 미리보기 -->
+  <!-- 페이지 전용 JS: 필수값 검사 + 썸네일 미리보기 -->
   <script>
     (function () {
+      // 폼 요소 참조를 한 번만 잡아두고 재사용
       var titleEl = document.getElementById('anime_title');
       var yearEl = document.getElementById('anime_year');
       var originalTitleEl = document.getElementById('original_title');
@@ -447,10 +469,13 @@
       var thumbBox = document.getElementById('thumbBox');
       var formEl = document.getElementById('animeWriteForm');
 
+      // 공백만 입력한 경우를 막기 위해 trim 기준으로 값 확인
       function trimVal(el) {
         return (el && el.value) ? String(el.value).trim() : '';
       }
 
+      // 버튼 활성화 조건을 한 군데에서 관리
+      // required가 있어도 UX상 미리 버튼 상태를 보여주기 위해 별도 체크함
       function validateForm() {
         var titleOk = trimVal(titleEl).length > 0;
         var yearOk = trimVal(yearEl).length > 0;
@@ -464,9 +489,11 @@
 
       if (fileEl) {
         fileEl.addEventListener('change', function () {
+          // 파일 선택이 취소된 경우도 있으니 먼저 null 체크
           var file = (fileEl.files && fileEl.files[0]) ? fileEl.files[0] : null;
           if (!file) { validateForm(); return; }
 
+          // 선택한 이미지를 서버 업로드 전에 브라우저에서 바로 미리보기
           var reader = new FileReader();
           reader.onload = function (e) {
             if (!thumbBox) return;
@@ -476,11 +503,14 @@
           };
           reader.readAsDataURL(file);
 
+          // 파일 선택 상태도 필수 검증 조건에 포함되므로 같이 재검사
           validateForm();
         });
       }
 
-      // 입력 변화마다 검증
+      // 입력/변경 이벤트마다 버튼 상태 갱신
+      // input: 타이핑 중 실시간 반영
+      // change: select/file 등 변경 반영
       var events = ['input', 'change'];
       for (var i = 0; i < events.length; i++) {
         var evt = events[i];
@@ -491,7 +521,10 @@
         if (storyEl) storyEl.addEventListener(evt, validateForm);
       }
 
-      <%-- ✅ 엔터 제출/예외 제출 방지: submit에서도 한 번 더 검증 --%>
+      <%-- 
+        버튼 disabled만 믿지 않고 submit 시점에도 한 번 더 검증한다.
+        엔터키 제출이나 브라우저 동작 차이로 우회되는 상황을 줄이기 위한 마지막 체크.
+      --%>
       if (formEl) {
         formEl.addEventListener('submit', function (e) {
           validateForm();
@@ -503,6 +536,7 @@
         });
       }
 
+      // 초기 진입 시점에도 버튼 상태 맞춰두기 (기본 disabled 유지 확인용)
       validateForm();
     })();
   </script>
