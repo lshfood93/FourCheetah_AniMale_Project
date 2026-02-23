@@ -22,6 +22,8 @@
 <%-- 이 페이지에서 정적 리소스 / 링크 / API 경로 만들 때 계속 쓰므로 ctx로 한번 빼둠 --%>
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
 
+
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -46,6 +48,7 @@
 
 <body>
   <%-- 공용 헤더 포함 (상단 네비/로그인 상태 등 공통 UI) --%>
+  <c:set var="activeMenu" value="ANILIST" scope="request" />
   <jsp:include page="/WEB-INF/common/header.jsp" />
 
   <section class="product-page spad anime-list-page">
