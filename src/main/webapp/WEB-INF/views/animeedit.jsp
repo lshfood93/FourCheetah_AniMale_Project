@@ -320,6 +320,7 @@
                   </div>
 
                   <form class="admin-form"
+                        id="animeEditForm"
                         action="${ctx}/animeEdit"
                         method="post"
                         enctype="multipart/form-data"
@@ -335,6 +336,23 @@
                            name="existingThumbUrl"
                            id="existingThumbUrl"
                            value="${animeData.animeThumbnailUrl}">
+
+                    <%--
+                      장르/태그 실제 서버 전송용 hidden.
+                      화면에서는 쉼표 입력칸을 사용하고, submit 직전에 JSON 배열 문자열로 맞춰서 여기에 넣는다.
+
+                      수정 페이지는 기존 DB 값을 먼저 hidden에 넣어두고,
+                      화면 진입 시 JS가 읽어서 보기 좋은 쉼표 문자열로 복원해준다.
+                    --%>
+                    <input type="hidden"
+                           name="animeGenres"
+                           id="anime_genres_json"
+                           value="<c:out value='${animeData.animeGenres}'/>">
+
+                    <input type="hidden"
+                           name="animeTags"
+                           id="anime_tags_json"
+                           value="<c:out value='${animeData.animeTags}'/>">
 
                     <div class="row">
 
@@ -459,6 +477,41 @@
                         </div>
                       </div>
 
+                      <%-- anime_genres: 화면에서는 쉼표 입력, submit 시 hidden에 JSON 문자열로 반영 --%>
+                      <div class="col-lg-6 col-md-6">
+                        <div class="form-group" style="margin-bottom: 16px;">
+                          <label>장르 (선택)</label>
+
+                          <input type="text"
+                                 class="form-control"
+                                 id="anime_genres_input"
+                                 maxlength="1000"
+                                 placeholder="예) 판타지, 액션, 모험">
+
+                          <div class="help">
+                            쉼표(,)로 구분해서 입력하세요. 저장 시 JSON 배열 문자열로 변환되어 전송됩니다.
+                            기존 값이 있으면 화면 진입 시 자동으로 불러옵니다.
+                          </div>
+                        </div>
+                      </div>
+
+                      <%-- anime_tags: 화면에서는 쉼표 입력, submit 시 hidden에 JSON 문자열로 반영 --%>
+                      <div class="col-lg-6 col-md-6">
+                        <div class="form-group" style="margin-bottom: 16px;">
+                          <label>태그 (선택)</label>
+
+                          <input type="text"
+                                 class="form-control"
+                                 id="anime_tags_input"
+                                 maxlength="1000"
+                                 placeholder="예) 성장, 힐링, 학교">
+
+                          <div class="help">
+                            쉼표(,)로 구분해서 입력하세요. 중복 항목은 자동으로 정리됩니다.
+                          </div>
+                        </div>
+                      </div>
+
                     </div>
 
                     <%-- 하단 액션 버튼 영역:
@@ -498,13 +551,19 @@
   <script>
   (function(){
     /* =========================================================
-       썸네일 미리보기 전용 스크립트
+       수정 화면 보조 스크립트
        ---------------------------------------------------------
-       이 스크립트의 역할은 서버 저장 로직이 아니라 "화면 UX 보조"다.
-       흐름은 딱 3단계:
-       1) 기존 썸네일 URL 표시
-       2) 새 파일 선택 시 즉시 미리보기(DataURL)
-       3) 되돌리기 클릭 시 파일 선택 해제 + 기존 미리보기 복구
+       이 스크립트에서 하는 일은 크게 2가지다.
+
+       1) 썸네일 미리보기 UX
+          - 기존 썸네일 표시
+          - 새 파일 선택 시 즉시 미리보기
+          - 되돌리기 버튼으로 기존 썸네일 복구
+
+       2) 장르/태그 입력 UX
+          - 서버 값(hidden, JSON 문자열)을 화면용 쉼표 문자열로 복원
+          - 사용자가 수정한 쉼표 입력값을 submit 전에 다시 JSON 문자열로 변환
+            -> 컨트롤러 dto.getAnimeGenres(), dto.getAnimeTags()로 전달
     ========================================================= */
 
     /* JSP에서 내려준 ctx를 JS에서도 써서 상대/절대 경로를 안정적으로 맞춤 */
@@ -520,6 +579,13 @@
     const fileNameEl = document.getElementById("thumbFileName");
     const resetBtn = document.getElementById("thumbResetBtn");
 
+    /* 수정 폼 + 장르/태그 요소 */
+    const formEl = document.getElementById("animeEditForm");
+    const genresInputEl = document.getElementById("anime_genres_input");
+    const tagsInputEl = document.getElementById("anime_tags_input");
+    const genresJsonEl = document.getElementById("anime_genres_json");
+    const tagsJsonEl = document.getElementById("anime_tags_json");
+
     function resolveUrl(u){
       /* DB에 저장된 썸네일 경로가 절대URL/컨텍스트포함경로/루트경로/상대경로로
          섞여 들어와도 브라우저가 실제로 열 수 있는 URL 형태로 통일하는 함수 */
@@ -527,16 +593,16 @@
       u = String(u).trim();
       if(!u) return "";
 
-      // 절대 URL(http/https)이면 그대로 사용
+      /* 절대 URL(http/https)이면 그대로 사용 */
       if(/^https?:\/\//i.test(u)) return u;
 
-      // DB 값에 컨텍스트 경로가 이미 포함되어 있으면 중복으로 ctx를 붙이지 않음
+      /* DB 값에 ctx가 이미 포함되어 있으면 중복으로 붙이지 않음 */
       if(ctx && u.indexOf(ctx + "/") === 0) return u;
 
-      // 루트 경로(/...) 형태면 ctx를 앞에 붙여서 프로젝트 기준 경로로 맞춤
+      /* 루트경로(/...)면 ctx를 앞에 붙여 프로젝트 기준 경로로 맞춤 */
       if(u.charAt(0) === "/") return ctx + u;
 
-      // 상대경로면 ctx/상대경로 형태로 보정
+      /* 상대경로면 ctx/상대경로 형태로 보정 */
       return ctx + "/" + u;
     }
 
@@ -547,7 +613,7 @@
       if(!box) return;
 
       if(url){
-        /* CSS url('...') 안에 작은따옴표가 깨지는 케이스 방지용 최소 이스케이프 */
+        /* CSS url('...') 안에서 작은따옴표 깨짐 방지용 최소 이스케이프 */
         const safe = url.replace(/'/g, "\\'");
         box.style.backgroundImage = "url('" + safe + "')";
         if(fallback) fallback.style.display = "none";
@@ -557,9 +623,94 @@
       }
     }
 
+    function parseCommaList(raw){
+      /* 쉼표 입력 문자열을 정리해서 배열로 만드는 함수
+         - 앞뒤 공백 제거
+         - 빈 항목 제거
+         - 중복 제거(입력 순서 유지) */
+      const text = raw == null ? "" : String(raw);
+      if(!text.trim()) return [];
+
+      const parts = text.split(",");
+      const result = [];
+      const seen = {};
+
+      for(let i = 0; i < parts.length; i++){
+        const item = String(parts[i]).trim();
+        if(!item) continue;
+        if(seen[item]) continue;
+        seen[item] = true;
+        result.push(item);
+      }
+      return result;
+    }
+
+    function jsonToCommaText(raw){
+      /* hidden에 들어있는 JSON 문자열(예: ["판타지","액션"])을
+         화면 표시용 쉼표 문자열(예: 판타지, 액션)로 바꾸는 함수
+
+         레거시/비정상 데이터도 생각해서:
+         - JSON 배열이면 정상 파싱 후 표시
+         - 파싱 실패하면 원문 그대로 보여줘서 사용자가 직접 고칠 수 있게 둔다 */
+      if(raw == null) return "";
+
+      const text = String(raw).trim();
+
+      if(!text || text === "null") return "";
+      if(text === "[]") return "";
+
+      try{
+        const parsed = JSON.parse(text);
+
+        if(Array.isArray(parsed)){
+          const cleaned = [];
+          const seen = {};
+
+          for(let i = 0; i < parsed.length; i++){
+            const item = parsed[i] == null ? "" : String(parsed[i]).trim();
+            if(!item) continue;
+            if(seen[item]) continue;
+            seen[item] = true;
+            cleaned.push(item);
+          }
+
+          return cleaned.join(", ");
+        }
+      }catch(e){
+        /* JSON 파싱 실패 시 fallback으로 원문 표시 */
+      }
+
+      return text;
+    }
+
+    function syncGenreTagJsonFields(){
+      /* 화면 입력칸(쉼표 문자열) 값을 hidden(JSON 문자열)로 동기화
+         빈 입력은 []로 맞춰서 JSON 컬럼 저장 시 형식 깨짐 가능성을 줄인다 */
+      const genresArr = parseCommaList(genresInputEl ? genresInputEl.value : "");
+      const tagsArr = parseCommaList(tagsInputEl ? tagsInputEl.value : "");
+
+      if(genresJsonEl) genresJsonEl.value = JSON.stringify(genresArr);
+      if(tagsJsonEl) tagsJsonEl.value = JSON.stringify(tagsArr);
+    }
+
+    function initGenreTagInputsFromHidden(){
+      /* 수정 화면 진입 시:
+         서버에서 내려준 hidden(JSON 문자열)을 읽어서
+         사용자가 수정하기 편한 쉼표 문자열로 input에 넣어준다 */
+      if(genresInputEl && genresJsonEl){
+        genresInputEl.value = jsonToCommaText(genresJsonEl.value);
+      }
+      if(tagsInputEl && tagsJsonEl){
+        tagsInputEl.value = jsonToCommaText(tagsJsonEl.value);
+      }
+    }
+
     /* 페이지 진입 시점: 서버에 저장된 기존 썸네일을 먼저 보여줌 */
     const origin = existing ? resolveUrl(existing.value) : "";
     applyBg(origin);
+
+    /* 페이지 진입 시점: 장르/태그도 hidden(JSON) -> 화면용 입력칸으로 복원 */
+    initGenreTagInputsFromHidden();
 
     /* 새 파일 선택 시 브라우저에서만 미리보기 생성
        (아직 서버 업로드 전 단계이므로 FileReader + DataURL 사용) */
@@ -596,6 +747,29 @@
         applyBg(origin);
       });
     }
+
+    /* 장르/태그 입력칸은 타이핑할 때마다 hidden(JSON)을 갱신해둔다.
+       최종적으로 submit 직전에 다시 한 번 동기화해서 누락을 막는다. */
+    if(genresInputEl){
+      genresInputEl.addEventListener("input", syncGenreTagJsonFields);
+      genresInputEl.addEventListener("change", syncGenreTagJsonFields);
+    }
+    if(tagsInputEl){
+      tagsInputEl.addEventListener("input", syncGenreTagJsonFields);
+      tagsInputEl.addEventListener("change", syncGenreTagJsonFields);
+    }
+
+    /* 제출 직전 최종 동기화
+       사용자가 쉼표로 입력한 장르/태그를 JSON 배열 문자열로 확정해서 hidden에 넣는다 */
+    if(formEl){
+      formEl.addEventListener("submit", function(){
+        syncGenreTagJsonFields();
+      });
+    }
+
+    /* 초기 1회 동기화
+       hidden 값이 공백/비정상 형태였더라도 현재 화면 입력값 기준으로 한 번 정리해 둔다 */
+    syncGenreTagJsonFields();
   })();
   </script>
 
