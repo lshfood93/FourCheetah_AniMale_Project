@@ -59,7 +59,7 @@ public class BoardController {
 	private BoardLikeService boardLikeService;
 
 	@Autowired
-	private BoardReportDAO boardReportDAO;  // ✅ 신고 여부 체크용
+	private BoardReportDAO boardReportDAO;  // 신고 여부 체크용
 
 	@Autowired
 	private HtmlSanitizer htmlSanitizer; // XSS Sanitizer 클래스
@@ -205,7 +205,7 @@ public class BoardController {
 		boardData.setBoardContent(htmlSanitizer.sanitizeBoardHtml(boardData.getBoardContent()));
 		boardData.setBoardTitle(htmlSanitizer.sanitizePlainText(boardData.getBoardTitle()));
 
-		// ✅ 신고 승인으로 삭제된 게시글 접근 차단 → 목록으로 redirect
+		// 신고 승인으로 삭제된 게시글 접근 차단 → 목록으로 redirect
 		if ("내용삭제".equals(boardData.getBoardStatus())) {
 			System.out.println("[게시글 상세보기 로그] 내용삭제 게시글 접근 차단 - boardId=" + boardId);
 			if (session == null) session = request.getSession(true);
@@ -239,7 +239,7 @@ public class BoardController {
 
 		model.addAttribute("isLiked", likedByMe);
 
-		// ✅ FIX: 내가 신고한 게시글인지 (신고버튼 비활성화용)
+		// FIX: 내가 신고한 게시글인지 (신고버튼 비활성화용)
 		boolean isReported = false;
 		if (memberId != null) {
 			isReported = boardReportDAO.isReportedByMember((int) boardId, (int) memberId);
@@ -372,30 +372,30 @@ public class BoardController {
 		String title = boardDTO.getBoardTitle();
 		String content = boardDTO.getBoardContent();
 
-		title = htmlSanitizer.sanitizePlainText(title); // ✅ (추가) 제목 sanitize
+		title = htmlSanitizer.sanitizePlainText(title); // (추가) 제목 sanitize
 		if (title.isEmpty()) {
 			// 참고: 너 코드 기준 GET 수정폼 매핑은 /boardEditPage 라서 이 경로가 더 자연스러움
-			return message(model, "제목은 필수입니다.", "boardEditPage?boardId=" + boardId); // ✅ (수정)
+			return message(model, "제목은 필수입니다.", "boardEditPage?boardId=" + boardId); 
 		}
 		if (title.length() > 255) {
-			return message(model, "제목은 255자 이내로 작성해주세요.", "boardEditPage?boardId=" + boardId); // ✅ (수정)
+			return message(model, "제목은 255자 이내로 작성해주세요.", "boardEditPage?boardId=" + boardId); 
 		}
 
 		if (content == null || content.trim().isEmpty()) {
-			return message(model, "내용은 필수입니다.", "boardEditPage?boardId=" + boardId); // ✅ (수정)
+			return message(model, "내용은 필수입니다.", "boardEditPage?boardId=" + boardId); 
 		}
 
 		content = content.trim();
 		if (content.length() > 100000) {
-			return message(model, "내용이 너무 깁니다.", "boardEditPage?boardId=" + boardId); // ✅ (수정)
+			return message(model, "내용이 너무 깁니다.", "boardEditPage?boardId=" + boardId); 
 		}
 
 		// ---------------------------------------------------------
 		// 서버측 HTML Sanitizing
 		// ---------------------------------------------------------
-		String safeContent = htmlSanitizer.sanitizeBoardHtml(content); // ✅ (유지)
+		String safeContent = htmlSanitizer.sanitizeBoardHtml(content); 
 		if (safeContent == null || safeContent.trim().isEmpty()) {
-			return message(model, "내용이 올바르지 않습니다.", "boardEditPage?boardId=" + boardId); // ✅ (수정)
+			return message(model, "내용이 올바르지 않습니다.", "boardEditPage?boardId=" + boardId); 
 		}
 
 		// ---------------------------------------------------------
@@ -403,8 +403,8 @@ public class BoardController {
 		// ---------------------------------------------------------
 		boardDTO.setCondition("BOARD_UPDATE");
 		boardDTO.setBoardId(boardId);
-		boardDTO.setBoardTitle(title);            // ✅ (추가) normalize된 제목 저장
-		boardDTO.setBoardContent(safeContent);    // ✅ (핵심) 원본 content 대신 sanitize 결과 저장
+		boardDTO.setBoardTitle(title);            // normalize된 제목 저장
+		boardDTO.setBoardContent(safeContent);    // (핵심) 원본 content 대신 sanitize 결과 저장
 
 		// 관리자면 작성자 memberId로 update (WHERE 통과)
 		boardDTO.setMemberId(isAdmin ? boardData.getMemberId() : loginMemberId);
@@ -429,7 +429,7 @@ public class BoardController {
 
 	    model.addAttribute("activeMenu", "COMMUNITY");
 
-	    // ✅ 추가: 삭제된 게시글 접근 플래그 읽고 즉시 제거
+	    // 추가: 삭제된 게시글 접근 플래그 읽고 즉시 제거
 	    HttpSession session = request.getSession(false);
 	    if (session != null) {
 	        Object deletedFlag = session.getAttribute("deletedBoardRedirect");
@@ -611,13 +611,13 @@ public class BoardController {
 		if (category == null || category.trim().isEmpty()) {
 			return message(model, "게시판 카테고리가 올바르지 않습니다.", "/mainPage");
 		}
-		category = category.trim().toUpperCase(); // ✅ (변경) 카테고리 정규화
+		category = category.trim().toUpperCase(); // 카테고리 정규화
 		boardDTO.setBoardCategory(category);
 
 		// ---------------------------------------------------------
 		// 2) 제목 검증 (일반 텍스트 normalize 사용)
 		// ---------------------------------------------------------
-		title = htmlSanitizer.sanitizePlainText(title); // ✅ (추가) 제어문자 제거 + trim
+		title = htmlSanitizer.sanitizePlainText(title); // 제어문자 제거 + trim
 		if (title.isEmpty()) {
 			return message(model, "제목은 필수입니다.", "/boardWritePage?boardCategory=" + category);
 		}
@@ -632,7 +632,7 @@ public class BoardController {
 			return message(model, "내용은 필수입니다.", "/boardWritePage?boardCategory=" + category);
 		}
 
-		content = content.trim(); // ✅ (중요) 이후 검사는 trim 기준으로 통일
+		content = content.trim(); // (중요) 이후 검사는 trim 기준으로 통일
 		if (content.length() > 100000) {
 			return message(model, "내용이 너무 깁니다.", "/boardWritePage?boardCategory=" + category);
 		}
@@ -640,7 +640,7 @@ public class BoardController {
 		// ---------------------------------------------------------
 		// 4) 서버측 HTML Sanitizing (화이트리스트)
 		// ---------------------------------------------------------
-		String safeContent = htmlSanitizer.sanitizeBoardHtml(content); // ✅ (유지)
+		String safeContent = htmlSanitizer.sanitizeBoardHtml(content); 
 		if (safeContent == null || safeContent.trim().isEmpty()) {
 			return message(model, "내용이 올바르지 않습니다.", "/boardWritePage?boardCategory=" + category);
 		}
@@ -660,8 +660,8 @@ public class BoardController {
 		// ---------------------------------------------------------
 		boardDTO.setMemberId(memberId);
 		boardDTO.setCondition("BOARD_INSERT");
-		boardDTO.setBoardTitle(title);           // ✅ (추가) normalize된 제목 반영
-		boardDTO.setBoardContent(safeContent);   // ✅ (핵심) 원본 content가 아니라 safeContent 저장
+		boardDTO.setBoardTitle(title);           // normalize된 제목 반영
+		boardDTO.setBoardContent(safeContent);   // (핵심) 원본 content가 아니라 safeContent 저장
 
 		// INSERT 호출
 		boolean inserted = boardService.insert(boardDTO);

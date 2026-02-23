@@ -171,7 +171,7 @@ public class AdminReportServiceImpl implements AdminReportService {
         
         try {
             // ========================================
-            // 【1단계】 게시글 작성자 조회
+            // 1단계 게시글 작성자 조회
             // ========================================
             BoardReportDTO reportDetail = selectReportDetail(boardId);
             
@@ -184,7 +184,7 @@ public class AdminReportServiceImpl implements AdminReportService {
             System.out.println("[1단계] 게시글 작성자 ID: " + boardWriterId);
             
             // ========================================
-            // 【2단계】 게시글 삭제 + 신고 승인
+            // 2단계 게시글 삭제 + 신고 승인
             // ========================================
             System.out.println("[2단계] BoardReportDAO.approveReport() 호출");
             boolean daoResult = boardReportDAO.approveReport(boardId, boardWriterId, handledBy);
@@ -197,7 +197,7 @@ public class AdminReportServiceImpl implements AdminReportService {
             System.out.println("[2단계] DAO 처리 완료 (게시글 삭제 + 신고 승인 + 작성자 누적 +1)");
             
             // ========================================
-            // 【3단계】 작성자 정보 재조회 (누적 횟수 확인)
+            // 3단계 작성자 정보 재조회 (누적 횟수 확인)
             // ========================================
             MemberDTO memberDTO = new MemberDTO();
             memberDTO.setMemberId(boardWriterId);
@@ -217,7 +217,7 @@ public class AdminReportServiceImpl implements AdminReportService {
             System.out.println("[3단계] 작성자 이메일: " + memberEmail);
             
             // ========================================
-            // 【4단계】 제재 판정 (3회/5회/6회)
+            // 4단계 제재 판정 (3회/5회/6회)
             // ========================================
             String warningType = null;
             LocalDateTime endAt = null;
@@ -250,7 +250,7 @@ public class AdminReportServiceImpl implements AdminReportService {
             }
             
          // ========================================
-         // 【5단계】 이메일 발송
+         // 5단계 이메일 발송
          // ========================================
          if (warningType != null) {
              System.out.println("[5단계] 제재 알림 이메일 발송 시작");

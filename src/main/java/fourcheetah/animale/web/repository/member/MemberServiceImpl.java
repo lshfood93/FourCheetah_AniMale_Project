@@ -52,7 +52,7 @@ public class MemberServiceImpl implements MemberService {
             // 저장된 비밀번호(해시 또는 기존 평문)
             String savedPassword = target.getMemberPassword();
 
-            // ✅ 해시 비교(matches) + 임시 평문 fallback
+            // 해시 비교(matches) + 임시 평문 fallback
             boolean matched = isPasswordMatched(rawPassword, savedPassword);
             if (!matched) {
                 return null;
@@ -90,7 +90,7 @@ public class MemberServiceImpl implements MemberService {
             String rawPassword = dto.getMemberPassword();
 
             if (rawPassword != null && !rawPassword.trim().isEmpty()) {
-                // ✅ 이중 해시 방지
+                // 이중 해시 방지
                 if (!isBcryptHash(rawPassword)) {
                     dto.setMemberPassword(passwordEncoder.encode(rawPassword));
                 }
@@ -107,7 +107,7 @@ public class MemberServiceImpl implements MemberService {
             String rawPassword = dto.getMemberPassword();
 
             if (rawPassword != null && !rawPassword.trim().isEmpty()) {
-                // ✅ 이중 해시 방지
+                // 이중 해시 방지
                 if (!isBcryptHash(rawPassword)) {
                     dto.setMemberPassword(passwordEncoder.encode(rawPassword));
                 }

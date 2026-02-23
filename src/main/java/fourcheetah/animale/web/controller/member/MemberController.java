@@ -47,7 +47,7 @@ public class MemberController {
 
     private final MemberService memberService;
     private final WithdrawRepository withdrawRepository;
-    private final MemberWarningDAO memberWarningDAO;  // ✅ NEW: WARNING notified 업데이트용
+    private final MemberWarningDAO memberWarningDAO; 
 
     @Value("${app.upload.profile-temp-dir}")
     private String profileTempDir;
@@ -163,7 +163,7 @@ public class MemberController {
                     session.setAttribute("sanctionReason", warningInfo.getReason());
 
                     if ("WARNING".equals(warningType) && isToday(warningInfo.getStartAt())) {
-                        // ✅ 최초 확인: 모달 표시 + WARNING으로 업데이트
+                        // 최초 확인: 모달 표시 + WARNING으로 업데이트
                         session.setAttribute("showSanctionModal", true);
                         memberWarningDAO.updateWarningConfirmed(warningInfo.getWarningId());
                         System.out.println("[로그인] WARNING_NEW - 최초 모달 표시, WARNING으로 업데이트");

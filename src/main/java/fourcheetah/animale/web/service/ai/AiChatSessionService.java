@@ -20,7 +20,7 @@ public class AiChatSessionService {
     public static final String S_MORE_COUNT   = "ai.moreRecommendCount";
     public static final String S_LAST_SPEC    = "ai.lastQuerySpec";
 
-    // ✅ 추가: 마지막 추천 리스트
+    // 추가: 마지막 추천 리스트
     public static final String S_LAST_RECOMMENDS = "ai.lastRecommendedAnimes";
 
     /**
@@ -123,7 +123,7 @@ public class AiChatSessionService {
         }
     }
 
-    // ✅ 추가: 마지막 추천 리스트 조회
+    // 추가: 마지막 추천 리스트 조회
     @SuppressWarnings("unchecked")
     public List<RecommendedAnimeDTO> getLastRecommendedAnimes(HttpSession session) {
         Object v = session.getAttribute(S_LAST_RECOMMENDS);
@@ -135,7 +135,7 @@ public class AiChatSessionService {
         return (List<RecommendedAnimeDTO>) v;
     }
 
-    // ✅ 추가: 마지막 추천 리스트 저장 (복사본 저장 권장)
+    // 추가: 마지막 추천 리스트 저장 (복사본 저장 권장)
     public void setLastRecommendedAnimes(HttpSession session, List<RecommendedAnimeDTO> list) {
         if (list == null) {
             session.setAttribute(S_LAST_RECOMMENDS, new ArrayList<RecommendedAnimeDTO>());

@@ -101,7 +101,7 @@ public class BoardDAO {
 
    // =========================================================
    // SELECT ONE
-   // board_status, board_created_at, board_updated_at 추가!
+   // board_status, board_created_at, board_updated_at 추가
    private static final String SELECT_BOARD_DETAIL = 
 		    "SELECT " +
 		    "  b.board_id, b.member_id, " +
@@ -112,8 +112,6 @@ public class BoardDAO {
 		    "  b.board_created_at, " +
 		    "  b.board_updated_at, " +
 		    "  IFNULL(l.like_cnt, 0) AS like_cnt, " +
-		    
-		    // ⭐⭐⭐ 여기부터 추가 ⭐⭐⭐
 		    
 		    // isLiked 계산 (좋아요 눌렀는지)
 		    "  CASE " +
@@ -138,7 +136,6 @@ public class BoardDAO {
 		    "    ELSE 1 " +
 		    "  END AS is_edited " +
 		    
-		    // ⭐⭐⭐ 추가 끝 ⭐⭐⭐
 		    
 		    "FROM board b " +
 		    "JOIN member m ON m.member_id = b.member_id " +
@@ -162,7 +159,6 @@ public class BoardDAO {
    
    // =========================================================
    // RowMapper 대체: JdbcTemplate 람다 매핑 (공통)
-
    // =========================================================
    // selectAll
    public ArrayList<BoardDTO> selectAll(BoardDTO boardDTO) {
@@ -238,7 +234,7 @@ public class BoardDAO {
        try {
            if ("BOARD_DETAIL".equals(condition)) {
 
-               // ⭐⭐⭐ 파라미터 순서 중요! ⭐⭐⭐
+               // 파라미터 순서 중요
                Integer currentMemberId = boardDTO.getMemberId();  // DTO에서 가져옴
                
                return jdbcTemplate.queryForObject(
@@ -253,7 +249,6 @@ public class BoardDAO {
            }
 
            if ("BOARD_EXISTS".equals(condition)) {
-               // 기존 stream 방식보다 queryForObject가 더 깔끔함
                Integer id = jdbcTemplate.queryForObject(
                        SELECT_BOARD_EXISTS,
                        (rs, rowNum) -> rs.getInt("board_id"),
@@ -299,7 +294,7 @@ public class BoardDAO {
        Number key = keyHolder.getKey();
        if (key == null) return false;
 
-       boardDTO.setBoardId(key.intValue());  // 여기 핵심
+       boardDTO.setBoardId(key.intValue());  // 핵심
        return true;
    }
 
@@ -385,16 +380,13 @@ public class BoardDAO {
               data.setBoardCreatedAt(rs.getString("board_created_at"));
               data.setBoardUpdatedAt(rs.getString("board_updated_at"));
               
-              // ⭐⭐⭐ 여기 추가 ⭐⭐⭐
               data.setIsLiked(getIntOrZero(rs, "is_liked"));
               data.setIsReported(getIntOrZero(rs, "is_reported"));
               data.setIsEdited(getIntOrZero(rs, "is_edited"));
-              // ⭐⭐⭐ 추가 끝 ⭐⭐⭐
               
               return data;
           }
           
-          // ⭐⭐⭐ 이 메서드도 추가 ⭐⭐⭐
           private int getIntOrZero(ResultSet rs, String colName) throws SQLException {
               Object obj = rs.getObject(colName);
               if (obj == null) return 0;

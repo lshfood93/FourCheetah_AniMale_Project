@@ -27,7 +27,7 @@ public class ReplyController {
     private ReplyService replyService;
 
     @Autowired
-    private HtmlSanitizer htmlSanitizer; // ✅ 추가 (댓글 입력값 XSS 방어용)
+    private HtmlSanitizer htmlSanitizer; // 추가 (댓글 입력값 XSS 방어용)
 
     // =========================================================
     // 1) 댓글 작성 (POST /replyWrite)
@@ -65,25 +65,25 @@ public class ReplyController {
         String rawReplyContent = replyDTO.getReplyContent();
         System.out.println("[댓글 작성 로그] replyContentParam=" + rawReplyContent);
 
-        // ✅ 핵심: 댓글은 리치텍스트가 아니라 일반 텍스트 필드
+        // 핵심: 댓글은 리치텍스트가 아니라 일반 텍스트 필드
         //    -> 태그 제거 + 제어문자 정리 + trim 적용
         String replyContent = htmlSanitizer.sanitizePlainText(rawReplyContent);
 
-        // ✅ sanitize 결과 기준으로 빈값 검증
+        // sanitize 결과 기준으로 빈값 검증
         if (replyContent.isEmpty()) {
             return message(model, "댓글 내용은 필수입니다.", "/boardDetail?boardId=" + boardId);
         }
 
-        // ✅ sanitize 결과 기준으로 길이 검증 (기존 정책 500자 유지)
+        // sanitize 결과 기준으로 길이 검증 (기존 정책 500자 유지)
         if (replyContent.length() > 500) {
             return message(model, "댓글은 500자 이내로 작성해주세요.", "/boardDetail?boardId=" + boardId);
         }
 
         // 4) DTO 세팅 + INSERT
-        replyDTO.setCondition("REPLY_INSERT");   // ✅ 기존 condition 유지
+        replyDTO.setCondition("REPLY_INSERT");   // 기존 condition 유지
         replyDTO.setBoardId(boardId);
         replyDTO.setMemberId(memberId);
-        replyDTO.setReplyContent(replyContent);  // ✅ sanitize된 값 저장
+        replyDTO.setReplyContent(replyContent);  // sanitize된 값 저장
 
         boolean result = replyService.insert(replyDTO);
 
@@ -140,10 +140,10 @@ public class ReplyController {
         String rawReplyContent = replyDTO.getReplyContent();
         System.out.println("[댓글 수정 로그] replyContentParam=" + rawReplyContent);
 
-        // ✅ 핵심: 수정도 작성과 동일 정책 적용
+        // 핵심: 수정도 작성과 동일 정책 적용
         String replyContent = htmlSanitizer.sanitizePlainText(rawReplyContent);
 
-        // ✅ sanitize 결과 기준 검증
+        // sanitize 결과 기준 검증
         if (replyContent.isEmpty()) {
             return message(model, "댓글 내용은 필수입니다.", "/boardDetail?boardId=" + boardId);
         }
@@ -153,10 +153,10 @@ public class ReplyController {
         }
 
         // 5) UPDATE
-        replyDTO.setCondition("REPLY_UPDATE");   // ✅ 기존 condition 유지
+        replyDTO.setCondition("REPLY_UPDATE");   // 기존 condition 유지
         replyDTO.setReplyId(replyId);
         replyDTO.setMemberId(memberId);          // 본인 확인용
-        replyDTO.setReplyContent(replyContent);  // ✅ sanitize 반영
+        replyDTO.setReplyContent(replyContent);  // sanitize 반영
 
         boolean result = replyService.update(replyDTO);
 
