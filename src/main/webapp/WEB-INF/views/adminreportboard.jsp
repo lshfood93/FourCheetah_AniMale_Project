@@ -274,7 +274,9 @@
 
     if (window.Swal && typeof window.Swal.fire === 'function') {
       window.Swal.fire({
-        position: 'top',
+    	position: 'center',
+    	heightAuto: false,
+    	target: document.body,
         icon: icon,
         title: (icon === 'success') ? '완료' : '알림',
         text: String(message || ''),
