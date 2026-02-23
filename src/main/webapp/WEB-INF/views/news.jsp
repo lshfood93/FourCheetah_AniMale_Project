@@ -2,7 +2,10 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 
-<c:set var="ctx" value="${pageContext.request.contextPath}" /> <%-- ✅ CHANGED: ctx 선언을 최상단으로 이동(전역 사용 안정화) --%>
+<%-- 공통 컨텍스트 경로
+     링크/폼 action/정적 리소스(css, js, 이미지) 경로를 전부 ctx 기준으로 맞추기 위해
+     페이지 최상단에서 먼저 선언해 둔다. --%>
+<c:set var="ctx" value="${pageContext.request.contextPath}" />
 
 <!DOCTYPE html>
 <html lang="ko">
@@ -13,7 +16,7 @@
 
 <link rel="icon" type="image/png" href="${ctx}/favicon.png">
 
-<!-- 템플릿 CSS -->
+<!-- 템플릿 공통 CSS (경로는 모두 ctx 기준으로 통일) -->
 <link rel="stylesheet" href="${ctx}/css/bootstrap.min.css">
 <link rel="stylesheet" href="${ctx}/css/font-awesome.min.css">
 <link rel="stylesheet" href="${ctx}/css/elegant-icons.css">
@@ -25,32 +28,34 @@
 
 <style>
 /* =========================================================
-   NEWS Page (커스텀) - FINAL
+   NEWS 목록 페이지 전용 커스텀 스타일
    - scope: .news-page
-   - 카드/타이틀은 뉴스 전용
-   - 검색바 룩앤필은 공용 CSS 유지
-   - 단, 뉴스 페이지에서만 '폭 흔들림' 방지
+   - 카드/타이틀/페이지네이션을 뉴스 화면 톤에 맞게 보정
+   - 검색 UI의 기본 스타일은 공용 CSS를 최대한 유지
+   - 뉴스 페이지에서만 검색 영역 폭 흔들림(버튼 유무에 따른 레이아웃 변화) 보정
 ========================================================= */
 
 /* =========================
-   quick tweak (여기만 만지면 됨)
+   빠르게 조정할 값(페이지 톤 미세조절용)
+   여기 변수만 만져도 타이틀/검색 폭 느낌을 바로 바꿀 수 있게 분리
 ========================= */
 .news-page{
-  --news-title-size: 28px;     /* '뉴스' 글자 크기 */
-  --news-sub-gap: 6px;         /* '뉴스'와 서브문장 간격 */
-  --news-underline-w: 50px;    /* 언더라인 길이 */
-  --news-underline-h: 2px;     /* 언더라인 두께 */
+  --news-title-size: 28px;     /* '뉴스' 메인 타이틀 크기 */
+  --news-sub-gap: 6px;         /* 메인 타이틀과 서브문장 간격 */
+  --news-underline-w: 50px;    /* 타이틀 아래 언더라인 길이 */
+  --news-underline-h: 2px;     /* 타이틀 아래 언더라인 두께 */
 
-  --news-search-max: 320px;    /* 검색박스 목표 폭(데스크탑) */
-  --news-search-min: 320px;    /* 버튼 생겨도 이 정도는 유지(너무 짧아지는 것 방지) */
+  --news-search-max: 320px;    /* 데스크탑 기준 검색박스 목표 폭 */
+  --news-search-min: 320px;    /* 버튼이 같이 보여도 최소 유지할 폭(너무 찌그러짐 방지) */
 }
 
-/* 카드 영역만 거터 통일(타이틀 row에는 영향 X) */
+/* 뉴스 카드 영역 안쪽 row/col 거터만 따로 정리
+   타이틀 영역(.product__page__title)의 row 간격에는 영향 안 주려고 범위를 news-card-area로 제한 */
 .news-page .news-card-area .row{ margin-left:-6px; margin-right:-6px; }
 .news-page .news-card-area [class*='col-']{ padding-left:6px; padding-right:6px; }
 
 /* -------------------------
-   Cards
+   뉴스 카드(목록 아이템)
 ------------------------- */
 .news-page .blog__item{
   height: 580px;
@@ -75,6 +80,8 @@
 }
 .news-page .blog__item.small__item{ height: 285px; }
 
+/* 카드 위에 얹는 어두운 베이스 오버레이
+   텍스트 가독성 확보용 + hover 때 톤 변화 주기 쉽게 분리 */
 .news-page .blog__item::before{
   content: '';
   position: absolute;
@@ -83,6 +90,9 @@
   z-index: 1;
   pointer-events: none;
 }
+
+/* 카드 하단으로 갈수록 더 어두워지는 그라데이션
+   제목 텍스트가 카드 하단에 올라가므로 하단 대비를 확실히 잡아준다. */
 .news-page .blog__item::after{
   content: '';
   position: absolute;
@@ -99,6 +109,8 @@
 .news-page .blog__item::before,
 .news-page .blog__item::after{ border-radius: inherit; }
 
+/* 카드 hover 피드백
+   살짝 뜨는 느낌 + 붉은 톤 외곽선으로 뉴스 카드임을 강조 */
 .news-page .blog__item:hover{
   transform: translateY(-3px);
   box-shadow:
@@ -109,7 +121,8 @@
   background: rgba(11, 12, 42, 0.40);
 }
 
-/* 카드 텍스트 오버레이 */
+/* 카드 텍스트 오버레이
+   제목을 카드 하단 중앙에 올리고, 큰 카드/작은 카드 padding 차이만 별도 조정 */
 .news-page .blog__item__text{
   position: absolute;
   left: 0;
@@ -121,6 +134,8 @@
 }
 .news-page .blog__item.small__item .blog__item__text{ padding: 0 30px; }
 
+/* 제목 줄수 제한
+   작은 카드는 2줄, 큰 카드는 3줄까지 허용해서 카드 높이별 균형 맞춤 */
 .news-page .blog__item__text h4{
   margin: 0;
   color: #fff;
@@ -137,7 +152,8 @@
   -webkit-line-clamp: 3;
 }
 
-/* 카드 내 NEWS 배지 */
+/* 카드 상단의 NEWS 배지
+   별도 마크업 추가 없이 pseudo 요소로 처리해서 구조를 단순하게 유지 */
 .news-page .blog__item__text::before{
   content: 'NEWS';
   display: inline-flex;
@@ -153,7 +169,7 @@
 }
 
 /* -------------------------
-   Pagination
+   페이지네이션
 ------------------------- */
 .news-page .product__pagination{
   margin-top: 25px;
@@ -187,7 +203,8 @@
 }
 
 /* =========================================================
-   NEWS 타이틀 섹션 (미니멀)
+   뉴스 타이틀 영역(미니멀 커스텀)
+   템플릿 기본 section-title 장식은 지우고 뉴스 페이지 전용 스타일 적용
 ========================================================= */
 .news-page .product__page__title .section-title::before,
 .news-page .product__page__title .section-title::after{
@@ -216,6 +233,7 @@
   text-shadow: 0 12px 28px rgba(0,0,0,0.35);
 }
 
+/* 타이틀 위에 작은 NEWS 라벨 표시 */
 .news-page .product__page__title .section-title h4::before{
   content: 'NEWS';
   position: absolute;
@@ -228,6 +246,7 @@
   color: rgba(255,255,255,0.55);
 }
 
+/* 타이틀 밑 언더라인 */
 .news-page .product__page__title .section-title h4::after{
   content: '';
   position: absolute;
@@ -246,6 +265,8 @@
   opacity: 0.9;
 }
 
+/* 타이틀 아래 설명 문장
+   박스/보더 느낌 없이 가볍게 텍스트만 보이도록 정리 */
 .news-page .news-subtitle{
   margin: var(--news-sub-gap) 0 0 !important;
   padding: 0 !important;
@@ -268,7 +289,7 @@
   content: none !important;
 }
 
-/* 모바일 타이틀 */
+/* 모바일 타이틀/서브문장 크기 보정 */
 @media (max-width: 991px){
   .news-page .product__page__title .section-title h4{
     font-size: 30px;
@@ -288,15 +309,19 @@
 }
 
 /* =========================================================
-   검색 길이 흔들림 FIX (뉴스 페이지만)
+   검색 영역 폭 흔들림 방지 (뉴스 페이지 전용)
+   - 검색 상태일 때 '전체보기' 버튼이 생기고
+   - 관리자일 때 '뉴스 작성' 버튼도 붙을 수 있어서
+   검색 input 폭이 갑자기 줄어드는 현상을 데스크탑에서 고정폭 정책으로 완화
 ========================================================= */
 
-/* 타이틀 row 세로 정렬은 가운데 */
+/* 타이틀 row 세로 정렬만 보정(가운데 정렬) */
 .news-page .product__page__title .row{
   align-items: center !important;
 }
 
 @media (min-width: 992px){
+  /* 좌측(타이틀) / 우측(검색) 비율을 고정해 레이아웃 흔들림 감소 */
   .news-page .product__page__title > .row > .col-lg-8{
     flex: 0 0 55%;
     max-width: 55%;
@@ -306,6 +331,7 @@
     max-width: 45%;
   }
 
+  /* 검색행: 한 줄 고정 + 우측 정렬 */
   .news-page .news-search-row{
     display: flex;
     justify-content: flex-end;
@@ -314,6 +340,7 @@
     flex-wrap: nowrap;
   }
 
+  /* 검색박스 자체 폭 정책 (최대/최소 동일하게 잡아 흔들림 방지) */
   .news-page .news-search-box{
     flex: 0 1 var(--news-search-max);
     width: var(--news-search-max);
@@ -321,21 +348,25 @@
     min-width: var(--news-search-min);
   }
 
+  /* input은 부모 박스 안에서 줄어들 수 있게 min-width 해제 */
   .news-page .news-search-box input[type='text']{
     min-width: 0;
   }
 
+  /* 버튼 텍스트 줄바꿈 방지 */
   .news-page .news-reset-btn,
   .news-page .news-admin-btn{
     white-space: nowrap;
   }
 }
 
+/* 전체보기 버튼 hover 시 밑줄 생기는 템플릿 기본 a 스타일 방지 */
 .news-page a.news-reset-btn:hover{
   text-decoration: none !important;
 }
 
 @media (max-width: 991px){
+  /* 모바일에서는 자연스럽게 줄바꿈 허용 */
   .news-page .news-search-row{
     justify-content: flex-start;
     flex-wrap: wrap;
@@ -354,6 +385,8 @@
 
 <jsp:include page="/WEB-INF/common/header.jsp" />
 
+<%-- 검색 여부 / 뉴스 개수
+     아래에서 empty 체크를 계속 반복하지 않으려고 미리 boolean/숫자 형태로 꺼내둔다. --%>
 <c:set var="isSearch" value="${not empty keyword}" />
 <c:set var="nlen" value="${empty newsList ? 0 : newsList.size()}" />
 
@@ -421,13 +454,19 @@
 
             <c:choose>
               <c:when test="${isSearch}">
-                <%-- 검색 결과: 작은 카드만 (좌 6 / 우 나머지) --%>
+                <%-- 검색 결과 레이아웃
+                     검색 시에는 전부 작은 카드로 통일해서 정보 밀도를 높이고,
+                     좌측 6개 / 우측 나머지로 나눠 보여준다. --%>
 
                 <div class="col-lg-6">
                   <div class="row">
                     <c:forEach var="news" items="${newsList}" begin="0" end="${nlen-1}" varStatus="st">
                       <c:if test="${st.index < 6}">
 
+                        <%-- 썸네일 경로 정규화
+                             DB 값이 절대URL / ctx포함 / 루트상대 / 상대경로 중 어떤 형태로 와도
+                             화면에서는 정상 출력되도록 한 번 정리한다.
+                             썸네일이 비어 있으면 기본 이미지 사용. --%>
                         <c:set var="thumb" value="${empty news.newsThumbnailUrl ? '/img/normal-breadcrumb.jpg' : news.newsThumbnailUrl}" />
                         <c:choose>
                           <c:when test="${fn:startsWith(thumb,'http')}"></c:when>
@@ -440,7 +479,10 @@
                           </c:otherwise>
                         </c:choose>
 
-                        <%-- ✅ CHANGED: c:url은 ctx를 붙이지 말고 "/매핑"만 넣기(컨텍스트 중복 방지) --%>
+                        <%-- 뉴스 상세 URL 생성
+                             c:url에는 ctx를 직접 붙이지 않고 매핑 경로(/newsDetail)만 넣는다.
+                             이렇게 해야 컨텍스트 경로가 중복으로 붙는 문제를 막고,
+                             page/condition/keyword 파라미터도 안전하게 이어갈 수 있다. --%>
                         <c:url var="detailUrl" value="/newsDetail">
                           <c:param name="newsId" value="${news.newsId}" />
                           <c:param name="page" value="${page}" />
@@ -468,6 +510,7 @@
                     <c:forEach var="news" items="${newsList}" begin="0" end="${nlen-1}" varStatus="st">
                       <c:if test="${st.index >= 6}">
 
+                        <%-- 썸네일 경로 정규화(우측 컬럼도 동일 규칙 적용) --%>
                         <c:set var="thumb" value="${empty news.newsThumbnailUrl ? '/img/normal-breadcrumb.jpg' : news.newsThumbnailUrl}" />
                         <c:choose>
                           <c:when test="${fn:startsWith(thumb,'http')}"></c:when>
@@ -480,7 +523,8 @@
                           </c:otherwise>
                         </c:choose>
 
-                        <%-- ✅ CHANGED: 동일 사유로 value="/newsDetail" 사용 --%>
+                        <%-- 뉴스 상세 URL 생성(동일 규칙)
+                             c:url + c:param으로 목록 상태(page/검색조건) 유지 --%>
                         <c:url var="detailUrl" value="/newsDetail">
                           <c:param name="newsId" value="${news.newsId}" />
                           <c:param name="page" value="${page}" />
@@ -506,7 +550,10 @@
               </c:when>
 
               <c:otherwise>
-                <%-- 기본 목록: (왼쪽 BIG+SMALL+SMALL) + (오른쪽 SMALL+SMALL+BIG) 6개 단위 반복 --%>
+                <%-- 기본 목록 레이아웃(검색 아닐 때)
+                     6개를 한 묶음으로 보고
+                     (왼쪽 BIG + SMALL + SMALL) + (오른쪽 SMALL + SMALL + BIG)
+                     패턴을 반복해서 카드 리듬감을 만든다. --%>
 
                 <c:forEach var="base" begin="0" end="${nlen-1}" step="6">
                   <div class="col-lg-12">
@@ -519,6 +566,7 @@
                           <c:if test="${idx < nlen}">
                             <c:set var="news" value="${newsList[idx]}" />
 
+                            <%-- 1번 카드(좌측 BIG) 썸네일 경로 정규화 --%>
                             <c:set var="thumb" value="${empty news.newsThumbnailUrl ? '/img/normal-breadcrumb.jpg' : news.newsThumbnailUrl}" />
                             <c:choose>
                               <c:when test="${fn:startsWith(thumb,'http')}"></c:when>
@@ -527,7 +575,8 @@
                               <c:otherwise><c:set var="thumb" value="${ctx}/${thumb}" /></c:otherwise>
                             </c:choose>
 
-                            <%-- ✅ CHANGED --%>
+                            <%-- 상세 URL 생성
+                                 c:url은 매핑 경로만 넣고, 현재 목록 상태(page/condition/keyword)를 함께 전달한다. --%>
                             <c:url var="detailUrl" value="/newsDetail">
                               <c:param name="newsId" value="${news.newsId}" />
                               <c:param name="page" value="${page}" />
@@ -550,6 +599,7 @@
                           <c:if test="${idx < nlen}">
                             <c:set var="news" value="${newsList[idx]}" />
 
+                            <%-- 2번 카드(좌측 SMALL) 썸네일 경로 정규화 --%>
                             <c:set var="thumb" value="${empty news.newsThumbnailUrl ? '/img/normal-breadcrumb.jpg' : news.newsThumbnailUrl}" />
                             <c:choose>
                               <c:when test="${fn:startsWith(thumb,'http')}"></c:when>
@@ -558,7 +608,7 @@
                               <c:otherwise><c:set var="thumb" value="${ctx}/${thumb}" /></c:otherwise>
                             </c:choose>
 
-                            <%-- ✅ CHANGED --%>
+                            <%-- 상세 URL 생성(동일 규칙) --%>
                             <c:url var="detailUrl" value="/newsDetail">
                               <c:param name="newsId" value="${news.newsId}" />
                               <c:param name="page" value="${page}" />
@@ -581,6 +631,7 @@
                           <c:if test="${idx < nlen}">
                             <c:set var="news" value="${newsList[idx]}" />
 
+                            <%-- 3번 카드(좌측 SMALL) 썸네일 경로 정규화 --%>
                             <c:set var="thumb" value="${empty news.newsThumbnailUrl ? '/img/normal-breadcrumb.jpg' : news.newsThumbnailUrl}" />
                             <c:choose>
                               <c:when test="${fn:startsWith(thumb,'http')}"></c:when>
@@ -589,7 +640,7 @@
                               <c:otherwise><c:set var="thumb" value="${ctx}/${thumb}" /></c:otherwise>
                             </c:choose>
 
-                            <%-- ✅ CHANGED --%>
+                            <%-- 상세 URL 생성(동일 규칙) --%>
                             <c:url var="detailUrl" value="/newsDetail">
                               <c:param name="newsId" value="${news.newsId}" />
                               <c:param name="page" value="${page}" />
@@ -618,6 +669,7 @@
                           <c:if test="${idx < nlen}">
                             <c:set var="news" value="${newsList[idx]}" />
 
+                            <%-- 4번 카드(우측 SMALL) 썸네일 경로 정규화 --%>
                             <c:set var="thumb" value="${empty news.newsThumbnailUrl ? '/img/normal-breadcrumb.jpg' : news.newsThumbnailUrl}" />
                             <c:choose>
                               <c:when test="${fn:startsWith(thumb,'http')}"></c:when>
@@ -626,7 +678,7 @@
                               <c:otherwise><c:set var="thumb" value="${ctx}/${thumb}" /></c:otherwise>
                             </c:choose>
 
-                            <%-- ✅ CHANGED --%>
+                            <%-- 상세 URL 생성(동일 규칙) --%>
                             <c:url var="detailUrl" value="/newsDetail">
                               <c:param name="newsId" value="${news.newsId}" />
                               <c:param name="page" value="${page}" />
@@ -649,6 +701,7 @@
                           <c:if test="${idx < nlen}">
                             <c:set var="news" value="${newsList[idx]}" />
 
+                            <%-- 5번 카드(우측 SMALL) 썸네일 경로 정규화 --%>
                             <c:set var="thumb" value="${empty news.newsThumbnailUrl ? '/img/normal-breadcrumb.jpg' : news.newsThumbnailUrl}" />
                             <c:choose>
                               <c:when test="${fn:startsWith(thumb,'http')}"></c:when>
@@ -657,7 +710,7 @@
                               <c:otherwise><c:set var="thumb" value="${ctx}/${thumb}" /></c:otherwise>
                             </c:choose>
 
-                            <%-- ✅ CHANGED --%>
+                            <%-- 상세 URL 생성(동일 규칙) --%>
                             <c:url var="detailUrl" value="/newsDetail">
                               <c:param name="newsId" value="${news.newsId}" />
                               <c:param name="page" value="${page}" />
@@ -680,6 +733,7 @@
                           <c:if test="${idx < nlen}">
                             <c:set var="news" value="${newsList[idx]}" />
 
+                            <%-- 6번 카드(우측 BIG) 썸네일 경로 정규화 --%>
                             <c:set var="thumb" value="${empty news.newsThumbnailUrl ? '/img/normal-breadcrumb.jpg' : news.newsThumbnailUrl}" />
                             <c:choose>
                               <c:when test="${fn:startsWith(thumb,'http')}"></c:when>
@@ -688,7 +742,7 @@
                               <c:otherwise><c:set var="thumb" value="${ctx}/${thumb}" /></c:otherwise>
                             </c:choose>
 
-                            <%-- ✅ CHANGED --%>
+                            <%-- 상세 URL 생성(동일 규칙) --%>
                             <c:url var="detailUrl" value="/newsDetail">
                               <c:param name="newsId" value="${news.newsId}" />
                               <c:param name="page" value="${page}" />
@@ -722,7 +776,9 @@
               <div class="product__pagination">
 
                 <c:if test="${hasPrev}">
-                  <%-- ✅ CHANGED: value="/newsList" --%>
+                  <%-- 이전 페이지 묶음 이동 URL
+                       c:url에는 매핑 경로만 넣고, condition/keyword를 그대로 이어서
+                       검색 중 페이지 이동 시 검색 상태가 유지되게 한다. --%>
                   <c:url var="prevUrl" value="/newsList">
                     <c:param name="page" value="${startPage - 1}" />
                     <c:param name="condition" value="${condition}" />
@@ -734,7 +790,8 @@
                 </c:if>
 
                 <c:forEach var="p" begin="${startPage}" end="${endPage}">
-                  <%-- ✅ CHANGED: value="/newsList" --%>
+                  <%-- 개별 페이지 번호 URL
+                       현재 condition/keyword를 함께 전달해서 페이지 번호 클릭 후에도 목록 상태 유지 --%>
                   <c:url var="pageUrl" value="/newsList">
                     <c:param name="page" value="${p}" />
                     <c:param name="condition" value="${condition}" />
@@ -746,7 +803,7 @@
                 </c:forEach>
 
                 <c:if test="${hasNext}">
-                  <%-- ✅ CHANGED: value="/newsList" --%>
+                  <%-- 다음 페이지 묶음 이동 URL (검색 조건 유지) --%>
                   <c:url var="nextUrl" value="/newsList">
                     <c:param name="page" value="${endPage + 1}" />
                     <c:param name="condition" value="${condition}" />
