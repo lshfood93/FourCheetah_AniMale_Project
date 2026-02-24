@@ -261,7 +261,7 @@
 										<span class="split-text">닉네임</span>
 									</div>
 									<div class="split-value">
-										<input id="nicknameInput" type="text" value="<c:out value='${memberData.memberNickname}'/>" readonly>
+										<input id="nicknameInput" name="memberNickname" type="text" value="<c:out value='${memberData.memberNickname}'/>" readonly>
 									</div>
 								</div>
 
