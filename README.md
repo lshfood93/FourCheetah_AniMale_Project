@@ -22,12 +22,12 @@ ANIMale은 애니메이션 콘텐츠를 탐색하고, <br/>
 - 뉴스 운영(관리자 CRUD)
 - 회원 관리(가입/로그인/비밀번호 재설정/마이페이지)
 - 유료 커스터마이징(프로필/닉네임 꾸미기, 캐시 충전)
-- 관리자 제재/신고 처리
+- 관리자 대시보드(캐시 운영 지표/신고 제재 처리)
 - AI 기반 추천/채팅 기능
 
 ---
 
-## 현재 프로젝트 기준 주요 변경점 (기존 README 대비)
+## 🧩 현재 프로젝트 기준 주요 변경점 (기존 README 대비)
 
 - Java Servlet/JSP MVC → Spring Boot MVC
 - FrontController `*.do` 구조 → `@Controller`, `@RestController` 기반 라우팅
