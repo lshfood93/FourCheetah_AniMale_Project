@@ -27,7 +27,7 @@ ANIMale은 애니메이션 콘텐츠를 탐색하고, <br/>
 
 ---
 
-## 🧩 현재 프로젝트 기준 주요 변경점 (기존 README 대비)
+## 🧩 현재 프로젝트 기준 주요 변경점
 
 - Java Servlet/JSP MVC → Spring Boot MVC
 - FrontController `*.do` 구조 → `@Controller`, `@RestController` 기반 라우팅
